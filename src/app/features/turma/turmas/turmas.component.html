@@ -1,0 +1,102 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Turmas</h1>
+      <p class="tl-text-muted">Cadastre as turmas e gerencie professores e alunos dentro de cada uma.</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="abrirNova()">
+      <span class="material-symbols-outlined">add</span> Nova turma
+    </button>
+  </header>
+
+  <div class="page-toolbar">
+    <input
+      class="form-control"
+      type="search"
+      placeholder="Buscar por nome, série ou código"
+      [value]="busca()"
+      (input)="busca.set(valor($event))"
+    />
+  </div>
+
+  <div class="card mb-0">
+    @if (filtradas().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state__icon" aria-hidden="true"><span class="material-symbols-outlined">school</span></div>
+        <h3>{{ turmas.total() === 0 ? 'Nenhuma turma cadastrada' : 'Nada encontrado' }}</h3>
+        <p>
+          {{ turmas.total() === 0 ? 'Clique em "Nova turma" para começar.' : 'Tente outro termo de busca.' }}
+        </p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Turma</th>
+              <th>Série</th>
+              <th>Turno</th>
+              <th>Ano</th>
+              <th>Professores</th>
+              <th>Alunos</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (turma of filtradas(); track turma.id) {
+              <tr>
+                <td>
+                  <a class="tl-link-strong" [routerLink]="['/turmas', turma.id]">
+                    <strong>{{ turma.nome }}</strong>
+                  </a>
+                  @if (turma.codigo) {
+                    <div class="tl-small tl-text-muted">Código: {{ turma.codigo }}</div>
+                  }
+                </td>
+                <td>{{ turma.serie || '—' }}</td>
+                <td>{{ turnoLabel(turma.turno) }}</td>
+                <td>{{ turma.anoLetivo }}</td>
+                <td>{{ professoresDa(turma) }}</td>
+                <td><span class="badge badge-primary">{{ alunos.contarPorTurma(turma.id) }}</span></td>
+                <td>
+                  <span [class]="'badge ' + (turma.ativa ? 'badge-success' : 'badge-neutral')">
+                    {{ turma.ativa ? 'Ativa' : 'Inativa' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <a class="btn btn-sm btn-primary" [routerLink]="['/turmas', turma.id]">Abrir</a>
+                    <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(turma)">
+                      <span class="material-symbols-outlined">edit</span> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" type="button" (click)="pedirExclusao(turma)" aria-label="Excluir">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
+
+<app-turma-form
+  [open]="modalAberto()"
+  [turma]="editando()"
+  (salvo)="onSalvo()"
+  (fechado)="fechar()"
+/>
+
+<app-modal [open]="!!excluindo()" title="Excluir turma" (close)="cancelarExclusao()">
+  <p>
+    Deseja realmente excluir a turma <strong>{{ excluindo()?.nome }}</strong>? Esta ação não pode ser desfeita.
+  </p>
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusao()">Cancelar</button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
+  </div>
+</app-modal>

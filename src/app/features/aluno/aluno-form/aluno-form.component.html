@@ -1,0 +1,105 @@
+<app-modal [open]="open()" [title]="aluno() ? 'Editar aluno' : 'Novo aluno'" (close)="fechar()">
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div class="span-2">
+        <label class="form-label" for="aluno-nome">Nome completo *</label>
+        <input
+          id="aluno-nome"
+          class="form-control"
+          type="text"
+          placeholder="Ex.: João Pereira"
+          [value]="form().nome"
+          (input)="patch('nome', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="aluno-email">E-mail</label>
+        <input
+          id="aluno-email"
+          class="form-control"
+          type="email"
+          placeholder="aluno@escola.com"
+          [value]="form().email"
+          (input)="patch('email', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="aluno-matricula">Matrícula</label>
+        <input
+          id="aluno-matricula"
+          class="form-control"
+          type="text"
+          placeholder="Ex.: 2026001"
+          [value]="form().matricula"
+          (input)="patch('matricula', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="aluno-turma">Turma</label>
+        <select id="aluno-turma" class="form-select" [value]="form().turmaId" (change)="patch('turmaId', valor($event))">
+          <option value="">— Sem turma —</option>
+          @for (turma of turmas.turmas(); track turma.id) {
+            <option [value]="turma.id">{{ turma.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="aluno-nasc">Data de nascimento</label>
+        <input
+          id="aluno-nasc"
+          class="form-control"
+          type="date"
+          [value]="form().dataNascimento"
+          (input)="patch('dataNascimento', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="aluno-resp">Responsável</label>
+        <input
+          id="aluno-resp"
+          class="form-control"
+          type="text"
+          placeholder="Nome do responsável"
+          [value]="form().responsavel"
+          (input)="patch('responsavel', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="aluno-resp-tel">Telefone do responsável</label>
+        <input
+          id="aluno-resp-tel"
+          class="form-control"
+          type="tel"
+          placeholder="(00) 00000-0000"
+          [value]="form().telefoneResponsavel"
+          (input)="patch('telefoneResponsavel', valor($event))"
+        />
+      </div>
+
+      <div class="span-2">
+        <label class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            [checked]="form().ativo"
+            (change)="patch('ativo', marcado($event))"
+          />
+          <span>Aluno ativo</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="submit">
+        {{ aluno() ? 'Salvar alterações' : 'Cadastrar aluno' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

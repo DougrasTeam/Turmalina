@@ -1,0 +1,74 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>InstituiÃ§Ã£o</h1>
+      <p class="tl-text-muted">Dados bÃ¡sicos e fuso horÃ¡rio usados em todo o sistema.</p>
+    </div>
+  </header>
+
+  @if (!instituicao.instituicao()) {
+    <div class="card">
+      <div class="card-body">
+        <p class="tl-text-muted mb-0">
+          Ainda nÃ£o hÃ¡ dados da instituiÃ§Ã£o cadastrados. Preencha o formulÃ¡rio abaixo para comeÃ§ar.
+        </p>
+      </div>
+    </div>
+  }
+
+  <form class="card" (submit)="salvar($event)">
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="span-2">
+          <label class="form-label" for="inst-nome">Nome da instituiÃ§Ã£o *</label>
+          <input
+            id="inst-nome"
+            class="form-control"
+            type="text"
+            placeholder="Ex.: Escola Turmalina"
+            [value]="form().nome"
+            (input)="patch('nome', valor($event))"
+          />
+        </div>
+
+        <div>
+          <label class="form-label" for="inst-fuso">Fuso horÃ¡rio</label>
+          <input
+            id="inst-fuso"
+            class="form-control"
+            type="text"
+            list="fusos-instituicao"
+            [value]="form().fusoHorario"
+            (input)="patch('fusoHorario', valor($event))"
+          />
+          <datalist id="fusos-instituicao">
+            @for (fuso of fusos; track fuso) {
+              <option [value]="fuso"></option>
+            }
+          </datalist>
+        </div>
+
+        <div>
+          <label class="form-label" for="inst-status">Status</label>
+          <select
+            id="inst-status"
+            class="form-select"
+            [value]="form().status"
+            (change)="setStatus($event)"
+          >
+            @for (opcao of statusOpcoes; track opcao.value) {
+              <option [value]="opcao.value">{{ opcao.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-primary" type="submit">
+          <span class="material-symbols-outlined" aria-hidden="true">save</span>
+          Salvar
+        </button>
+      </div>
+    </div>
+  </form>
+</section>

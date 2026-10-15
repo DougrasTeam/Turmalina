@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TurmaLina UI Kit — Documentação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef0ff;--ink:#1b1740;--muted:#5f5b86;--pri:#5b3df5;--line:#d9d6f2;--surface:#fff;--gold:#ffc93c;--green:#19b37d}*{box-sizing:border-box}body{margin:0;background:#f8f8fc;color:var(--ink);font:600 15px/1.5 'Nunito',sans-serif}header{padding:32px max(20px,calc((100% - 1180px)/2));background:var(--ink);color:#fff}header h1{font:400 clamp(30px,5vw,48px)/1.1 'Lilita One',sans-serif;margin:0 0 8px}header p{margin:0;color:#c9c3ff;max-width:700px}.layout{max-width:1180px;margin:24px auto;padding:0 18px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px}aside{position:sticky;top:16px;align-self:start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}aside a{display:block;padding:8px 10px;color:var(--muted);text-decoration:none;border-radius:8px}aside a:hover{background:#f0edff;color:var(--pri)}main{min-width:0}.intro,.section{background:#fff;border:1px solid #e7e5f5;border-radius:18px;padding:22px;margin-bottom:18px}.section h2{font:400 28px 'Lilita One',sans-serif;margin:0 0 5px}.section>p{color:var(--muted);margin:0 0 18px}.demo{padding:18px;background:#eef0ff;border:1px dashed #c8c3e9;border-radius:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}.codebox{position:relative;background:#17152b;color:#f3f0ff;border-radius:12px;overflow:hidden}.codebox pre{margin:0;padding:16px;overflow:auto;font:13px/1.55 Consolas,monospace;white-space:pre}.copy{position:absolute;right:8px;top:8px;border:1px solid #625c83;border-radius:8px;background:#302b50;color:white;padding:6px 10px;font:700 12px 'Nunito',sans-serif;cursor:pointer}.swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.swatch{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}.swatch i{display:block;height:52px}.swatch span{display:block;padding:8px;font-size:12px}.note{padding:12px 14px;background:#fff2d6;border:1px solid #f0c45d;border-radius:10px;color:#7a5200}.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border:2px solid #d9d6f2;border-radius:12px;background:#fff;color:#1b1740;box-shadow:0 3px 0 #d9d6f2;font:800 14px 'Nunito',sans-serif}.btn-primary{background:#5b3df5;border-color:#3f27c4;color:white;box-shadow:0 4px 0 #3f27c4}.btn-success{background:#19b37d;border-color:#0e8a62;color:white;box-shadow:0 4px 0 #0e8a62}.btn-warning{background:#ffc93c;border-color:#d99e00;box-shadow:0 4px 0 #d99e00}.btn-danger{color:#c2283a;border-color:#ffc3c9}.btn-dark{background:#1b1740;border-color:#120e33;color:#fff}.btn-outline-primary{background:transparent;color:#5b3df5;border-color:#5b3df5;box-shadow:none}.btn-sm{padding:7px 12px;font-size:12px}.btn-lg{padding:14px 22px;font-size:17px}.card{background:white;border:2px solid #d9d6f2;border-bottom-width:5px;border-radius:18px;padding:16px;max-width:390px}.card h3{font:400 21px 'Lilita One',sans-serif;margin:0 0 6px}.muted{color:#5f5b86}.badge{display:inline-block;padding:4px 9px;border-radius:99px;font-size:12px;background:#e4e0ff;color:#3f27c4}.badge-success{background:#d7f5e8;color:#0a6a4b}.badge-warning{background:#fff2d6;color:#8a5700}.badge-danger{background:#ffdde0;color:#b01e32}.alert{padding:12px 14px;border-radius:14px;border:2px solid;margin:6px 0}.alert-success{background:#d7f5e8;border-color:#19b37d;color:#0a5a40}.alert-warning{background:#fff2d6;border-color:#f0c45d;color:#7a5200}.alert-danger{background:#ffdde0;border-color:#ff9ca6;color:#9f1e2e}.form-control,.form-select{width:100%;max-width:440px;padding:11px 12px;border:2px solid #d9d6f2;border-radius:12px;background:#fff;font:700 15px 'Nunito',sans-serif;color:#1b1740}.progress{height:10px;background:#e7e5fa;border-radius:99px;overflow:hidden;max-width:500px}.progress-bar{display:block;width:var(--progress,0%);height:100%;background:linear-gradient(90deg,#ffc93c,#ffa928);border-radius:99px}.nav{display:flex;gap:5px;background:#fff;border:2px solid #d9d6f2;padding:4px;border-radius:14px;max-width:560px}.nav a{flex:1;text-align:center;text-decoration:none;padding:9px;border-radius:10px;color:#5f5b86}.nav a.active{background:#1b1740;color:#fff}.table{width:100%;border-collapse:collapse;background:#fff}.table th,.table td{padding:10px;text-align:left;border-bottom:1px solid #d9d6f2}.table th{background:#eef0ff}.grid-demo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}.grid-demo div{padding:18px 8px;text-align:center;border-radius:12px;background:#f0edff;border:1px solid #d9d6f2}.footer{max-width:1180px;margin:0 auto;padding:0 18px 32px;color:#77718f;font-size:13px}@media(max-width:800px){.layout{grid-template-columns:1fr}aside{position:static;display:flex;gap:4px;overflow:auto}aside a{white-space:nowrap}.intro,.section{padding:16px}.grid-demo{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<header><h1>TurmaLina UI Kit</h1><p>Documentação prática dos estilos do projeto turmaLina, organizada em classes utilitárias e componentes com sintaxe familiar ao Bootstrap. Abra o SCSS junto desta página para usar no Angular.</p></header>
+<div class="layout"><aside><a href="#instalacao">Instalação</a><a href="#cores">Cores</a><a href="#botoes">Botões</a><a href="#cards">Cards</a><a href="#badges">Badges e chips</a><a href="#alertas">Alertas</a><a href="#formularios">Formulários</a><a href="#progresso">Progresso</a><a href="#navegacao">Navegação</a><a href="#tabelas">Tabelas</a><a href="#layout">Layout</a><a href="#tema">Tema corporativo</a></aside>
+<main>
+<section class="intro" id="instalacao"><h2>Comece por aqui</h2><p>Copie <strong>turmalina-ui-kit.scss</strong> para a pasta de estilos do Angular. Em <code>src/styles.scss</code>, importe o arquivo:</p><div class="codebox"><button class="copy">Copiar</button><pre><code>@use './styles/turmalina-ui-kit';</code></pre></div><p style="margin-top:14px">Depois, use as classes no template:</p><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;button type="button" class="btn btn-primary"&gt;Salvar&lt;/button&gt;
+
+&lt;div class="card"&gt;
+  &lt;div class="card-body"&gt;
+    &lt;h3 class="card-title"&gt;Título do card&lt;/h3&gt;
+    &lt;p class="card-text"&gt;Conteúdo do cartão.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div><p class="note" style="margin-top:14px">A documentação é uma referência visual. O arquivo SCSS é a fonte real das classes; comportamentos como abrir modal ou alternar abas precisam ser implementados no Angular.</p></section>
+<section class="section" id="cores"><h2>Paleta de cores</h2><p>Tokens extraídos da identidade visual do projeto. É possível sobrescrevê-los em <code>:root</code>.</p><div class="swatches"><div class="swatch"><i style="background:#5b3df5"></i><span><b>Primary</b><br>#5B3DF5</span></div><div class="swatch"><i style="background:#1b1740"></i><span><b>Ink</b><br>#1B1740</span></div><div class="swatch"><i style="background:#eef0ff"></i><span><b>Background</b><br>#EEF0FF</span></div><div class="swatch"><i style="background:#ffc93c"></i><span><b>Warning / Coin</b><br>#FFC93C</span></div><div class="swatch"><i style="background:#19b37d"></i><span><b>Success</b><br>#19B37D</span></div><div class="swatch"><i style="background:#ff5e6c"></i><span><b>Danger</b><br>#FF5E6C</span></div><div class="swatch"><i style="background:#d9d6f2"></i><span><b>Border</b><br>#D9D6F2</span></div></div></section>
+<section class="section" id="botoes"><h2>Botões</h2><p>Variantes principais, tamanhos e largura total. Use a classe base <code>btn</code> com a variante.</p><div class="demo"><button class="btn">Padrão</button><button class="btn btn-primary">Primário</button><button class="btn btn-success">Sucesso</button><button class="btn btn-warning">Atenção</button><button class="btn btn-danger">Excluir</button><button class="btn btn-dark">Escuro</button><button class="btn btn-outline-primary">Contorno</button></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;button class="btn"&gt;Padrão&lt;/button&gt;
+&lt;button class="btn btn-primary"&gt;Salvar&lt;/button&gt;
+&lt;button class="btn btn-success"&gt;Confirmar&lt;/button&gt;
+&lt;button class="btn btn-warning"&gt;Atenção&lt;/button&gt;
+&lt;button class="btn btn-danger"&gt;Excluir&lt;/button&gt;
+&lt;button class="btn btn-outline-primary"&gt;Cancelar&lt;/button&gt;
+&lt;button class="btn btn-primary btn-sm"&gt;Pequeno&lt;/button&gt;
+&lt;button class="btn btn-primary btn-lg"&gt;Grande&lt;/button&gt;
+&lt;button class="btn btn-primary btn-block"&gt;Largura total&lt;/button&gt;</code></pre></div><div class="demo"><button class="btn btn-primary btn-sm">Pequeno</button><button class="btn btn-primary">Normal</button><button class="btn btn-primary btn-lg">Grande</button></div></section>
+<section class="section" id="cards"><h2>Cards</h2><p>Cartões com borda lavanda e base destacada, característicos do projeto.</p><div class="demo"><article class="card"><div class="card-header">Resumo da turma</div><div class="card-body"><h3 class="card-title">Conquistas da semana</h3><p class="card-text">A turma conquistou novos pontos e badges.</p><span class="badge badge-success">+120 XP</span></div><div class="card-footer"><button class="btn btn-primary btn-sm">Ver detalhes</button></div></article></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;div class="card"&gt;
+  &lt;div class="card-header"&gt;Resumo da turma&lt;/div&gt;
+  &lt;div class="card-body"&gt;
+    &lt;h3 class="card-title"&gt;Conquistas da semana&lt;/h3&gt;
+    &lt;p class="card-text"&gt;Descrição do conteúdo.&lt;/p&gt;
+    &lt;span class="badge badge-success"&gt;+120 XP&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="card-footer"&gt;
+    &lt;button class="btn btn-primary btn-sm"&gt;Ver detalhes&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div></section>
+<section class="section" id="badges"><h2>Badges e chips</h2><p>Indicadores de estado compactos e etiquetas selecionáveis.</p><div class="demo"><span class="badge">Padrão</span><span class="badge badge-success">Concluído</span><span class="badge badge-warning">Pendente</span><span class="badge badge-danger">Atrasado</span><span class="badge badge-info">Informação</span><span class="badge badge-neutral">Neutro</span><span class="chip">Turma A</span><span class="chip active">Selecionado ✓</span></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;span class="badge badge-success"&gt;Concluído&lt;/span&gt;
+&lt;span class="badge badge-warning"&gt;Pendente&lt;/span&gt;
+&lt;span class="badge badge-danger"&gt;Atrasado&lt;/span&gt;
+
+&lt;span class="chip"&gt;Turma A&lt;/span&gt;
+&lt;span class="chip active"&gt;Selecionado&lt;/span&gt;</code></pre></div></section>
+<section class="section" id="alertas"><h2>Alertas</h2><p>Mensagens informativas com contraste de cor e borda.</p><div class="demo" style="display:block"><div class="alert alert-success">Tudo certo! Alterações salvas.</div><div class="alert alert-warning">Atenção: revise os campos antes de continuar.</div><div class="alert alert-danger">Não foi possível concluir a operação.</div></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;div class="alert alert-success"&gt;Alterações salvas.&lt;/div&gt;
+&lt;div class="alert alert-warning"&gt;Revise os campos.&lt;/div&gt;
+&lt;div class="alert alert-danger"&gt;Ocorreu um erro.&lt;/div&gt;
+&lt;div class="alert alert-info"&gt;Informação útil.&lt;/div&gt;</code></pre></div></section>
+<section class="section" id="formularios"><h2>Formulários</h2><p>Campos, seleção, texto de ajuda e checkbox.</p><div class="demo" style="display:block"><label class="form-label" for="nomeDemo">Nome completo</label><input class="form-control" id="nomeDemo" placeholder="Digite o nome"><small class="muted">Informe o nome como aparece no cadastro.</small><label class="form-label" for="turmaDemo">Turma</label><select class="form-select" id="turmaDemo"><option>Selecione uma turma</option><option>Turma A</option></select><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" style="accent-color:#5b3df5"> Receber notificações</label></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;label class="form-label" for="nome"&gt;Nome completo&lt;/label&gt;
+&lt;input id="nome" class="form-control" type="text"
+       placeholder="Digite o nome"&gt;
+
+&lt;label class="form-label" for="turma"&gt;Turma&lt;/label&gt;
+&lt;select id="turma" class="form-select"&gt;
+  &lt;option&gt;Selecione uma turma&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;div class="form-check"&gt;
+  &lt;input id="notificacoes" class="form-check-input" type="checkbox"&gt;
+  &lt;label for="notificacoes"&gt;Receber notificações&lt;/label&gt;
+&lt;/div&gt;</code></pre></div></section>
+<section class="section" id="progresso"><h2>Barra de progresso</h2><p>A largura é definida pela variável CSS <code>--progress</code>.</p><div class="demo" style="display:block"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><b>Progresso da missão</b><span>72%</span></div><div class="progress"><div class="progress-bar" style="--progress:72%"></div></div></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;div class="progress"&gt;
+  &lt;div class="progress-bar" style="--progress: 72%"&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="progress progress-lg"&gt;
+  &lt;div class="progress-bar progress-bar-success"
+       style="--progress: 100%"&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre></div><p class="note">No SCSS, a classe <code>.progress-bar</code> lê <code>--progress</code> como largura. Para usar o HTML acima, mantenha a classe <code>progress-bar</code> no elemento interno.</p></section>
+<section class="section" id="navegacao"><h2>Navegação e abas</h2><p>Estilo visual para grupos de abas. A troca de conteúdo deve ser ligada a eventos Angular.</p><div class="demo"><nav class="nav"><a class="nav-link active" href="#navegacao">Painel</a><a class="nav-link" href="#navegacao">Mural</a><a class="nav-link" href="#navegacao">Turma</a></nav></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;nav class="nav" aria-label="Seções da turma"&gt;
+  &lt;button class="nav-link active" type="button"&gt;Painel&lt;/button&gt;
+  &lt;button class="nav-link" type="button"&gt;Mural&lt;/button&gt;
+  &lt;button class="nav-link" type="button"&gt;Turma&lt;/button&gt;
+&lt;/nav&gt;</code></pre></div></section>
+<section class="section" id="tabelas"><h2>Tabelas</h2><p>Tabela com cabeçalho lavanda e rolagem horizontal em telas pequenas.</p><div class="demo" style="display:block;overflow:auto"><table class="table"><thead><tr><th>Aluno</th><th>XP</th><th>Status</th></tr></thead><tbody><tr><td>Ana</td><td>120</td><td><span class="badge badge-success">Ativo</span></td></tr><tr><td>Pedro</td><td>85</td><td><span class="badge badge-warning">Em andamento</span></td></tr></tbody></table></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;div class="table-responsive"&gt;
+  &lt;table class="table"&gt;
+    &lt;thead&gt;&lt;tr&gt;&lt;th&gt;Aluno&lt;/th&gt;&lt;th&gt;XP&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+    &lt;tbody&gt;&lt;tr&gt;&lt;td&gt;Ana&lt;/td&gt;&lt;td&gt;120&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/div&gt;</code></pre></div></section>
+<section class="section" id="layout"><h2>Layout e utilitários</h2><p>Classes úteis para organizar conteúdo sem escrever CSS a cada tela.</p><div class="demo" style="display:block"><div class="grid-demo"><div>Coluna 1</div><div>Coluna 2</div><div>Coluna 3</div></div></div><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;div class="container"&gt;
+  &lt;div class="grid grid-3 grid-sm-3"&gt;
+    &lt;div class="card card-body"&gt;Item 1&lt;/div&gt;
+    &lt;div class="card card-body"&gt;Item 2&lt;/div&gt;
+    &lt;div class="card card-body"&gt;Item 3&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="d-flex align-items-center justify-content-between gap-2"&gt;
+  &lt;span&gt;Título&lt;/span&gt;
+  &lt;button class="btn btn-primary btn-sm"&gt;Ação&lt;/button&gt;
+&lt;/div&gt;</code></pre></div><p>Utilitários incluídos: <code>d-flex</code>, <code>d-grid</code>, <code>d-block</code>, <code>d-none</code>, <code>flex-column</code>, <code>flex-wrap</code>, <code>align-items-center</code>, <code>justify-content-between</code>, <code>gap-1</code> a <code>gap-4</code>, <code>w-100</code>, <code>mt-*</code>, <code>mb-*</code>, <code>p-*</code> e alinhamento de texto.</p></section>
+<section class="section" id="tema"><h2>Tema corporativo</h2><p>O projeto original possui uma aparência corporativa alternativa. No kit, use o atributo <code>data-tl-theme="corporate"</code> em um wrapper ou no elemento raiz.</p><div class="codebox"><button class="copy">Copiar</button><pre><code>&lt;div data-tl-theme="corporate"&gt;
+  &lt;button class="btn btn-primary"&gt;Ação corporativa&lt;/button&gt;
+  &lt;div class="card"&gt;
+    &lt;div class="card-body"&gt;Card em tema corporativo&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div><p>O tema troca tokens de cor, tipografia e reduz os efeitos de relevo para um visual mais sóbrio.</p></section>
+</main></div><div class="footer">TurmaLina UI Kit · SCSS independente · Sem dependência de Bootstrap.</div>
+<script>
+document.querySelectorAll('.copy').forEach(button=>button.addEventListener('click',async()=>{const code=button.parentElement.querySelector('code').innerText;try{await navigator.clipboard.writeText(code);button.textContent='Copiado!';}catch(e){const range=document.createRange();range.selectNodeContents(button.parentElement.querySelector('code'));const sel=getSelection();sel.removeAllRanges();sel.addRange(range);button.textContent='Selecione e copie';}setTimeout(()=>button.textContent='Copiar',1800)}));
+</script></body></html>

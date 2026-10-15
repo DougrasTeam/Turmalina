@@ -1,0 +1,65 @@
+<div class="tl-ui login">
+  <div class="login__card">
+    <div class="login__brand">
+      <span class="login__logo" aria-hidden="true">
+        <span class="material-symbols-outlined">diamond</span>
+      </span>
+      <div>
+        <strong class="login__name">Turmalina</strong>
+        <small class="tl-text-muted">Gestão escolar gamificada</small>
+      </div>
+    </div>
+
+    <h1 class="login__title">Entrar</h1>
+    <p class="tl-text-muted">Acesse com suas credenciais institucionais.</p>
+
+    @if (mensagemErro(); as erro) {
+      <div class="alert alert-danger" role="alert">{{ erro }}</div>
+    }
+
+    <form [formGroup]="formulario" (ngSubmit)="entrar()" novalidate>
+      <label class="form-label" for="login-email">E-mail</label>
+      <input
+        id="login-email"
+        class="form-control"
+        type="email"
+        formControlName="email"
+        autocomplete="username"
+        [attr.aria-invalid]="emailInvalido()"
+        aria-describedby="login-email-erro"
+      />
+      @if (emailInvalido()) {
+        <span id="login-email-erro" class="form-text login__erro">Informe um e-mail válido.</span>
+      }
+
+      <label class="form-label" for="login-senha">Senha</label>
+      <input
+        id="login-senha"
+        class="form-control"
+        type="password"
+        formControlName="senha"
+        autocomplete="current-password"
+        aria-describedby="login-senha-erro"
+      />
+      @if (senhaInvalida()) {
+        <span id="login-senha-erro" class="form-text login__erro">Informe a senha.</span>
+      }
+
+      <button class="btn btn-primary btn-block mt-3" type="submit" [disabled]="enviando()">
+        {{ enviando() ? 'Entrando…' : 'Entrar' }}
+      </button>
+    </form>
+
+    <div class="login__demo">
+      <strong>Contas de demonstração</strong>
+      <p class="tl-small tl-text-muted">
+        Administrador, professor e aluno. Senha: <code>turmalina</code>.
+      </p>
+      <ul class="tl-small">
+        <li>admin&#64;turmalina.demo</li>
+        <li>professor&#64;turmalina.demo</li>
+        <li>aluno&#64;turmalina.demo</li>
+      </ul>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,193 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Professores</h1>
+      <p class="tl-text-muted">Cadastre os professores e suas disciplinas.</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+      <span class="material-symbols-outlined">add</span> Novo professor
+    </button>
+  </header>
+
+  <div class="page-toolbar">
+    <input
+      class="form-control"
+      type="search"
+      placeholder="Buscar por nome, e-mail ou disciplina"
+      [value]="busca()"
+      (input)="busca.set(valor($event))"
+    />
+  </div>
+
+  <div class="card mb-0">
+    @if (filtrados().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state__icon" aria-hidden="true"><span class="material-symbols-outlined">co_present</span></div>
+        <h3>{{ professores.total() === 0 ? 'Nenhum professor cadastrado' : 'Nada encontrado' }}</h3>
+        <p>
+          {{ professores.total() === 0 ? 'Clique em "Novo professor" para começar.' : 'Tente outro termo de busca.' }}
+        </p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Professor</th>
+              <th>Contato</th>
+              <th>Disciplinas</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (prof of filtrados(); track prof.id) {
+              <tr>
+                <td><strong>{{ prof.nome }}</strong></td>
+                <td>
+                  <div>{{ prof.email || '—' }}</div>
+                  @if (prof.telefone) {
+                    <div class="tl-small tl-text-muted">{{ prof.telefone }}</div>
+                  }
+                </td>
+                <td>
+                  @if (prof.disciplinas.length) {
+                    <div class="d-flex flex-wrap gap-1">
+                      @for (disciplina of prof.disciplinas; track disciplina) {
+                        <span class="badge badge-info">{{ disciplina }}</span>
+                      }
+                    </div>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>
+                  <span [class]="'badge ' + (prof.ativo ? 'badge-success' : 'badge-neutral')">
+                    {{ prof.ativo ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(prof)">
+                      <span class="material-symbols-outlined">edit</span> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" type="button" (click)="pedirExclusao(prof)" aria-label="Excluir">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
+
+<app-modal [open]="modalAberto()" [title]="editandoId() ? 'Editar professor' : 'Novo professor'" (close)="fechar()">
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div class="span-2">
+        <label class="form-label" for="prof-nome">Nome completo *</label>
+        <input
+          id="prof-nome"
+          class="form-control"
+          type="text"
+          placeholder="Ex.: Maria Silva"
+          [value]="form().nome"
+          (input)="patch('nome', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="prof-email">E-mail</label>
+        <input
+          id="prof-email"
+          class="form-control"
+          type="email"
+          placeholder="nome@escola.com"
+          [value]="form().email"
+          (input)="patch('email', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="prof-tel">Telefone</label>
+        <input
+          id="prof-tel"
+          class="form-control"
+          type="tel"
+          placeholder="(00) 00000-0000"
+          [value]="form().telefone"
+          (input)="patch('telefone', valor($event))"
+        />
+      </div>
+
+      <div class="span-2">
+        <label class="form-label">Disciplinas</label>
+        <div class="input-group">
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Digite uma disciplina e adicione"
+            [value]="novaDisciplina()"
+            (input)="novaDisciplina.set(valor($event))"
+            (keydown.enter)="adicionarDisciplina($event)"
+          />
+          <button class="btn btn-light" type="button" (click)="adicionarDisciplina()">Adicionar</button>
+        </div>
+
+        @if (form().disciplinas.length) {
+          <div class="chip-input mt-2">
+            @for (disciplina of form().disciplinas; track disciplina) {
+              <button class="chip" type="button" (click)="removerDisciplina(disciplina)">
+                {{ disciplina }} <span class="material-symbols-outlined">close</span>
+              </button>
+            }
+          </div>
+        }
+
+        <span class="form-text">Sugestões:</span>
+        <div class="chip-input">
+          @for (sugestao of sugestoes; track sugestao) {
+            @if (!form().disciplinas.includes(sugestao)) {
+              <button class="chip" type="button" (click)="adicionarSugestao(sugestao)">
+                <span class="material-symbols-outlined">add</span> {{ sugestao }}
+              </button>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="span-2">
+        <label class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            [checked]="form().ativo"
+            (change)="patch('ativo', marcado($event))"
+          />
+          <span>Professor ativo</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="submit">
+        {{ editandoId() ? 'Salvar alterações' : 'Cadastrar professor' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="!!excluindo()" title="Excluir professor" (close)="cancelarExclusao()">
+  <p>
+    Deseja realmente excluir <strong>{{ excluindo()?.nome }}</strong>? Esta ação não pode ser desfeita.
+  </p>
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusao()">Cancelar</button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
+  </div>
+</app-modal>

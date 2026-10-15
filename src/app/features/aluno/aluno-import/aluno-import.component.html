@@ -1,0 +1,120 @@
+<section>
+  <div class="card-section">
+    <h3 class="step-title"><span class="step-badge">1</span> Envie ou cole o CSV</h3>
+    <div class="import-drop">
+      <div class="empty-state__icon" aria-hidden="true"><span class="material-symbols-outlined">description</span></div>
+      <p class="mt-2">Arraste um arquivo ou selecione abaixo. Colunas aceitas: vírgula, ponto e vírgula ou tabulação.</p>
+      <input
+        #arquivo
+        type="file"
+        accept=".csv,.tsv,.txt,text/csv,text/plain"
+        hidden
+        (change)="lerArquivo($event)"
+      />
+      <button class="btn btn-primary" type="button" (click)="arquivo.click()">
+        <span class="material-symbols-outlined">upload</span> Escolher arquivo
+      </button>
+    </div>
+
+    <label class="form-label" for="csv-texto">Ou cole o conteúdo aqui</label>
+    <textarea
+      id="csv-texto"
+      class="form-control"
+      rows="5"
+      placeholder="nome,email,turma&#10;Ana Souza,ana@escola.com,6º A"
+      [value]="texto()"
+      (input)="texto.set(valor($event))"
+    ></textarea>
+    <div class="d-flex justify-content-end mt-2">
+      <button class="btn btn-light" type="button" (click)="analisar()">Analisar colunas</button>
+    </div>
+
+    @if (erro()) {
+      <div class="alert alert-warning mb-0 mt-2">{{ erro() }}</div>
+    }
+  </div>
+
+  @if (resultado(); as res) {
+    <div class="card-section">
+      <h3 class="step-title"><span class="step-badge">2</span> Relacione as colunas</h3>
+      <p class="tl-text-muted tl-small">
+        {{ res.linhas.length }} linha(s) detectada(s) · delimitador
+        <strong>{{ nomeDelimitador(res.delimitador) }}</strong>
+      </p>
+
+      <div class="mapping-grid mt-2">
+        @for (campo of campos; track campo.chave) {
+          <div>
+            <label class="form-label" [attr.for]="'map-' + campo.chave">
+              {{ campo.label }} @if (campo.obrigatorio) { <span style="color: var(--tl-danger);">*</span> }
+            </label>
+            <select
+              class="form-select"
+              [id]="'map-' + campo.chave"
+              [value]="mapeamento()[campo.chave]"
+              (change)="setMapeamento(campo.chave, $event)"
+            >
+              <option [value]="-1">— Não importar —</option>
+              @for (coluna of res.cabecalho; track $index) {
+                <option [value]="$index">{{ coluna || 'Coluna ' + ($index + 1) }}</option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+
+      <label class="form-label" for="turma-padrao">Turma padrão (para linhas sem turma)</label>
+      <select id="turma-padrao" class="form-select" [value]="turmaPadrao()" (change)="turmaPadrao.set(valor($event))">
+        <option value="">— Sem turma —</option>
+        @for (turma of turmas.turmas(); track turma.id) {
+          <option [value]="turma.id">{{ turma.nome }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="card-section">
+      <h3 class="step-title"><span class="step-badge">3</span> Prévia</h3>
+      @if (previa().length === 0) {
+        <p class="tl-text-muted mb-0">Relacione ao menos a coluna de nome para ver a prévia.</p>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Matrícula</th>
+                <th>Turma</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (linha of previa(); track $index) {
+                <tr>
+                  <td>{{ linha.nome || '—' }}</td>
+                  <td>{{ linha.email || '—' }}</td>
+                  <td>{{ linha.matricula || '—' }}</td>
+                  <td>{{ linha.turma || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (res.linhas.length > previa().length) {
+          <p class="form-text">Mostrando {{ previa().length }} de {{ res.linhas.length }} linhas.</p>
+        }
+      }
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button
+          class="btn btn-success"
+          type="button"
+          [disabled]="mapeamento().nome < 0 || importando()"
+          (click)="importar()"
+        >
+          <span class="material-symbols-outlined">check</span>
+          {{ importando() ? 'Importando...' : 'Importar alunos' }}
+        </button>
+      </div>
+    </div>
+  }
+</section>

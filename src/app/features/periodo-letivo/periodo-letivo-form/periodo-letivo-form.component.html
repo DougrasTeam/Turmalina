@@ -1,0 +1,131 @@
+<app-modal
+  [open]="open()"
+  [title]="periodo() ? 'Editar perÃ­odo letivo' : 'Novo perÃ­odo letivo'"
+  (close)="fechar()"
+>
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div class="span-2">
+        <label class="form-label" for="periodo-nome">Nome do perÃ­odo *</label>
+        <input
+          id="periodo-nome"
+          class="form-control"
+          type="text"
+          placeholder="Ex.: Ano letivo 2026"
+          [value]="form().nome"
+          (input)="patch('nome', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="periodo-inicio">Data inicial *</label>
+        <input
+          id="periodo-inicio"
+          class="form-control"
+          type="date"
+          [value]="form().dataInicio"
+          (input)="patch('dataInicio', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="periodo-fim">Data final *</label>
+        <input
+          id="periodo-fim"
+          class="form-control"
+          type="date"
+          [value]="form().dataFim"
+          (input)="patch('dataFim', valor($event))"
+        />
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <h3 class="tl-small mb-0">Etapas de avaliaÃ§Ã£o</h3>
+      <button class="btn btn-sm btn-light" type="button" (click)="adicionarEtapa()">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+        Adicionar etapa
+      </button>
+    </div>
+
+    @if (form().etapas.length === 0) {
+      <p class="tl-text-muted tl-small">Nenhuma etapa cadastrada. Adicione bimestres, trimestres ou etapas.</p>
+    } @else {
+      @for (etapa of form().etapas; track etapa.id; let i = $index) {
+        <div class="etapa-row">
+          <div class="form-grid">
+            <div>
+              <label class="form-label" [attr.for]="'etapa-nome-' + i">Nome *</label>
+              <input
+                [id]="'etapa-nome-' + i"
+                class="form-control"
+                type="text"
+                placeholder="Ex.: 1Âº Bimestre"
+                [value]="etapa.nome"
+                (input)="setEtapaNome(i, valor($event))"
+              />
+            </div>
+            <div>
+              <label class="form-label" [attr.for]="'etapa-tipo-' + i">Tipo</label>
+              <select
+                [id]="'etapa-tipo-' + i"
+                class="form-select"
+                [value]="etapa.tipo"
+                (change)="setEtapaTipo(i, valor($event))"
+              >
+                @for (tipo of tiposEtapa; track tipo.value) {
+                  <option [value]="tipo.value">{{ tipo.label }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="form-label" [attr.for]="'etapa-inicio-' + i">InÃ­cio *</label>
+              <input
+                [id]="'etapa-inicio-' + i"
+                class="form-control"
+                type="date"
+                [value]="etapa.dataInicio"
+                (input)="setEtapaInicio(i, valor($event))"
+              />
+            </div>
+            <div>
+              <label class="form-label" [attr.for]="'etapa-fim-' + i">Fim *</label>
+              <input
+                [id]="'etapa-fim-' + i"
+                class="form-control"
+                type="date"
+                [value]="etapa.dataFim"
+                (input)="setEtapaFim(i, valor($event))"
+              />
+            </div>
+          </div>
+          <button
+            class="btn btn-sm btn-danger"
+            type="button"
+            aria-label="Remover etapa"
+            (click)="removerEtapa(i)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+          </button>
+        </div>
+      }
+    }
+
+    @if (erros().length) {
+      <div class="alert alert-warning mt-3" role="alert">
+        <ul class="mb-0">
+          @for (erro of erros(); track erro) {
+            <li>{{ erro }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="submit">
+        {{ periodo() ? 'Salvar alteraÃ§Ãµes' : 'Criar perÃ­odo' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

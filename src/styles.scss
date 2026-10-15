@@ -1,1 +1,24 @@
-/* You can add global styles to this file, and also import other style files */
+@use './styles/turmalina-ui-kit';
+@use './styles/pages';
+
+/* src/styles.css */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+/* Opcional: remover estilos padrão de listas, links, etc. */
+ul, ol {
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}

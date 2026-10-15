@@ -1,6 +1,30 @@
 # Turmalina
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.37.
+Sistema de gestão escolar gamificado (turmaLina), construído com
+[Angular CLI](https://github.com/angular/angular-cli) v20.
+
+- **Especificação/requisitos:** `docs/especificacao-turmalina-gestao-escolar.md`
+- **Arquitetura:** `docs/architecture.md`
+- **Permissões:** `docs/permissions.md`
+- **Regras de negócio:** `docs/business-rules.md`
+- **Backlog e riscos:** `docs/backlog.md`
+- **Decisões de arquitetura (ADRs):** `docs/adr/`
+- **Regras de desenvolvimento:** `agents/AGENTS.md`
+
+## Estado atual
+
+- Shell responsivo + cadastros (turmas, professores, alunos, importação CSV) e painel.
+- Instituição e períodos letivos (com um único período ativo e etapas de avaliação).
+- **Autenticação/sessão/autorização são mock de demonstração** (ver ADR 0002).
+  Não usar com dados reais.
+
+### Contas de demonstração (senha `turmalina`)
+
+| E-mail                     | Papel         |
+| -------------------------- | ------------- |
+| `admin@turmalina.demo`     | Administrador |
+| `professor@turmalina.demo` | Professor     |
+| `aluno@turmalina.demo`     | Aluno         |
 
 ## Development server
 
@@ -42,6 +66,14 @@ To execute unit tests with the [Karma](https://karma-runner.github.io) test runn
 
 ```bash
 ng test
+```
+
+If Google Chrome is not installed, point `CHROME_BIN` to a Chromium-based
+browser (e.g. Microsoft Edge) and run headless:
+
+```powershell
+$env:CHROME_BIN = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
 ## Running end-to-end tests

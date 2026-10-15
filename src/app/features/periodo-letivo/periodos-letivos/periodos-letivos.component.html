@@ -1,0 +1,113 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>PerÃ­odos letivos</h1>
+      <p class="tl-text-muted">
+        Defina o perÃ­odo ativo e suas etapas de avaliaÃ§Ã£o (bimestres, trimestres ou etapas).
+      </p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span> Novo perÃ­odo
+    </button>
+  </header>
+
+  @if (periodos.ativo(); as ativo) {
+    <div class="alert alert-info mb-0" role="status">
+      PerÃ­odo ativo: <strong>{{ ativo.nome }}</strong> ({{ formatarData(ativo.dataInicio) }} a
+      {{ formatarData(ativo.dataFim) }}).
+    </div>
+  }
+
+  <div class="card">
+    @if (periodos.periodos().length === 0) {
+      <div class="card-body">
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">calendar_month</span>
+          <h3>Nenhum perÃ­odo letivo</h3>
+          <p>Crie um perÃ­odo letivo para comeÃ§ar a organizar turmas, notas e frequÃªncia.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>InÃ­cio</th>
+              <th>Fim</th>
+              <th>Etapas</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (periodo of periodos.periodos(); track periodo.id) {
+              <tr>
+                <td><strong>{{ periodo.nome }}</strong></td>
+                <td>{{ formatarData(periodo.dataInicio) }}</td>
+                <td>{{ formatarData(periodo.dataFim) }}</td>
+                <td><span class="badge badge-neutral">{{ periodo.etapas.length }}</span></td>
+                <td>
+                  <span [class]="'badge ' + classeStatus(periodo.status)">{{ statusLabel(periodo.status) }}</span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    @if (periodo.status !== 'ativo') {
+                      <button class="btn btn-sm btn-success" type="button" (click)="pedir('ativar', periodo)">
+                        <span class="material-symbols-outlined" aria-hidden="true">play_arrow</span> Ativar
+                      </button>
+                    }
+                    @if (periodo.status === 'ativo') {
+                      <button class="btn btn-sm btn-light" type="button" (click)="pedir('encerrar', periodo)">
+                        <span class="material-symbols-outlined" aria-hidden="true">lock</span> Encerrar
+                      </button>
+                    }
+                    @if (periodo.status === 'encerrado') {
+                      <button class="btn btn-sm btn-light" type="button" (click)="pedir('reabrir', periodo)">
+                        <span class="material-symbols-outlined" aria-hidden="true">lock_open</span> Reabrir
+                      </button>
+                    }
+                    <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(periodo)">
+                      <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+                    </button>
+                    @if (periodo.status === 'planejado') {
+                      <button
+                        class="btn btn-sm btn-danger"
+                        type="button"
+                        aria-label="Excluir perÃ­odo"
+                        (click)="pedir('excluir', periodo)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
+
+<app-periodo-letivo-form
+  [open]="modalAberto()"
+  [periodo]="editando()"
+  (salvo)="onSalvo()"
+  (fechado)="fechar()"
+/>
+
+<app-modal [open]="!!acaoPendente()" [title]="tituloConfirmacao()" (close)="cancelar()">
+  <p>{{ mensagemConfirmacao() }}</p>
+  <div class="d-flex justify-content-between gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelar()">Cancelar</button>
+    <button
+      [class]="'btn ' + (acaoPendente()?.tipo === 'excluir' ? 'btn-danger' : 'btn-primary')"
+      type="button"
+      (click)="confirmar()"
+    >
+      Confirmar
+    </button>
+  </div>
+</app-modal>
