@@ -6,6 +6,8 @@ export type StatusPublicacao = 'publicada' | 'arquivada';
 export interface Publicacao extends BaseEntity {
   titulo: string;
   conteudo: string;
+  /** URL da foto anexada (Storage, http ou data URL) ou `null` sem imagem. */
+  imagemUrl: string | null;
   /** Turma destinatária; `null` indica publicação para toda a instituição. */
   turmaId: string | null;
   autorId: string;
@@ -20,6 +22,7 @@ export interface Publicacao extends BaseEntity {
 export interface DadosPublicacao {
   titulo: string;
   conteudo: string;
+  imagemUrl: string | null;
   turmaId: string | null;
   publicadaEm: string;
   expiraEm: string | null;
@@ -27,6 +30,34 @@ export interface DadosPublicacao {
 
 export const TITULO_PUBLICACAO_MAX = 120;
 export const CONTEUDO_PUBLICACAO_MAX = 4000;
+
+/** Tipos de imagem aceitos no anexo de publicações. */
+export const IMAGEM_PUBLICACAO_TIPOS: readonly string[] = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+
+/** Tamanho máximo do anexo de imagem (5 MB). */
+export const IMAGEM_PUBLICACAO_TAMANHO_MAX = 5 * 1024 * 1024;
+
+/** Valida o arquivo de imagem informado; devolve a mensagem de erro ou `null`. */
+export function validarImagemPublicacao(arquivo: { type: string; size: number }): string | null {
+  if (!IMAGEM_PUBLICACAO_TIPOS.includes(arquivo.type)) {
+    return 'Formato de imagem não suportado. Use JPG, PNG, WEBP ou GIF.';
+  }
+  if (arquivo.size > IMAGEM_PUBLICACAO_TAMANHO_MAX) {
+    return 'A imagem deve ter no máximo 5 MB.';
+  }
+  return null;
+}
+
+/** Indica se a URL da imagem pode ser exibida com segurança (data URL ou http). */
+export function imagemPublicacaoValida(url: string | null): boolean {
+  if (!url) return false;
+  return url.startsWith('data:image/') || /^https?:\/\//i.test(url);
+}
 
 export interface StatusPublicacaoOpcao {
   value: StatusPublicacao;

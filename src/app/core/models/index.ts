@@ -91,6 +91,7 @@ export * from './conta-usuario.model';
 export * from './conteudo.model';
 export * from './disciplina.model';
 export * from './etapa-avaliacao.model';
+export * from './filtro-publicacoes.model';
 export * from './frequencia.model';
 export * from './instituicao.model';
 export * from './matricula.model';

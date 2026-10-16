@@ -55,12 +55,18 @@ Regras aplicadas:
 - Relatórios agregados (`/relatorios`) são restritos ao **administrador**.
 - Mural e recados (`/mural`) são operados pelo administrador/professor:
   publicações coletivas (turma ou instituição) e comunicados individuais
-  (**recado** ao aluno e **observação** privada). O professor edita/arquiva as
-  próprias publicações e envia recados aos alunos das suas turmas; o aluno acessa
+  (**recado** ao aluno e **observação** privada). O administrador publica para
+  qualquer turma ou para **toda a instituição** e vê todos os feeds; o professor
+  publica apenas para as suas turmas, edita/arquiva as próprias publicações e
+  envia recados aos alunos das suas turmas. O detalhe da turma também traz o
+  **mural da turma** (destino fixo na turma). O aluno acessa
   `/aluno/mural` e vê apenas as publicações vigentes da sua turma (mais as
   institucionais) e os **próprios recados** — nunca observações privadas nem
   publicações de outras turmas. Sem envio de mensagem aluno→aluno. No Supabase, o
-  escopo é reforçado por RLS (migração `0004`).
+  escopo é reforçado por RLS (migração `0004`). As **fotos** do mural ficam no
+  bucket `mural-publicacoes` do Storage: leitura pública (para o feed), mas
+  **envio/remoção apenas pela equipe** (política na migração `0005`, via
+  `public.eh_equipe()`).
 - Exportação CSV respeita o mesmo escopo de acesso da tela: boletim (equipe e o
   próprio aluno) e listas de alunos/turmas/professores e relatórios (equipe/admin,
   conforme a tela). Toda exportação de dados sensíveis registra evento de

@@ -18,23 +18,43 @@
         />
       </div>
 
-      <div class="span-2">
-        <label class="form-label" for="publicacao-turma">Destino</label>
-        <select
-          id="publicacao-turma"
-          class="form-select"
-          [value]="form().turmaId"
-          (change)="patch('turmaId', valor($event))"
-        >
-          <option value="">Toda a instituição</option>
-          @for (turma of turmas(); track turma.id) {
-            <option [value]="turma.id">{{ turma.nome }}</option>
-          }
-        </select>
-        <p class="form-text">
-          Escolha uma turma específica ou publique para todos os alunos da instituição.
-        </p>
-      </div>
+      @if (turmaFixa()) {
+        <div class="span-2">
+          <label class="form-label" for="publicacao-turma-fixa">Destino</label>
+          <input
+            id="publicacao-turma-fixa"
+            class="form-control"
+            type="text"
+            [value]="nomeTurmaFixa()"
+            disabled
+          />
+          <p class="form-text">Esta publicação será enviada para esta turma.</p>
+        </div>
+      } @else {
+        <div class="span-2">
+          <label class="form-label" for="publicacao-turma">Destino</label>
+          <select
+            id="publicacao-turma"
+            class="form-select"
+            [value]="form().turmaId"
+            (change)="patch('turmaId', valor($event))"
+          >
+            @if (permitirInstitucional()) {
+              <option value="">Toda a instituição</option>
+            }
+            @for (turma of turmas(); track turma.id) {
+              <option [value]="turma.id">{{ turma.nome }}</option>
+            }
+          </select>
+          <p class="form-text">
+            @if (permitirInstitucional()) {
+              Escolha uma turma específica ou publique para todos os alunos da instituição.
+            } @else {
+              Escolha uma das suas turmas para publicar.
+            }
+          </p>
+        </div>
+      }
 
       <div class="span-2">
         <label class="form-label" for="publicacao-conteudo">Conteúdo *</label>
@@ -47,6 +67,27 @@
           [value]="form().conteudo"
           (input)="patch('conteudo', valor($event))"
         ></textarea>
+      </div>
+
+      <div class="span-2">
+        <label class="form-label" for="publicacao-imagem">Foto</label>
+        <input
+          id="publicacao-imagem"
+          class="form-control"
+          type="file"
+          accept="image/*"
+          (change)="selecionarImagem($event)"
+        />
+        <p class="form-text">Opcional. JPG, PNG, WEBP ou GIF, até 5 MB.</p>
+
+        @if (imagemExibida(); as imagem) {
+          <div class="publicacao-imagem">
+            <img class="publicacao-imagem__preview" [src]="imagem" alt="Pré-visualização da foto" />
+            <button class="btn btn-light btn-sm" type="button" (click)="removerImagemSelecionada()">
+              Remover foto
+            </button>
+          </div>
+        }
       </div>
 
       <div>
@@ -64,8 +105,8 @@
 
     <div class="d-flex justify-content-between gap-2 mt-3">
       <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
-      <button class="btn btn-primary" type="submit">
-        {{ publicacao() ? 'Salvar alterações' : 'Publicar' }}
+      <button class="btn btn-primary" type="submit" [disabled]="salvando()">
+        {{ salvando() ? 'Salvando…' : publicacao() ? 'Salvar alterações' : 'Publicar' }}
       </button>
     </div>
   </form>

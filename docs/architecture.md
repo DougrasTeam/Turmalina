@@ -44,9 +44,10 @@ src/app/
     boletim/boletim/                    Boletim (equipe e aluno)
     relatorios/relatorios/              Relatórios institucionais (admin)
     mural/mural/                        Mural e recados (equipe)
+    mural/feed-publicacoes/             Feed de publicações reutilizável (cartões)
     mural/publicacao-form/              Formulário de publicação (modal)
     mural/comunicado-form/              Formulário de recado/observação (modal)
-    aluno/mural/                        Mural/recados do aluno
+    aluno/mural/                        Feed/recados do aluno
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -215,11 +216,13 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 
 ## Mural e recados (RF-022)
 
-- `Publicacao` (`core/models/publicacao.model.ts`): título, conteúdo, `turmaId`
-  (`null` = toda a instituição), `publicadaEm` (timestamp ISO), `expiraEm`
-  (`yyyy-mm-dd` opcional), `status` (`publicada|arquivada`) e autoria
-  (`autorId`/`autorNome`). Helpers `validarPublicacao`, `alcancePublicacao`
-  (destino alcança uma turma?) e `publicacaoVigente` (publicada e não expirada).
+- `Publicacao` (`core/models/publicacao.model.ts`): título, conteúdo,
+  `imagemUrl` (foto opcional), `turmaId` (`null` = toda a instituição),
+  `publicadaEm` (timestamp ISO), `expiraEm` (`yyyy-mm-dd` opcional), `status`
+  (`publicada|arquivada`) e autoria (`autorId`/`autorNome`). Helpers
+  `validarPublicacao`, `alcancePublicacao` (destino alcança uma turma?) e
+  `publicacaoVigente` (publicada e não expirada). Para as fotos: `validarImagemPublicacao`
+  (tipo/tamanho) e `imagemPublicacaoValida` (data URL ou http).
 - `Comunicado` (`core/models/comunicado.model.ts`): mensagem **individual**
   (`alunoId`) com `tipo` `recado` (visível ao próprio aluno) ou `observacao`
   (privada, só a equipe), mais autoria.
@@ -231,16 +234,37 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   `vigentesParaTurma` e operações `criar/atualizar/arquivar/restaurar/remover`
   (todas auditadas). `ComunicadosService` (`turmalina.comunicados`) expõe
   `porAluno`, `recadosDoAluno` e `criar/remover` (auditados).
-- Página `features/mural/mural/` (`/mural`, admin/professor) com abas Mural e
-  Recados; admin vê tudo, professor vê as publicações institucionais e das suas
-  turmas, e os alunos das suas turmas. A visão do aluno
-  (`features/aluno/mural/`, `/aluno/mural`) mostra somente as publicações
-  vigentes da sua turma (mais institucionais) e os próprios recados. Sem chat em
-  tempo real e sem mensagem aluno→aluno.
+- **Feed reutilizável** `features/mural/feed-publicacoes/`
+  (`FeedPublicacoesComponent`): recebe a lista já autorizada e mostra os cartões
+  (autor, destino, conteúdo, validade) com ações conforme a autoria
+  (`gerenciarTudo` ou `autorIdAtual`); emite `editar/arquivar/restaurar/excluir`.
+  É usado na equipe, no aluno e no detalhe da turma.
+- `aplicarFiltroPublicacoes` (`core/models/filtro-publicacoes.model.ts`) filtra o
+  feed por escopo (`tudo|escola|turma`), turma e autoria ("meus posts").
+- **Fotos do mural:** `MidiaService` (`core/services/midia.service.ts`) compacta a
+  imagem no navegador (redimensiona para no máximo 1280 px e converte em JPEG ~0,8)
+  e envia ao bucket público `mural-publicacoes` do **Supabase Storage**
+  (`cliente.storage`), devolvendo a URL pública guardada em `Publicacao.imagemUrl`.
+  No modo local a imagem compactada vira data URL. Remover/recolocar a foto (ou
+  excluir a publicação) apaga o objeto do Storage (best effort). `repository.factory.ts`
+  trata `imagem_url` como coluna nulável.
+- Página `features/mural/mural/` (`/mural`, admin/professor) com abas **Feed** e
+  **Recados**: o feed tem filtro por escopo (tudo / escola toda / turma) e "meus
+  posts", e o formulário de publicação (`permitirInstitucional` libera o destino
+  "toda a instituição", só para admin); admin vê tudo, professor vê as
+  publicações institucionais e das suas turmas, e os alunos das suas turmas. O
+  detalhe da turma (`features/turma/turma-detalhe/`) embute o **mural da turma**
+  com feed e publicação já destinada à turma (`turmaFixa`). A visão do aluno
+  (`features/aluno/mural/`, `/aluno/mural`) usa o mesmo feed filtrando entre
+  "Minha turma" e "Escola toda", e mostra os próprios recados. Sem chat em tempo
+  real e sem mensagem aluno→aluno.
 - No Supabase, as leituras são restritas por RLS
   (`supabase/migrations/0004_mural_comunicados.sql`): equipe lê tudo; aluno lê
   publicações publicadas do seu escopo (turma ou instituição) e não expiradas, e
-  apenas os recados endereçados a ele.
+  apenas os recados endereçados a ele. A migração
+  `supabase/migrations/0005_mural_imagens.sql` adiciona a coluna `imagem_url` e o
+  bucket `mural-publicacoes` (público para leitura; escrita apenas para a equipe
+  via `public.eh_equipe()`).
 
 ## Painel do professor (RF-008)
 

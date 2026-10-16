@@ -7,21 +7,34 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { AlunoFormComponent } from '../../aluno/aluno-form/aluno-form.component';
 import { AlunoImportComponent, ResumoImport } from '../../aluno/aluno-import/aluno-import.component';
 import { TurmaFormComponent } from '../turma-form/turma-form.component';
+import { FeedPublicacoesComponent } from '../../mural/feed-publicacoes/feed-publicacoes.component';
+import { PublicacaoFormComponent } from '../../mural/publicacao-form/publicacao-form.component';
 import { AlunosService } from '../../../core/services/alunos.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { MatriculasService } from '../../../core/services/matriculas.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
+import { PublicacoesService } from '../../../core/services/publicacoes.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
 import { VinculosDocentesService } from '../../../core/services/vinculos-docentes.service';
 import { Aluno, Professor, labelTurno } from '../../../core/models';
 import { Disciplina } from '../../../core/models/disciplina.model';
+import { Publicacao } from '../../../core/models/publicacao.model';
 import { VinculoDocente } from '../../../core/models/vinculo-docente.model';
 
 @Component({
   selector: 'app-turma-detalhe',
-  imports: [RouterLink, ModalComponent, TurmaFormComponent, AlunoFormComponent, AlunoImportComponent],
+  imports: [
+    RouterLink,
+    ModalComponent,
+    TurmaFormComponent,
+    AlunoFormComponent,
+    AlunoImportComponent,
+    FeedPublicacoesComponent,
+    PublicacaoFormComponent,
+  ],
   templateUrl: './turma-detalhe.component.html',
   styleUrl: './turma-detalhe.component.scss',
 })
@@ -34,6 +47,8 @@ export class TurmaDetalheComponent {
   protected readonly alunos = inject(AlunosService);
   private readonly matriculas = inject(MatriculasService);
   private readonly periodos = inject(PeriodosLetivosService);
+  protected readonly publicacoes = inject(PublicacoesService);
+  protected readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
   protected readonly turmaId = toSignal(
@@ -60,6 +75,21 @@ export class TurmaDetalheComponent {
   });
 
   readonly vinculosDaTurma = computed<VinculoDocente[]>(() => this.vinculos.porTurma(this.turmaId()));
+
+  protected readonly publicacoesDaTurma = computed<Publicacao[]>(() =>
+    this.publicacoes.ordenadas().filter((publicacao) => publicacao.turmaId === this.turmaId()),
+  );
+
+  protected readonly autorIdAtual = computed(() => this.auth.usuario()?.id ?? null);
+  protected readonly gerenciarTudo = computed(() => this.auth.papel() === 'administrador');
+  protected readonly nomesTurmas = computed<Record<string, string>>(() => {
+    const turma = this.turma();
+    return turma ? { [turma.id]: turma.nome } : {};
+  });
+
+  protected readonly publicacaoFormAberto = signal(false);
+  protected readonly publicacaoEditando = signal<Publicacao | null>(null);
+  protected readonly publicacaoExcluindo = signal<Publicacao | null>(null);
 
   protected readonly buscaAlunos = signal('');
   readonly alunosFiltrados = computed(() => {
@@ -289,5 +319,49 @@ export class TurmaDetalheComponent {
     this.importAberto.set(false);
     const extra = resumo.turmasCriadas > 0 ? ` (${resumo.turmasCriadas} turma(s) criada(s))` : '';
     this.toast.mostrar(`${resumo.criados} aluno(s) importado(s)!${extra}`);
+  }
+
+  protected abrirNovaPublicacao(): void {
+    this.publicacaoEditando.set(null);
+    this.publicacaoFormAberto.set(true);
+  }
+
+  protected abrirEdicaoPublicacao(publicacao: Publicacao): void {
+    this.publicacaoEditando.set(publicacao);
+    this.publicacaoFormAberto.set(true);
+  }
+
+  protected fecharFormPublicacao(): void {
+    this.publicacaoFormAberto.set(false);
+  }
+
+  protected onPublicacaoSalva(): void {
+    this.publicacaoFormAberto.set(false);
+  }
+
+  protected async arquivarPublicacao(publicacao: Publicacao): Promise<void> {
+    await this.publicacoes.arquivar(publicacao.id);
+    this.toast.mostrar('Publicação arquivada.', 'info');
+  }
+
+  protected async restaurarPublicacao(publicacao: Publicacao): Promise<void> {
+    await this.publicacoes.restaurar(publicacao.id);
+    this.toast.mostrar('Publicação republicada.', 'info');
+  }
+
+  protected pedirExclusaoPublicacao(publicacao: Publicacao): void {
+    this.publicacaoExcluindo.set(publicacao);
+  }
+
+  protected cancelarExclusaoPublicacao(): void {
+    this.publicacaoExcluindo.set(null);
+  }
+
+  protected async confirmarExclusaoPublicacao(): Promise<void> {
+    const publicacao = this.publicacaoExcluindo();
+    if (!publicacao) return;
+    await this.publicacoes.remover(publicacao.id);
+    this.toast.mostrar('Publicação excluída.', 'info');
+    this.publicacaoExcluindo.set(null);
   }
 }

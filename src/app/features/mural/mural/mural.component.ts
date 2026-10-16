@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
+import { FeedPublicacoesComponent } from '../feed-publicacoes/feed-publicacoes.component';
 import { PublicacaoFormComponent } from '../publicacao-form/publicacao-form.component';
 import { ComunicadoFormComponent } from '../comunicado-form/comunicado-form.component';
 import { AlunosService } from '../../../core/services/alunos.service';
@@ -12,21 +13,27 @@ import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
 import { Aluno, Professor, Turma } from '../../../core/models';
 import {
+  FILTRO_PUBLICACOES_PADRAO,
+  FiltroPublicacoes,
+  aplicarFiltroPublicacoes,
+} from '../../../core/models/filtro-publicacoes.model';
+import {
   Comunicado,
   classeTipoComunicado,
   rotuloTipoComunicado,
 } from '../../../core/models/comunicado.model';
-import {
-  Publicacao,
-  classeStatusPublicacao,
-  rotuloStatusPublicacao,
-} from '../../../core/models/publicacao.model';
+import { Publicacao } from '../../../core/models/publicacao.model';
 
-type Aba = 'mural' | 'recados';
+type Aba = 'feed' | 'recados';
 
 @Component({
   selector: 'app-mural',
-  imports: [ModalComponent, PublicacaoFormComponent, ComunicadoFormComponent],
+  imports: [
+    ModalComponent,
+    FeedPublicacoesComponent,
+    PublicacaoFormComponent,
+    ComunicadoFormComponent,
+  ],
   templateUrl: './mural.component.html',
   styleUrl: './mural.component.scss',
 })
@@ -39,7 +46,9 @@ export class MuralComponent {
   private readonly professores = inject(ProfessoresService);
   private readonly toast = inject(ToastService);
 
-  protected readonly aba = signal<Aba>('mural');
+  protected readonly aba = signal<Aba>('feed');
+
+  protected readonly filtro = signal<FiltroPublicacoes>(FILTRO_PUBLICACOES_PADRAO);
 
   protected readonly formPublicacaoAberto = signal(false);
   protected readonly publicacaoEditando = signal<Publicacao | null>(null);
@@ -48,6 +57,9 @@ export class MuralComponent {
   protected readonly formComunicadoAberto = signal(false);
   protected readonly alunoSelecionadoId = signal('');
   protected readonly comunicadoExcluindo = signal<Comunicado | null>(null);
+
+  protected readonly autorIdAtual = computed(() => this.auth.usuario()?.id ?? null);
+  protected readonly gerenciarTudo = computed(() => this.auth.papel() === 'administrador');
 
   private readonly professorProprio = computed<Professor | null>(() => {
     const usuario = this.auth.usuario();
@@ -61,7 +73,7 @@ export class MuralComponent {
     );
   });
 
-  /** Turmas que o usuário pode gerenciar: todas para admin, as próprias para o professor. */
+  /** Turmas que o usuário pode publicar: todas para admin, as próprias para o professor. */
   protected readonly turmasDisponiveis = computed<Turma[]>(() => {
     if (this.auth.papel() === 'administrador') return this.turmas.turmas();
     const professor = this.professorProprio();
@@ -75,12 +87,33 @@ export class MuralComponent {
     () => new Set(this.turmasDisponiveis().map((turma) => turma.id)),
   );
 
+  /** Nome de cada turma por id, usado pelo feed para exibir o destino. */
+  protected readonly nomesTurmas = computed<Record<string, string>>(() => {
+    const mapa: Record<string, string> = {};
+    for (const turma of this.turmas.turmas()) {
+      mapa[turma.id] = turma.nome;
+    }
+    return mapa;
+  });
+
+  /** Publicações que o usuário pode ver, antes do filtro de visualização. */
   protected readonly publicacoesVisiveis = computed<Publicacao[]>(() => {
     if (this.auth.papel() === 'administrador') return this.publicacoes.ordenadas();
     const permitidas = this.turmasPermitidas();
     return this.publicacoes
       .ordenadas()
       .filter((publicacao) => publicacao.turmaId === null || permitidas.has(publicacao.turmaId));
+  });
+
+  protected readonly publicacoesFiltradas = computed<Publicacao[]>(() =>
+    aplicarFiltroPublicacoes(this.publicacoesVisiveis(), this.filtro(), this.autorIdAtual()),
+  );
+
+  protected readonly valorFiltro = computed(() => {
+    const filtro = this.filtro();
+    if (filtro.escopo === 'escola') return 'escola';
+    if (filtro.escopo === 'turma') return filtro.turmaId;
+    return '';
   });
 
   protected readonly alunosDisponiveis = computed<Aluno[]>(() => {
@@ -111,15 +144,18 @@ export class MuralComponent {
     return (evento.target as HTMLSelectElement).value;
   }
 
-  protected nomeTurma(turmaId: string | null): string {
-    if (turmaId === null) return 'Toda a instituição';
-    return this.turmas.porId(turmaId)?.nome ?? 'Turma removida';
+  protected alterarEscopo(evento: Event): void {
+    const valor = this.valor(evento);
+    const escopo = valor === 'escola' ? 'escola' : valor ? 'turma' : 'tudo';
+    this.filtro.update((atual) => ({
+      ...atual,
+      escopo,
+      turmaId: escopo === 'turma' ? valor : '',
+    }));
   }
 
-  protected formatarData(iso: string | null): string {
-    if (!iso) return '—';
-    const partes = iso.slice(0, 10).split('-');
-    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : iso;
+  protected alternarApenasMeus(): void {
+    this.filtro.update((atual) => ({ ...atual, apenasMeus: !atual.apenasMeus }));
   }
 
   protected formatarDataHora(iso: string): string {
@@ -127,14 +163,6 @@ export class MuralComponent {
     return Number.isNaN(data.getTime())
       ? iso
       : data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-  }
-
-  protected statusPublicacao(publicacao: Publicacao): string {
-    return rotuloStatusPublicacao(publicacao.status);
-  }
-
-  protected classePublicacao(publicacao: Publicacao): string {
-    return classeStatusPublicacao(publicacao.status);
   }
 
   protected tipoComunicado(comunicado: Comunicado): string {

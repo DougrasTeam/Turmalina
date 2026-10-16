@@ -137,6 +137,29 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><span class="material-symbols-outlined">campaign</span> Mural da turma</span>
+        <button class="btn btn-sm btn-primary" type="button" (click)="abrirNovaPublicacao()">
+          <span class="material-symbols-outlined">add</span> Nova publicação
+        </button>
+      </div>
+      <div class="card-body">
+        <app-feed-publicacoes
+          [publicacoes]="publicacoesDaTurma()"
+          [nomesTurmas]="nomesTurmas()"
+          [autorIdAtual]="autorIdAtual()"
+          [gerenciarTudo]="gerenciarTudo()"
+          vazioTitulo="Nenhuma publicação nesta turma"
+          vazioTexto="Compartilhe um aviso com os alunos desta turma."
+          (editar)="abrirEdicaoPublicacao($event)"
+          (arquivar)="arquivarPublicacao($event)"
+          (restaurar)="restaurarPublicacao($event)"
+          (excluir)="pedirExclusaoPublicacao($event)"
+        />
+      </div>
+    </div>
+
     <div class="card mb-0">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><span class="material-symbols-outlined">groups</span> Alunos ({{ alunosDaTurma().length }})</span>
@@ -213,6 +236,36 @@
     (salvo)="alunoFormAberto.set(false)"
     (fechado)="alunoFormAberto.set(false)"
   />
+
+  <app-publicacao-form
+    [open]="publicacaoFormAberto()"
+    [publicacao]="publicacaoEditando()"
+    [turmas]="[t]"
+    [turmaFixa]="t.id"
+    [permitirInstitucional]="false"
+    (salvo)="onPublicacaoSalva()"
+    (fechado)="fecharFormPublicacao()"
+  />
+
+  <app-modal
+    [open]="!!publicacaoExcluindo()"
+    title="Excluir publicação"
+    (close)="cancelarExclusaoPublicacao()"
+  >
+    <p>
+      Deseja realmente excluir a publicação
+      <strong>{{ publicacaoExcluindo()?.titulo }}</strong
+      >? Esta ação não pode ser desfeita.
+    </p>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="cancelarExclusaoPublicacao()">
+        Cancelar
+      </button>
+      <button class="btn btn-danger" type="button" (click)="confirmarExclusaoPublicacao()">
+        Excluir
+      </button>
+    </div>
+  </app-modal>
 
   <app-modal [open]="importAberto()" title="Importar alunos (CSV)" (close)="importAberto.set(false)">
     <app-aluno-import [turmaIdPadrao]="t.id" (importado)="onImportado($event)" />

@@ -1,9 +1,9 @@
 <section class="page mural">
   <header class="page-header">
     <div>
-      <h1>Mural e recados</h1>
+      <h1>Mural</h1>
       <p class="tl-text-muted">
-        Publique avisos para as turmas e registre recados individuais ou observações privadas.
+        Compartilhe novidades com as suas turmas ou com toda a escola e envie recados individuais.
       </p>
     </div>
   </header>
@@ -13,11 +13,11 @@
       class="mural__aba"
       type="button"
       role="tab"
-      [class.mural__aba--ativa]="aba() === 'mural'"
-      [attr.aria-selected]="aba() === 'mural'"
-      (click)="trocarAba('mural')"
+      [class.mural__aba--ativa]="aba() === 'feed'"
+      [attr.aria-selected]="aba() === 'feed'"
+      (click)="trocarAba('feed')"
     >
-      <span class="material-symbols-outlined" aria-hidden="true">campaign</span> Mural das turmas
+      <span class="material-symbols-outlined" aria-hidden="true">campaign</span> Feed
     </button>
     <button
       class="mural__aba"
@@ -32,94 +32,51 @@
     </button>
   </div>
 
-  @if (aba() === 'mural') {
-    <div class="page-toolbar">
-      <span class="tl-small tl-text-muted">
-        {{ publicacoesVisiveis().length }} publicação(ões)
-      </span>
+  @if (aba() === 'feed') {
+    <div class="page-toolbar mural__toolbar">
+      <div class="mural__filtros">
+        <label class="form-label mb-0" for="mural-filtro">Ver publicações de</label>
+        <select
+          id="mural-filtro"
+          class="form-select"
+          [value]="valorFiltro()"
+          (change)="alterarEscopo($event)"
+        >
+          <option value="">Tudo que posso ver</option>
+          <option value="escola">Escola toda</option>
+          @for (turma of turmasDisponiveis(); track turma.id) {
+            <option [value]="turma.id">{{ turma.nome }}</option>
+          }
+        </select>
+        @if (turmasDisponiveis().length > 0) {
+          <label class="checkbox-chip">
+            <input
+              type="checkbox"
+              [checked]="filtro().apenasMeus"
+              (change)="alternarApenasMeus()"
+            />
+            Meus posts
+          </label>
+        }
+      </div>
       <span class="page-toolbar__spacer"></span>
       <button class="btn btn-primary" type="button" (click)="abrirNovaPublicacao()">
         <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova publicação
       </button>
     </div>
 
-    @if (publicacoesVisiveis().length === 0) {
-      <div class="card mb-0">
-        <div class="empty-state">
-          <div class="empty-state__icon" aria-hidden="true">
-            <span class="material-symbols-outlined">campaign</span>
-          </div>
-          <h3>Nenhuma publicação ainda</h3>
-          <p>Use "Nova publicação" para compartilhar um aviso com a turma ou a instituição.</p>
-        </div>
-      </div>
-    } @else {
-      <div class="mural__feed">
-        @for (publicacao of publicacoesVisiveis(); track publicacao.id) {
-          <article class="card mural__item">
-            <div class="card-body">
-              <div class="mural__item-topo">
-                <div>
-                  <h2 class="mural__titulo">{{ publicacao.titulo }}</h2>
-                  <p class="tl-small tl-text-muted mural__meta">
-                    {{ publicacao.autorNome }} · {{ formatarDataHora(publicacao.publicadaEm) }} ·
-                    {{ nomeTurma(publicacao.turmaId) }}
-                  </p>
-                </div>
-                <span [class]="'badge ' + classePublicacao(publicacao)">
-                  {{ statusPublicacao(publicacao) }}
-                </span>
-              </div>
-
-              <p class="mural__conteudo">{{ publicacao.conteudo }}</p>
-
-              @if (publicacao.expiraEm) {
-                <p class="tl-small tl-text-muted">
-                  Expira em {{ formatarData(publicacao.expiraEm) }}
-                </p>
-              }
-
-              <div class="table-actions mt-2">
-                <button
-                  class="btn btn-sm btn-light"
-                  type="button"
-                  (click)="abrirEdicaoPublicacao(publicacao)"
-                >
-                  <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
-                </button>
-                @if (publicacao.status === 'publicada') {
-                  <button
-                    class="btn btn-sm btn-light"
-                    type="button"
-                    (click)="arquivarPublicacao(publicacao)"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">archive</span>
-                    Arquivar
-                  </button>
-                } @else {
-                  <button
-                    class="btn btn-sm btn-light"
-                    type="button"
-                    (click)="restaurarPublicacao(publicacao)"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">unarchive</span>
-                    Republicar
-                  </button>
-                }
-                <button
-                  class="btn btn-sm btn-danger"
-                  type="button"
-                  aria-label="Excluir publicação"
-                  (click)="pedirExclusaoPublicacao(publicacao)"
-                >
-                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-                </button>
-              </div>
-            </div>
-          </article>
-        }
-      </div>
-    }
+    <app-feed-publicacoes
+      [publicacoes]="publicacoesFiltradas()"
+      [nomesTurmas]="nomesTurmas()"
+      [autorIdAtual]="autorIdAtual()"
+      [gerenciarTudo]="gerenciarTudo()"
+      vazioTitulo="Nenhuma publicação ainda"
+      vazioTexto='Clique em "Nova publicação" para compartilhar um aviso com a turma ou com a escola.'
+      (editar)="abrirEdicaoPublicacao($event)"
+      (arquivar)="arquivarPublicacao($event)"
+      (restaurar)="restaurarPublicacao($event)"
+      (excluir)="pedirExclusaoPublicacao($event)"
+    />
   } @else {
     <div class="card">
       <div class="card-body">
@@ -214,6 +171,7 @@
   [open]="formPublicacaoAberto()"
   [publicacao]="publicacaoEditando()"
   [turmas]="turmasDisponiveis()"
+  [permitirInstitucional]="gerenciarTudo()"
   (salvo)="onPublicacaoSalva()"
   (fechado)="fecharFormPublicacao()"
 />

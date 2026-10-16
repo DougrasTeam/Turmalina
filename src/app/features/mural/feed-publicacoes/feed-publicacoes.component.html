@@ -1,0 +1,87 @@
+@if (publicacoes().length === 0) {
+  <div class="card mb-0">
+    <div class="empty-state">
+      <div class="empty-state__icon" aria-hidden="true">
+        <span class="material-symbols-outlined">campaign</span>
+      </div>
+      <h3>{{ vazioTitulo() }}</h3>
+      <p>{{ vazioTexto() }}</p>
+    </div>
+  </div>
+} @else {
+  <div class="feed" role="list">
+    @for (publicacao of publicacoes(); track publicacao.id) {
+      <article class="card feed__post" role="listitem">
+        <header class="feed__cabecalho">
+          <span class="feed__avatar" aria-hidden="true">{{ iniciais(publicacao.autorNome) }}</span>
+          <div class="feed__autor">
+            <strong>{{ publicacao.autorNome || 'Equipe' }}</strong>
+            <span class="tl-small tl-text-muted">
+              {{ destino(publicacao) }} · {{ formatarDataHora(publicacao.publicadaEm) }}
+            </span>
+          </div>
+          @if (publicacao.status === 'arquivada') {
+            <span [class]="'badge ' + classeStatus(publicacao)">{{ status(publicacao) }}</span>
+          }
+        </header>
+
+        <div class="feed__corpo">
+          <h2 class="feed__titulo">{{ publicacao.titulo }}</h2>
+          <p class="feed__conteudo">{{ publicacao.conteudo }}</p>
+
+          @if (temImagem(publicacao)) {
+            <img
+              class="feed__imagem"
+              [src]="publicacao.imagemUrl"
+              [alt]="'Foto da publicação: ' + publicacao.titulo"
+              loading="lazy"
+            />
+          }
+
+          @if (publicacao.expiraEm) {
+            <p class="tl-small tl-text-muted feed__expiracao">
+              <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+              Visível até {{ formatarData(publicacao.expiraEm) }}
+            </p>
+          }
+        </div>
+
+        @if (podeGerenciar(publicacao)) {
+          <footer class="feed__acoes">
+            <button class="btn btn-sm btn-light" type="button" (click)="editar.emit(publicacao)">
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+            </button>
+
+            @if (publicacao.status === 'publicada') {
+              <button
+                class="btn btn-sm btn-light"
+                type="button"
+                (click)="arquivar.emit(publicacao)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">archive</span> Arquivar
+              </button>
+            } @else {
+              <button
+                class="btn btn-sm btn-light"
+                type="button"
+                (click)="restaurar.emit(publicacao)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">unarchive</span>
+                Republicar
+              </button>
+            }
+
+            <button
+              class="btn btn-sm btn-danger"
+              type="button"
+              aria-label="Excluir publicação"
+              (click)="excluir.emit(publicacao)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+            </button>
+          </footer>
+        }
+      </article>
+    }
+  </div>
+}

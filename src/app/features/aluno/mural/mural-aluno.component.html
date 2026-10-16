@@ -2,7 +2,9 @@
   <header class="page-header">
     <div>
       <h1>Meu mural</h1>
-      <p class="tl-text-muted">Avisos da sua turma e recados enviados pelos professores.</p>
+      <p class="tl-text-muted">
+        Avisos da sua turma e da escola, além dos recados enviados pelos professores.
+      </p>
     </div>
   </header>
 
@@ -11,38 +13,42 @@
       Não encontramos seu cadastro de aluno. Procure a secretaria da escola.
     </div>
   } @else {
-    <h2 class="mural__secao-titulo">Mural da turma</h2>
+    <div class="mural__filtros" role="group" aria-label="Filtrar publicações">
+      <button
+        class="chip"
+        type="button"
+        [class.active]="escopo() === 'tudo'"
+        [attr.aria-pressed]="escopo() === 'tudo'"
+        (click)="definirEscopo('tudo')"
+      >
+        Tudo
+      </button>
+      <button
+        class="chip"
+        type="button"
+        [class.active]="escopo() === 'turma'"
+        [attr.aria-pressed]="escopo() === 'turma'"
+        (click)="definirEscopo('turma')"
+      >
+        Minha turma
+      </button>
+      <button
+        class="chip"
+        type="button"
+        [class.active]="escopo() === 'escola'"
+        [attr.aria-pressed]="escopo() === 'escola'"
+        (click)="definirEscopo('escola')"
+      >
+        Escola toda
+      </button>
+    </div>
 
-    @if (publicacoesDaTurma().length === 0) {
-      <div class="card">
-        <div class="empty-state">
-          <div class="empty-state__icon" aria-hidden="true">
-            <span class="material-symbols-outlined">campaign</span>
-          </div>
-          <h3>Sem avisos por aqui</h3>
-          <p>Quando houver novidades para a sua turma, elas aparecerão neste espaço.</p>
-        </div>
-      </div>
-    } @else {
-      <div class="mural__feed">
-        @for (publicacao of publicacoesDaTurma(); track publicacao.id) {
-          <article class="card mural__item">
-            <div class="card-body">
-              <h3 class="mural__titulo">{{ publicacao.titulo }}</h3>
-              <p class="tl-small tl-text-muted mural__meta">
-                {{ publicacao.autorNome }} · {{ formatarDataHora(publicacao.publicadaEm) }}
-              </p>
-              <p class="mural__conteudo">{{ publicacao.conteudo }}</p>
-              @if (publicacao.expiraEm) {
-                <p class="tl-small tl-text-muted">
-                  Expira em {{ formatarData(publicacao.expiraEm) }}
-                </p>
-              }
-            </div>
-          </article>
-        }
-      </div>
-    }
+    <app-feed-publicacoes
+      [publicacoes]="publicacoesVisiveis()"
+      [nomesTurmas]="nomesTurmas()"
+      vazioTitulo="Sem avisos por aqui"
+      vazioTexto="Quando houver novidades para a sua turma, elas aparecerão neste espaço."
+    />
 
     <h2 class="mural__secao-titulo">Meus recados</h2>
 

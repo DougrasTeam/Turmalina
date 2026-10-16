@@ -30,7 +30,11 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
   'turmalina.instituicao': { tabela: 'instituicoes', ordenacao: 'criado_em' },
   'turmalina.matriculas': { tabela: 'matriculas', ordenacao: 'criado_em', nulaveis: ['periodo_letivo_id'] },
   'turmalina.vinculos-docentes': { tabela: 'vinculos_docentes', ordenacao: 'criado_em' },
-  'turmalina.publicacoes': { tabela: 'publicacoes', ordenacao: 'publicada_em', nulaveis: ['turma_id'] },
+  'turmalina.publicacoes': {
+    tabela: 'publicacoes',
+    ordenacao: 'publicada_em',
+    nulaveis: ['turma_id', 'imagem_url'],
+  },
   'turmalina.comunicados': { tabela: 'comunicados', ordenacao: 'criado_em' },
   'turmalina.auditoria': { tabela: 'eventos_auditoria', ordenacao: 'criado_em' },
 };

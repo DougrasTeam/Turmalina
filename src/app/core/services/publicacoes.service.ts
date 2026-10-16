@@ -13,6 +13,7 @@ import {
 import { sanitizarConteudo } from '../models/conteudo.model';
 import { Usuario } from '../models/usuario.model';
 import { AuditoriaService } from './auditoria.service';
+import { MidiaService } from './midia.service';
 
 /**
  * Publicações do mural coletivo (RF-022).
@@ -26,6 +27,7 @@ export class PublicacoesService {
     () => ({
       titulo: '',
       conteudo: '',
+      imagemUrl: null,
       turmaId: null,
       autorId: '',
       autorNome: '',
@@ -35,6 +37,7 @@ export class PublicacoesService {
     }),
   );
   private readonly auditoria = inject(AuditoriaService);
+  private readonly midia = inject(MidiaService);
 
   private readonly _publicacoes = signal<Publicacao[]>([]);
   private carregado = false;
@@ -92,6 +95,7 @@ export class PublicacoesService {
   async remover(id: string): Promise<void> {
     const publicacao = this._publicacoes().find((item) => item.id === id);
     await this.repo.remove(id);
+    await this.midia.removerImagemPublicacao(publicacao?.imagemUrl ?? null);
     this._publicacoes.update((lista) => lista.filter((item) => item.id !== id));
     this.auditoria.registrar('publicacao.removida', 'Publicacao', id, publicacao?.titulo ?? null);
   }
@@ -99,6 +103,7 @@ export class PublicacoesService {
   async removerTodas(): Promise<void> {
     for (const publicacao of this._publicacoes()) {
       await this.repo.remove(publicacao.id);
+      await this.midia.removerImagemPublicacao(publicacao.imagemUrl);
     }
     this._publicacoes.set([]);
     this.auditoria.registrar('publicacao.removidas-todas', 'Publicacao', null, null);
@@ -109,6 +114,7 @@ export class PublicacoesService {
     const vinculadas = this._publicacoes().filter((publicacao) => publicacao.turmaId !== null);
     for (const publicacao of vinculadas) {
       await this.repo.remove(publicacao.id);
+      await this.midia.removerImagemPublicacao(publicacao.imagemUrl);
     }
     if (vinculadas.length) {
       this._publicacoes.update((lista) =>
@@ -136,6 +142,7 @@ export class PublicacoesService {
     return {
       titulo: dados.titulo.trim(),
       conteudo: sanitizarConteudo(dados.conteudo),
+      imagemUrl: dados.imagemUrl || null,
       turmaId: dados.turmaId || null,
       publicadaEm: dados.publicadaEm || new Date().toISOString(),
       expiraEm: dados.expiraEm || null,

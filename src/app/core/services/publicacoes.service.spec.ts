@@ -20,6 +20,7 @@ function dados(sobrescrever: Partial<DadosPublicacao> = {}): DadosPublicacao {
   return {
     titulo: 'Feira de ciências',
     conteudo: 'A feira ocorrerá na próxima semana.',
+    imagemUrl: null,
     turmaId: 'turma-1',
     publicadaEm: '2026-03-01T10:00:00.000Z',
     expiraEm: null,
@@ -106,5 +107,13 @@ describe('PublicacoesService', () => {
     const publicacao = await service.criar(dados(), autor);
     await service.remover(publicacao.id);
     expect(service.total()).toBe(0);
+  });
+
+  it('guarda a URL da imagem e trata valor vazio como nulo', async () => {
+    const comFoto = await service.criar(dados({ imagemUrl: 'data:image/jpeg;base64,AAAA' }), autor);
+    const semFoto = await service.criar(dados({ imagemUrl: '' }), autor);
+
+    expect(comFoto.imagemUrl).toBe('data:image/jpeg;base64,AAAA');
+    expect(semFoto.imagemUrl).toBeNull();
   });
 });
