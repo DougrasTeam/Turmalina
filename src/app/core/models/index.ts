@@ -2,6 +2,7 @@ export type Turno = 'manha' | 'tarde' | 'noite' | 'integral';
 
 export interface BaseEntity {
   id: string;
+  institutionId: string;
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -14,6 +15,7 @@ export interface Turma extends BaseEntity {
   codigo: string;
   descricao: string;
   professorIds: string[];
+  disciplinaIds: string[];
   ativa: boolean;
 }
 
@@ -23,6 +25,8 @@ export interface Professor extends BaseEntity {
   telefone: string;
   disciplinas: string[];
   ativo: boolean;
+  /** Id da conta de acesso vinculada no Supabase Auth; ausente quando ainda não há conta. */
+  userId?: string | null;
 }
 
 export interface Aluno extends BaseEntity {
@@ -78,3 +82,19 @@ export function gerarCodigoTurma(tamanho = 6): string {
 export function labelTurno(turno: Turno): string {
   return TURNOS.find((t) => t.value === turno)?.label ?? turno;
 }
+
+export * from './auditoria.model';
+export * from './avaliacao.model';
+export * from './boletim.model';
+export * from './conta-usuario.model';
+export * from './disciplina.model';
+export * from './etapa-avaliacao.model';
+export * from './frequencia.model';
+export * from './instituicao.model';
+export * from './matricula.model';
+export * from './papel.model';
+export * from './perfil.model';
+export * from './periodo-letivo.model';
+export * from './relatorio.model';
+export * from './usuario.model';
+export * from './vinculo-docente.model';

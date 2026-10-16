@@ -1,0 +1,258 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Frequência</h1>
+      <p class="tl-text-muted">Registre a chamada por turma e data e acompanhe a frequência dos alunos.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      @if (frequencias.total() > 0) {
+        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodas()">
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todas
+        </button>
+      }
+      <button class="btn btn-primary" type="button" [disabled]="turmas.total() === 0" (click)="abrirNova()">
+        <span class="material-symbols-outlined" aria-hidden="true">fact_check</span> Registrar chamada
+      </button>
+    </div>
+  </header>
+
+  @if (turmas.total() === 0) {
+    <div class="alert alert-info" role="status">
+      Cadastre turmas e matricule alunos para começar a registrar a chamada.
+    </div>
+  }
+
+  <div class="page-toolbar">
+    <select class="form-select" style="max-width: 280px;" [value]="turmaFiltro()" (change)="turmaFiltro.set(valor($event))">
+      <option value="">Todas as turmas</option>
+      @for (turma of turmas.turmas(); track turma.id) {
+        <option [value]="turma.id">{{ turma.nome }}</option>
+      }
+    </select>
+  </div>
+
+  @if (turmaFiltro() && resumoFiltro(); as resumo) {
+    <div class="card">
+      <div class="card-header">
+        <h2>Resumo da turma</h2>
+        <span class="badge" [class]="'badge ' + classePercentual(resumo)">{{ percentual(resumo) }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Presenças</th>
+              <th>Faltas</th>
+              <th>Justificadas</th>
+              <th>Frequência</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (aluno of alunosDoFiltro(); track aluno.id) {
+              @let resumoAluno = resumoDoAluno(aluno.id);
+              <tr>
+                <td><strong>{{ aluno.nome }}</strong></td>
+                <td>{{ resumoAluno.presentes }}</td>
+                <td>{{ resumoAluno.faltas }}</td>
+                <td>{{ resumoAluno.justificadas }}</td>
+                <td>
+                  <span class="badge" [class]="'badge ' + classePercentual(resumoAluno)">{{ percentual(resumoAluno) }}</span>
+                  @if (abaixoDoLimite(resumoAluno)) {
+                    <span class="material-symbols-outlined alerta" aria-label="Abaixo do limite" title="Abaixo da frequência mínima">warning</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <div class="card mb-0">
+    @if (filtradas().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state__icon" aria-hidden="true"><span class="material-symbols-outlined">fact_check</span></div>
+        <h3>{{ frequencias.total() === 0 ? 'Nenhuma chamada registrada' : 'Nada encontrado' }}</h3>
+        <p>
+          {{ frequencias.total() === 0 ? 'Clique em "Registrar chamada" para começar.' : 'Selecione outra turma.' }}
+        </p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Turma</th>
+              <th>Data</th>
+              <th>Disciplina</th>
+              <th>Presentes</th>
+              <th>Faltas</th>
+              <th>Frequência</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (frequencia of filtradas(); track frequencia.id) {
+              @let resumo = resumoDaChamada(frequencia.id);
+              <tr>
+                <td><strong>{{ turmaNome(frequencia.turmaId) }}</strong></td>
+                <td>{{ dataFormatada(frequencia.data) }}</td>
+                <td>{{ disciplinaNome(frequencia.disciplinaId) }}</td>
+                <td>{{ resumo.presentes }}/{{ resumo.total }}</td>
+                <td>{{ resumo.faltas }}</td>
+                <td>
+                  <span class="badge" [class]="'badge ' + classePercentual(resumo)">{{ percentual(resumo) }}</span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(frequencia)">
+                      <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" type="button" aria-label="Excluir chamada" (click)="pedirExclusao(frequencia)">
+                      <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
+
+<app-modal
+  [open]="chamadaAberta()"
+  [title]="editandoId() ? 'Editar chamada' : 'Registrar chamada'"
+  (close)="fechar()"
+>
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div>
+        <label class="form-label" for="chamada-turma">Turma *</label>
+        <select id="chamada-turma" class="form-select" [value]="form().turmaId" (change)="selecionarTurma($event)">
+          <option value="">Selecione a turma</option>
+          @for (turma of turmas.turmas(); track turma.id) {
+            <option [value]="turma.id">{{ turma.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="chamada-data">Data *</label>
+        <input
+          id="chamada-data"
+          class="form-control"
+          type="date"
+          [value]="form().data"
+          (change)="selecionarData($event)"
+        />
+      </div>
+
+      <div class="span-2">
+        <label class="form-label" for="chamada-disciplina">Disciplina</label>
+        <select
+          id="chamada-disciplina"
+          class="form-select"
+          [value]="form().disciplinaId"
+          (change)="selecionarDisciplina($event)"
+        >
+          <option value="">Geral (por aula)</option>
+          @for (disciplina of disciplinasDaTurma(); track disciplina.id) {
+            <option [value]="disciplina.id">{{ disciplina.nome }}</option>
+          }
+        </select>
+        <span class="form-text">
+          Deixe "Geral" para frequência única por aula; escolha a disciplina para frequência específica.
+        </span>
+      </div>
+    </div>
+
+    @if (periodos.ativo(); as periodo) {
+      <p class="tl-small tl-text-muted">Período letivo: <strong>{{ periodo.nome }}</strong></p>
+    }
+
+    @if (form().turmaId) {
+      @if (alunosDoFormulario().length === 0) {
+        <p class="tl-text-muted">Nenhum aluno matriculado nesta turma.</p>
+      } @else {
+        <div class="chamada-resumo">
+          <span class="badge badge-success">{{ resumoFormulario().presentes }} presente(s)</span>
+          <span class="badge badge-danger">{{ resumoFormulario().faltas }} falta(s)</span>
+          <span class="badge badge-warning">{{ resumoFormulario().justificadas }} justificada(s)</span>
+          <span class="badge" [class]="'badge ' + classePercentual(resumoFormulario())">{{ percentual(resumoFormulario()) }}</span>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap mb-2">
+          <button class="btn btn-sm btn-light" type="button" (click)="marcarTodos('presente')">
+            Marcar todos presentes
+          </button>
+          <button class="btn btn-sm btn-light" type="button" (click)="marcarTodos('falta')">
+            Marcar todos falta
+          </button>
+        </div>
+
+        <ul class="chamada-lista">
+          @for (aluno of alunosDoFormulario(); track aluno.id) {
+            <li class="chamada-item">
+              <span class="chamada-item__nome">{{ aluno.nome }}</span>
+              <div class="chamada-item__acoes">
+                @for (opcao of statusOpcoes; track opcao.value) {
+                  <button
+                    type="button"
+                    [class]="'btn btn-sm ' + classeBotao(opcao.value, aluno.id)"
+                    (click)="definirStatus(aluno.id, opcao.value)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">{{ opcao.icone }}</span>
+                    {{ opcao.label }}
+                  </button>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+
+        <textarea
+          class="form-control mt-3"
+          rows="2"
+          placeholder="Observação da chamada (opcional)"
+          [value]="form().observacao"
+          (input)="definirObservacao($event)"
+        ></textarea>
+      }
+    }
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="submit" [disabled]="!form().turmaId || !form().data">
+        Salvar chamada
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="!!excluindo()" title="Excluir chamada" (close)="cancelarExclusao()">
+  @if (excluindo(); as frequencia) {
+    <p>
+      Deseja realmente excluir a chamada de <strong>{{ turmaNome(frequencia.turmaId) }}</strong> em
+      <strong>{{ dataFormatada(frequencia.data) }}</strong>? Esta ação não pode ser desfeita.
+    </p>
+  }
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusao()">Cancelar</button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
+  </div>
+</app-modal>
+
+<app-confirmar-texto
+  [open]="excluirTudoAberto()"
+  [titulo]="confirmacaoTudo().titulo"
+  [mensagem]="confirmacaoTudo().mensagem"
+  [detalhes]="confirmacaoTudo().detalhes"
+  [rotuloConfirmar]="confirmacaoTudo().rotuloConfirmar"
+  (confirmado)="excluirTodas()"
+  (fechado)="fecharExclusaoTodas()"
+/>

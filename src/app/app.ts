@@ -6,11 +6,18 @@ import { filter } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { Papel, rotuloPapel } from './core/models/papel.model';
 import { AlunosService } from './core/services/alunos.service';
+import { AvaliacoesService } from './core/services/avaliacoes.service';
+import { DisciplinasService } from './core/services/disciplinas.service';
+import { FrequenciasService } from './core/services/frequencias.service';
+import { MatriculasService } from './core/services/matriculas.service';
 import { ProfessoresService } from './core/services/professores.service';
 import { ToastService } from './core/services/toast.service';
 import { TurmasService } from './core/services/turmas.service';
+import { VinculosDocentesService } from './core/services/vinculos-docentes.service';
 import { InstituicaoService } from './core/services/instituicao.service';
 import { PeriodosLetivosService } from './core/services/periodos-letivos.service';
+import { DadosDemoService } from './core/services/dados-demo.service';
+import { AuditoriaService } from './core/services/auditoria.service';
 
 interface ItemNav {
   path: string;
@@ -24,6 +31,8 @@ const NAV_EQUIPE_CADASTROS: ItemNav[] = [
   { path: '/turmas', label: 'Turmas', icon: 'school' },
   { path: '/professores', label: 'Professores', icon: 'co_present' },
   { path: '/alunos', label: 'Alunos', icon: 'groups' },
+  { path: '/frequencia', label: 'Frequência', icon: 'fact_check' },
+  { path: '/avaliacoes', label: 'Avaliações', icon: 'grading' },
 ];
 
 const NAV_EQUIPE_MOBILE: ItemNav[] = [
@@ -35,9 +44,16 @@ const NAV_EQUIPE_MOBILE: ItemNav[] = [
 const NAV_ADMIN: ItemNav[] = [
   { path: '/instituicao', label: 'Instituição', icon: 'account_balance' },
   { path: '/periodos-letivos', label: 'Períodos letivos', icon: 'calendar_month' },
+  { path: '/disciplinas', label: 'Disciplinas', icon: 'menu_book' },
+  { path: '/relatorios', label: 'Relatórios', icon: 'insights' },
+  { path: '/auditoria', label: 'Auditoria', icon: 'history' },
+  { path: '/reset-dados', label: 'Zona de perigo', icon: 'delete_forever' },
 ];
 
-const NAV_ALUNO: ItemNav[] = [{ path: '/aluno/inicio', label: 'Início', icon: 'home' }];
+const NAV_ALUNO: ItemNav[] = [
+  { path: '/aluno/inicio', label: 'Início', icon: 'home' },
+  { path: '/aluno/boletim', label: 'Boletim', icon: 'description' },
+];
 
 @Component({
   selector: 'app-root',
@@ -53,7 +69,14 @@ export class App {
   private readonly professores = inject(ProfessoresService);
   private readonly alunos = inject(AlunosService);
   private readonly periodos = inject(PeriodosLetivosService);
+  private readonly disciplinas = inject(DisciplinasService);
+  private readonly vinculos = inject(VinculosDocentesService);
+  private readonly matriculas = inject(MatriculasService);
+  private readonly frequencias = inject(FrequenciasService);
+  private readonly avaliacoes = inject(AvaliacoesService);
   private readonly instituicao = inject(InstituicaoService);
+  private readonly dadosDemo = inject(DadosDemoService);
+  private readonly auditoria = inject(AuditoriaService);
   private readonly router = inject(Router);
 
   private readonly urlAtual = signal(this.router.url);
@@ -81,8 +104,16 @@ export class App {
     { prefixo: '/turmas', titulo: 'Turmas' },
     { prefixo: '/professores', titulo: 'Professores' },
     { prefixo: '/alunos', titulo: 'Alunos' },
+    { prefixo: '/frequencia', titulo: 'Frequência' },
+    { prefixo: '/avaliacoes', titulo: 'Avaliações e notas' },
     { prefixo: '/instituicao', titulo: 'Instituição' },
     { prefixo: '/periodos-letivos', titulo: 'Períodos letivos' },
+    { prefixo: '/disciplinas', titulo: 'Disciplinas' },
+    { prefixo: '/relatorios', titulo: 'Relatórios' },
+    { prefixo: '/auditoria', titulo: 'Auditoria' },
+    { prefixo: '/reset-dados', titulo: 'Zona de perigo' },
+    { prefixo: '/boletim', titulo: 'Boletim' },
+    { prefixo: '/aluno/boletim', titulo: 'Meu boletim' },
     { prefixo: '/aluno', titulo: 'Minha área' },
   ];
 
@@ -96,11 +127,7 @@ export class App {
 
     effect(() => {
       if (this.auth.autenticado()) {
-        void this.turmas.load();
-        void this.professores.load();
-        void this.alunos.load();
-        void this.instituicao.load();
-        void this.periodos.load();
+        void this.carregarDados();
       }
     });
 
@@ -113,6 +140,23 @@ export class App {
         this.urlAtual.set(evento.urlAfterRedirects);
         this.sidebarOpen.set(false);
       });
+  }
+
+  private async carregarDados(): Promise<void> {
+    await Promise.all([
+      this.turmas.load(),
+      this.professores.load(),
+      this.alunos.load(),
+      this.instituicao.load(),
+      this.periodos.load(),
+      this.disciplinas.load(),
+      this.vinculos.load(),
+      this.matriculas.load(),
+      this.frequencias.load(),
+      this.avaliacoes.load(),
+      this.auditoria.carregar(),
+    ]);
+    await this.dadosDemo.garantir();
   }
 
   iniciais(nome: string): string {

@@ -1,0 +1,60 @@
+<div class="tl-ui primeiro-acesso">
+  <div class="primeiro-acesso__card">
+    <h1 class="primeiro-acesso__title">Primeiro acesso</h1>
+    <p class="tl-text-muted">Bem-vindo(a). Antes de continuar, defina uma nova senha pessoal.</p>
+
+    @if (usuario(); as dadosUsuario) {
+      <dl class="primeiro-acesso__identidade">
+        <div class="primeiro-acesso__linha">
+          <dt>Nome</dt>
+          <dd>{{ dadosUsuario.nome }}</dd>
+        </div>
+        <div class="primeiro-acesso__linha">
+          <dt>E-mail</dt>
+          <dd>{{ dadosUsuario.email }}</dd>
+        </div>
+      </dl>
+    }
+
+    @if (mensagemErro(); as erro) {
+      <div class="alert alert-danger" role="alert">{{ erro }}</div>
+    }
+
+    <form [formGroup]="formulario" (ngSubmit)="concluir()" novalidate>
+      <label class="form-label" for="primeiro-acesso-senha">Nova senha</label>
+      <input
+        id="primeiro-acesso-senha"
+        class="form-control"
+        type="password"
+        formControlName="novaSenha"
+        autocomplete="new-password"
+        [attr.aria-invalid]="novaSenhaInvalida()"
+        aria-describedby="primeiro-acesso-senha-erro"
+      />
+      @if (novaSenhaInvalida()) {
+        <span id="primeiro-acesso-senha-erro" class="form-text primeiro-acesso__erro">
+          A senha deve ter ao menos 8 caracteres.
+        </span>
+      }
+
+      <label class="form-label" for="primeiro-acesso-confirmar">Confirmar nova senha</label>
+      <input
+        id="primeiro-acesso-confirmar"
+        class="form-control"
+        type="password"
+        formControlName="confirmarSenha"
+        autocomplete="new-password"
+        aria-describedby="primeiro-acesso-confirmar-erro"
+      />
+      @if (confirmacaoInvalida()) {
+        <span id="primeiro-acesso-confirmar-erro" class="form-text primeiro-acesso__erro">
+          Confirme a nova senha.
+        </span>
+      }
+
+      <button class="btn btn-primary btn-block mt-3" type="submit" [disabled]="enviando()">
+        {{ enviando() ? 'Salvando…' : 'Salvar nova senha' }}
+      </button>
+    </form>
+  </div>
+</div>

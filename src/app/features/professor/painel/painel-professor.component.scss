@@ -1,0 +1,14 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 12rem;
+}
+
+.campo .form-select {
+  min-width: 12rem;
+}
+
+.kpi-card p {
+  margin: 0.25rem 0 0;
+}

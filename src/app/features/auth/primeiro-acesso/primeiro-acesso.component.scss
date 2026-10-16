@@ -1,0 +1,51 @@
+.primeiro-acesso {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--tl-bg);
+}
+
+.primeiro-acesso__card {
+  width: min(100%, 440px);
+  padding: 1.75rem;
+  background: var(--tl-surface);
+  border: 2px solid var(--tl-border);
+  border-bottom-width: 5px;
+  border-radius: var(--tl-radius-lg);
+}
+
+.primeiro-acesso__title {
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.primeiro-acesso__identidade {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--tl-border);
+  border-radius: var(--tl-radius);
+}
+
+.primeiro-acesso__linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  & + & {
+    margin-top: 0.35rem;
+  }
+
+  & dt {
+    color: var(--tl-text-muted);
+  }
+
+  & dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.primeiro-acesso__erro {
+  color: var(--tl-danger-dark) !important;
+}

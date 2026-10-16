@@ -1,0 +1,71 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Zona de perigo</h1>
+      <p class="tl-text-muted">
+        Exclua dados de demonstração em massa. As exclusões respeitam as dependências (matrículas,
+        vínculos e referências) e não podem ser desfeitas.
+      </p>
+    </div>
+  </header>
+
+  <div class="alert alert-info" role="status">
+    <strong>Resumo:</strong>
+    {{ dados.resumo().turmas }} turma(s), {{ dados.resumo().alunos }} aluno(s),
+    {{ dados.resumo().professores }} professor(es), {{ dados.resumo().disciplinas }} disciplina(s),
+    {{ dados.resumo().periodos }} período(s), {{ dados.resumo().matriculas }} matrícula(s),
+    {{ dados.resumo().frequencias }} chamada(s), {{ dados.resumo().avaliacoes }} avaliação(ões) e
+    {{ dados.resumo().vinculos }} vínculo(s).
+  </div>
+
+  <div class="grupos">
+    @for (grupo of grupos; track grupo.chave) {
+      <article class="card grupo">
+        <div class="grupo__info">
+          <span class="grupo__icone material-symbols-outlined" aria-hidden="true">{{ grupo.icone }}</span>
+          <div>
+            <h2 class="grupo__titulo">
+              {{ grupo.rotulo }}
+              <span class="badge badge-neutral">{{ totalDe(grupo.chave) }}</span>
+            </h2>
+            <p class="tl-small tl-text-muted mb-0">{{ grupo.descricao }}</p>
+          </div>
+        </div>
+        <button
+          class="btn btn-danger"
+          type="button"
+          [disabled]="totalDe(grupo.chave) === 0"
+          (click)="abrir(grupo.chave)"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todos
+        </button>
+      </article>
+    }
+  </div>
+
+  <div class="card danger-card">
+    <div>
+      <h2 class="grupo__titulo">Excluir tudo</h2>
+      <p class="tl-small tl-text-muted mb-0">
+         Remove turmas, alunos, professores, disciplinas, períodos, matrículas, vínculos, frequência,
+         avaliações e a trilha de auditoria. A instituição é mantida.
+      </p>
+    </div>
+    <button class="btn btn-danger" type="button" (click)="abrir('tudo')">
+      <span class="material-symbols-outlined" aria-hidden="true">delete_forever</span> Excluir tudo
+    </button>
+  </div>
+</section>
+
+@if (confirmacao(); as confirmacaoAtual) {
+  <app-confirmar-texto
+    [open]="!!alvo()"
+    [titulo]="confirmacaoAtual.titulo"
+    [mensagem]="confirmacaoAtual.mensagem"
+    [detalhes]="confirmacaoAtual.detalhes"
+    [palavra]="palavra()"
+    [rotuloConfirmar]="confirmacaoAtual.rotuloConfirmar"
+    (confirmado)="confirmar()"
+    (fechado)="fechar()"
+  />
+}

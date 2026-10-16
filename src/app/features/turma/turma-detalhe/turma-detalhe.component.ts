@@ -8,10 +8,16 @@ import { AlunoFormComponent } from '../../aluno/aluno-form/aluno-form.component'
 import { AlunoImportComponent, ResumoImport } from '../../aluno/aluno-import/aluno-import.component';
 import { TurmaFormComponent } from '../turma-form/turma-form.component';
 import { AlunosService } from '../../../core/services/alunos.service';
+import { DisciplinasService } from '../../../core/services/disciplinas.service';
+import { MatriculasService } from '../../../core/services/matriculas.service';
+import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
+import { VinculosDocentesService } from '../../../core/services/vinculos-docentes.service';
 import { Aluno, Professor, labelTurno } from '../../../core/models';
+import { Disciplina } from '../../../core/models/disciplina.model';
+import { VinculoDocente } from '../../../core/models/vinculo-docente.model';
 
 @Component({
   selector: 'app-turma-detalhe',
@@ -23,7 +29,11 @@ export class TurmaDetalheComponent {
   private readonly route = inject(ActivatedRoute);
   protected readonly turmas = inject(TurmasService);
   protected readonly professores = inject(ProfessoresService);
+  protected readonly disciplinas = inject(DisciplinasService);
+  protected readonly vinculos = inject(VinculosDocentesService);
   protected readonly alunos = inject(AlunosService);
+  private readonly matriculas = inject(MatriculasService);
+  private readonly periodos = inject(PeriodosLetivosService);
   private readonly toast = inject(ToastService);
 
   protected readonly turmaId = toSignal(
@@ -42,6 +52,14 @@ export class TurmaDetalheComponent {
   });
 
   readonly alunosDaTurma = computed(() => this.alunos.porTurma(this.turmaId()));
+
+  readonly disciplinasDaTurma = computed<Disciplina[]>(() => {
+    const t = this.turma();
+    if (!t) return [];
+    return this.disciplinas.porIds(t.disciplinaIds);
+  });
+
+  readonly vinculosDaTurma = computed<VinculoDocente[]>(() => this.vinculos.porTurma(this.turmaId()));
 
   protected readonly buscaAlunos = signal('');
   readonly alunosFiltrados = computed(() => {
@@ -65,6 +83,13 @@ export class TurmaDetalheComponent {
     return this.professores.professores().filter((p) => !t.professorIds.includes(p.id));
   });
 
+  protected readonly pickerDisciplinasAberto = signal(false);
+  protected readonly selecaoDisciplinas = signal<string[]>([]);
+
+  protected readonly vinculoAberto = signal(false);
+  protected readonly novoVinculoProfessor = signal('');
+  protected readonly novoVinculoDisciplina = signal('');
+
   protected readonly pickerAlunoAberto = signal(false);
   protected readonly selecaoAlunos = signal<string[]>([]);
   protected readonly buscaPickerAlunos = signal('');
@@ -79,8 +104,49 @@ export class TurmaDetalheComponent {
     return lista.filter((a) => [a.nome, a.email, a.matricula].some((c) => c.toLowerCase().includes(termo)));
   });
 
+  protected readonly todosProfessoresSelecionados = computed(() => {
+    const lista = this.professoresDisponiveis();
+    return lista.length > 0 && lista.every((prof) => this.selecaoProfessores().includes(prof.id));
+  });
+
+  protected readonly todasDisciplinasSelecionadas = computed(() => {
+    const lista = this.disciplinas.disciplinas();
+    return lista.length > 0 && lista.every((disciplina) => this.selecaoDisciplinas().includes(disciplina.id));
+  });
+
+  protected readonly todosAlunosSelecionados = computed(() => {
+    const lista = this.alunosPickerFiltrados();
+    return lista.length > 0 && lista.every((aluno) => this.selecaoAlunos().includes(aluno.id));
+  });
+
   protected valor(evento: Event): string {
     return (evento.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;
+  }
+
+  protected marcado(evento: Event): boolean {
+    return (evento.target as HTMLInputElement).checked;
+  }
+
+  protected alternarTodosProfessores(evento: Event): void {
+    this.selecaoProfessores.set(
+      this.marcado(evento) ? this.professoresDisponiveis().map((prof) => prof.id) : [],
+    );
+  }
+
+  protected alternarTodasDisciplinas(evento: Event): void {
+    this.selecaoDisciplinas.set(
+      this.marcado(evento) ? this.disciplinas.disciplinas().map((disciplina) => disciplina.id) : [],
+    );
+  }
+
+  protected alternarTodosAlunos(evento: Event): void {
+    if (this.marcado(evento)) {
+      const ids = this.alunosPickerFiltrados().map((aluno) => aluno.id);
+      this.selecaoAlunos.update((atual) => Array.from(new Set([...atual, ...ids])));
+    } else {
+      const ids = new Set(this.alunosPickerFiltrados().map((aluno) => aluno.id));
+      this.selecaoAlunos.update((atual) => atual.filter((id) => !ids.has(id)));
+    }
   }
 
   protected turnoLabel(turno: Parameters<typeof labelTurno>[0]): string {
@@ -141,6 +207,11 @@ export class TurmaDetalheComponent {
     if (!t || selecionados.length === 0) return;
     for (const id of selecionados) {
       await this.alunos.update(id, { turmaId: t.id });
+      try {
+        await this.matriculas.matricular(id, t.id, this.periodos.ativo()?.id);
+      } catch {
+        // Ignora bloqueio de matrícula duplicada
+      }
     }
     this.toast.mostrar(`${selecionados.length} aluno(s) adicionado(s) à turma.`);
     this.pickerAlunoAberto.set(false);
@@ -148,7 +219,70 @@ export class TurmaDetalheComponent {
 
   protected async removerAluno(aluno: Aluno): Promise<void> {
     await this.alunos.update(aluno.id, { turmaId: '' });
+    try {
+      await this.matriculas.desmatricular(aluno.id, 'Removido da turma');
+    } catch {
+      // Histórico preservado
+    }
     this.toast.mostrar(`${aluno.nome} removido(a) da turma.`, 'info');
+  }
+
+  protected abrirPickerDisciplinas(): void {
+    const t = this.turma();
+    this.selecaoDisciplinas.set(t ? [...(t.disciplinaIds ?? [])] : []);
+    this.pickerDisciplinasAberto.set(true);
+  }
+
+  protected toggleDisciplinaSelecao(id: string): void {
+    this.selecaoDisciplinas.update((atual) =>
+      atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id],
+    );
+  }
+
+  protected async confirmarDisciplinas(): Promise<void> {
+    const t = this.turma();
+    if (!t) return;
+    await this.turmas.update(t.id, { disciplinaIds: this.selecaoDisciplinas() });
+    this.toast.mostrar('Disciplinas da turma atualizadas.');
+    this.pickerDisciplinasAberto.set(false);
+  }
+
+  protected abrirVinculo(): void {
+    this.novoVinculoProfessor.set('');
+    this.novoVinculoDisciplina.set('');
+    this.vinculoAberto.set(true);
+  }
+
+  protected nomeProfessor(id: string): string {
+    return this.professores.porId(id)?.nome ?? '—';
+  }
+
+  protected nomeDisciplina(id: string): string {
+    return this.disciplinas.porId(id)?.nome ?? '—';
+  }
+
+  protected async confirmarVinculo(): Promise<void> {
+    const t = this.turma();
+    if (!t) return;
+    try {
+      await this.vinculos.criar({
+        turmaId: t.id,
+        professorId: this.novoVinculoProfessor(),
+        disciplinaId: this.novoVinculoDisciplina(),
+      });
+      this.toast.mostrar('Vínculo docente adicionado.');
+      this.vinculoAberto.set(false);
+    } catch (erro) {
+      this.toast.mostrar(
+        erro instanceof Error ? erro.message : 'Não foi possível adicionar o vínculo.',
+        'warning',
+      );
+    }
+  }
+
+  protected async removerVinculo(id: string): Promise<void> {
+    await this.vinculos.remover(id);
+    this.toast.mostrar('Vínculo removido.', 'info');
   }
 
   protected onImportado(resumo: ResumoImport): void {

@@ -1,19 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
 
 import { AuthService } from './auth.service';
-import { BaseEntity } from '../models';
+import { EventoAuditoria } from '../models/auditoria.model';
 import { Repository } from '../data/repository';
 import { RepositoryFactory } from '../data/repository.factory';
-
-/** Registro de auditoria de operações críticas (RF-027). */
-export interface EventoAuditoria extends BaseEntity {
-  atorId: string | null;
-  atorNome: string | null;
-  acao: string;
-  entidade: string;
-  referencia: string | null;
-  detalhes: string | null;
-}
 
 /**
  * Trilha de auditoria local (demonstração) para alterações críticas.
@@ -56,5 +46,12 @@ export class AuditoriaService {
         atorNome: usuario?.nome ?? null,
       })
       .then((evento) => this._eventos.update((lista) => [evento, ...lista]));
+  }
+
+  async limpar(): Promise<void> {
+    for (const evento of this._eventos()) {
+      await this.repo.remove(evento.id);
+    }
+    this._eventos.set([]);
   }
 }

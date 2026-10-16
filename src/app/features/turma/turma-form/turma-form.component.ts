@@ -1,6 +1,7 @@
-import { Component, inject, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
+import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
@@ -14,6 +15,7 @@ interface TurmaFormData {
   codigo: string;
   descricao: string;
   professorIds: string[];
+  disciplinaIds: string[];
   ativa: boolean;
 }
 
@@ -31,6 +33,7 @@ export class TurmaFormComponent {
   readonly fechado = output<void>();
 
   protected readonly professores = inject(ProfessoresService);
+  protected readonly disciplinas = inject(DisciplinasService);
   private readonly turmas = inject(TurmasService);
   private readonly toast = inject(ToastService);
 
@@ -38,6 +41,16 @@ export class TurmaFormComponent {
   protected readonly form = linkedSignal<TurmaFormData>(() => {
     this.open();
     return this.paraForm(this.turma());
+  });
+
+  protected readonly todosProfessoresSelecionados = computed(() => {
+    const lista = this.professores.professores();
+    return lista.length > 0 && lista.every((prof) => this.form().professorIds.includes(prof.id));
+  });
+
+  protected readonly todasDisciplinasSelecionadas = computed(() => {
+    const lista = this.disciplinas.disciplinas();
+    return lista.length > 0 && lista.every((disciplina) => this.form().disciplinaIds.includes(disciplina.id));
   });
 
   protected valor(evento: Event): string {
@@ -62,6 +75,26 @@ export class TurmaFormComponent {
       return {
         ...atual,
         professorIds: possui ? atual.professorIds.filter((p) => p !== id) : [...atual.professorIds, id],
+      };
+    });
+  }
+
+  protected alternarTodosProfessores(evento: Event): void {
+    const marcar = this.marcado(evento);
+    this.patch('professorIds', marcar ? this.professores.professores().map((prof) => prof.id) : []);
+  }
+
+  protected alternarTodasDisciplinas(evento: Event): void {
+    const marcar = this.marcado(evento);
+    this.patch('disciplinaIds', marcar ? this.disciplinas.disciplinas().map((disciplina) => disciplina.id) : []);
+  }
+
+  protected toggleDisciplina(id: string): void {
+    this.form.update((atual) => {
+      const possui = atual.disciplinaIds.includes(id);
+      return {
+        ...atual,
+        disciplinaIds: possui ? atual.disciplinaIds.filter((d) => d !== id) : [...atual.disciplinaIds, id],
       };
     });
   }
@@ -102,7 +135,8 @@ export class TurmaFormComponent {
         anoLetivo: turma.anoLetivo,
         codigo: turma.codigo,
         descricao: turma.descricao,
-        professorIds: [...turma.professorIds],
+        professorIds: [...(turma.professorIds ?? [])],
+        disciplinaIds: [...(turma.disciplinaIds ?? [])],
         ativa: turma.ativa,
       };
     }
@@ -114,6 +148,7 @@ export class TurmaFormComponent {
       codigo: gerarCodigoTurma(),
       descricao: '',
       professorIds: [],
+      disciplinaIds: [],
       ativa: true,
     };
   }

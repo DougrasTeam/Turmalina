@@ -1,0 +1,11 @@
+# Configuração mínima do Supabase CLI para o projeto Turmalina.
+# Gerada para permitir `supabase functions deploy`. Se você já rodou
+# `supabase init`, preserve o restante do arquivo e apenas confirme o bloco
+# [functions.admin-usuarios].
+
+project_id = "turmalina"
+
+# A Edge Function exige um usuário autenticado; a autorização por papel
+# (administrador) é validada dentro da própria função.
+[functions.admin-usuarios]
+verify_jwt = true

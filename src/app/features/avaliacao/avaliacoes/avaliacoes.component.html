@@ -1,0 +1,338 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Avaliações e notas</h1>
+      <p class="tl-text-muted">Crie avaliações e lance as notas dos alunos por turma, disciplina e período.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      @if (avaliacoes.total() > 0) {
+        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodas()">
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todas
+        </button>
+      }
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="turmas.total() === 0 || periodos.periodos().length === 0"
+        (click)="abrirNova()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova avaliação
+      </button>
+    </div>
+  </header>
+
+  @if (turmas.total() === 0 || periodos.periodos().length === 0) {
+    <div class="alert alert-info" role="status">
+      Cadastre turmas, disciplinas e um período letivo para criar avaliações e lançar notas.
+    </div>
+  }
+
+  <div class="page-toolbar">
+    <select class="form-select" style="max-width: 260px;" [value]="filtroTurma()" (change)="filtroTurma.set(valor($event))">
+      <option value="">Todas as turmas</option>
+      @for (turma of turmas.turmas(); track turma.id) {
+        <option [value]="turma.id">{{ turma.nome }}</option>
+      }
+    </select>
+    <select class="form-select" style="max-width: 260px;" [value]="filtroPeriodo()" (change)="filtroPeriodo.set(valor($event))">
+      <option value="">Todos os períodos</option>
+      @for (periodo of periodos.periodos(); track periodo.id) {
+        <option [value]="periodo.id">{{ periodo.nome }}</option>
+      }
+    </select>
+  </div>
+
+  @if (filtroTurma()) {
+    <div class="card">
+      <div class="card-header">
+        <h2>Média por aluno</h2>
+        <span class="tl-small tl-text-muted">Média mínima: {{ instituicao.mediaMinima() }}</span>
+      </div>
+      @if (alunosDoResumo().length === 0) {
+        <div class="card-body">
+          <p class="tl-text-muted mb-0">Nenhum aluno matriculado nesta turma.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Aluno</th>
+                <th>Média</th>
+                <th>Regra</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (aluno of alunosDoResumo(); track aluno.id) {
+                @let resultado = resultadoAluno(aluno.id);
+                <tr>
+                  <td><strong>{{ aluno.nome }}</strong></td>
+                  <td>
+                    <span class="badge" [class]="'badge ' + (abaixoDaMedia(aluno.id) ? 'badge-danger' : resultado.valor === null ? 'badge-neutral' : 'badge-success')">
+                      {{ mediaAluno(aluno.id) }}
+                    </span>
+                    @if (abaixoDaMedia(aluno.id)) {
+                      <span class="material-symbols-outlined alerta" aria-label="Abaixo da média" title="Abaixo da média mínima">warning</span>
+                    }
+                  </td>
+                  <td class="tl-small tl-text-muted">{{ formulaLabel(resultado) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="card mb-0">
+    @if (filtradas().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state__icon" aria-hidden="true"><span class="material-symbols-outlined">grading</span></div>
+        <h3>{{ avaliacoes.total() === 0 ? 'Nenhuma avaliação criada' : 'Nada encontrado' }}</h3>
+        <p>
+          {{ avaliacoes.total() === 0 ? 'Clique em "Nova avaliação" para começar.' : 'Ajuste os filtros de turma e período.' }}
+        </p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Avaliação</th>
+              <th>Turma / Disciplina</th>
+              <th>Período</th>
+              <th>Data</th>
+              <th>Nota máx.</th>
+              <th>Peso</th>
+              <th>Status</th>
+              <th>Notas</th>
+              <th>Média</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (avaliacao of filtradas(); track avaliacao.id) {
+              @let resumoAtual = resumo(avaliacao);
+              <tr>
+                <td><strong>{{ avaliacao.nome }}</strong></td>
+                <td>
+                  <div>{{ turmaNome(avaliacao.turmaId) }}</div>
+                  <div class="tl-small tl-text-muted">{{ disciplinaNome(avaliacao.disciplinaId) }}</div>
+                </td>
+                <td>
+                  <div>{{ periodoNome(avaliacao.periodoLetivoId) }}</div>
+                  @if (avaliacao.etapaId) {
+                    <div class="tl-small tl-text-muted">{{ etapaNome(avaliacao.etapaId) }}</div>
+                  }
+                </td>
+                <td>{{ dataFormatada(avaliacao.data) }}</td>
+                <td>{{ avaliacao.notaMaxima }}</td>
+                <td>{{ avaliacao.peso }}</td>
+                <td>
+                  <span class="badge" [class]="'badge ' + statusClasse(avaliacao.status)">{{ statusLabel(avaliacao.status) }}</span>
+                  @if (bloquear(avaliacao)) {
+                    <span class="material-symbols-outlined alerta" aria-label="Período encerrado" title="Período encerrado: edição bloqueada">lock</span>
+                  }
+                </td>
+                <td>{{ resumoAtual.lancadas }}/{{ resumoAtual.total }} <span class="tl-small tl-text-muted">({{ resumoAtual.pendentes }} pend.)</span></td>
+                <td>{{ media(avaliacao) }}</td>
+                <td>
+                  <div class="table-actions">
+                    <button
+                      class="btn btn-sm btn-light"
+                      type="button"
+                      [disabled]="bloquear(avaliacao)"
+                      (click)="abrirLancamento(avaliacao)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">edit_note</span> Notas
+                    </button>
+                    <button class="btn btn-sm btn-light" type="button" [disabled]="bloquear(avaliacao)" (click)="abrirEdicao(avaliacao)">
+                      <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+                    </button>
+                    @if (avaliacao.status === 'arquivada') {
+                      <button class="btn btn-sm btn-light" type="button" [disabled]="bloquear(avaliacao)" (click)="publicar(avaliacao)">
+                        <span class="material-symbols-outlined" aria-hidden="true">unarchive</span> Reabrir
+                      </button>
+                    } @else {
+                      <button class="btn btn-sm btn-light" type="button" (click)="arquivar(avaliacao)">
+                        <span class="material-symbols-outlined" aria-hidden="true">archive</span> Arquivar
+                      </button>
+                    }
+                    <button class="btn btn-sm btn-danger" type="button" aria-label="Excluir avaliação" (click)="pedirExclusao(avaliacao)">
+                      <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
+
+<app-modal
+  [open]="formAberta()"
+  [title]="editandoId() ? 'Editar avaliação' : 'Nova avaliação'"
+  (close)="fecharForm()"
+>
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div class="span-2">
+        <label class="form-label" for="av-nome">Nome da avaliação *</label>
+        <input id="av-nome" class="form-control" type="text" placeholder="Ex.: Prova bimestral" [value]="form().nome" (input)="patch('nome', valor($event))" />
+      </div>
+
+      <div>
+        <label class="form-label" for="av-turma">Turma *</label>
+        <select id="av-turma" class="form-select" [value]="form().turmaId" (change)="selecionarTurma($event)">
+          <option value="">Selecione a turma</option>
+          @for (turma of turmas.turmas(); track turma.id) {
+            <option [value]="turma.id">{{ turma.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="av-disciplina">Disciplina *</label>
+        <select id="av-disciplina" class="form-select" [value]="form().disciplinaId" (change)="patchCampo('disciplinaId', valor($event))">
+          <option value="">Selecione a disciplina</option>
+          @for (disciplina of disciplinasDaTurma(); track disciplina.id) {
+            <option [value]="disciplina.id">{{ disciplina.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="av-periodo">Período letivo *</label>
+        <select id="av-periodo" class="form-select" [value]="form().periodoLetivoId" (change)="patchCampo('periodoLetivoId', valor($event))">
+          <option value="">Selecione o período</option>
+          @for (periodo of periodos.periodos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="av-etapa">Etapa</label>
+        <select id="av-etapa" class="form-select" [value]="form().etapaId" (change)="patchCampo('etapaId', valor($event))">
+          <option value="">Sem etapa</option>
+          @for (etapa of etapasDoPeriodo(); track etapa.id) {
+            <option [value]="etapa.id">{{ etapa.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="av-data">Data</label>
+        <input id="av-data" class="form-control" type="date" [value]="form().data" (change)="patch('data', valor($event))" />
+      </div>
+
+      <div>
+        <label class="form-label" for="av-nota-maxima">Nota máxima *</label>
+        <input id="av-nota-maxima" class="form-control" type="number" min="0" step="0.1" [value]="form().notaMaxima" (input)="patchNumero('notaMaxima', valor($event))" />
+      </div>
+
+      <div>
+        <label class="form-label" for="av-peso">Peso *</label>
+        <input id="av-peso" class="form-control" type="number" min="0" step="1" [value]="form().peso" (input)="patchNumero('peso', valor($event))" />
+      </div>
+
+      <div>
+        <label class="form-label" for="av-status">Status</label>
+        <select id="av-status" class="form-select" [value]="form().status" (change)="setStatus($event)">
+          @for (opcao of statusOpcoes; track opcao.value) {
+            <option [value]="opcao.value">{{ opcao.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="span-2">
+        <label class="form-label" for="av-descricao">Descrição</label>
+        <textarea id="av-descricao" class="form-control" rows="2" [value]="form().descricao" (input)="patch('descricao', valor($event))"></textarea>
+      </div>
+    </div>
+
+    <p class="tl-small tl-text-muted mt-2">
+      A média usa <strong>ponderação</strong> quando houver pesos diferentes de 1 (senão, média aritmética).
+    </p>
+
+    @if (erroForm()) {
+      <div class="alert alert-warning" role="alert">{{ erroForm() }}</div>
+    }
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fecharForm()">Cancelar</button>
+      <button class="btn btn-primary" type="submit">Salvar avaliação</button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="lancamentoAberto()" [title]="'Lançar notas · ' + (avaliacaoLancando()?.nome ?? '')" (close)="fecharLancamento()">
+  @if (avaliacaoLancando(); as avaliacao) {
+    <p class="tl-small tl-text-muted">
+      {{ turmaNome(avaliacao.turmaId) }} · {{ disciplinaNome(avaliacao.disciplinaId) }} · Nota máxima {{ avaliacao.notaMaxima }}.
+      Campos em branco ficam como <strong>não lançados</strong>.
+    </p>
+
+    @if (alunosDoLancamento().length === 0) {
+      <p class="tl-text-muted">Nenhum aluno matriculado nesta turma.</p>
+    } @else {
+      <form (submit)="salvarNotas($event)">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="badge badge-neutral">{{ lancadasNoFormulario() }}/{{ notasForm().length }} lançadas</span>
+          <button class="btn btn-sm btn-light" type="button" (click)="limparNotas()">Limpar notas</button>
+        </div>
+
+        <ul class="notas-lista">
+          @for (nota of notasForm(); track nota.alunoId) {
+            <li class="notas-item">
+              <span class="notas-item__nome">{{ nota.nome }}</span>
+              <input
+                class="form-control notas-item__campo"
+                [class.is-invalid]="notaInvalida(nota.alunoId)"
+                type="number"
+                min="0"
+                [max]="avaliacao.notaMaxima"
+                step="0.1"
+                placeholder="—"
+                [value]="nota.texto"
+                (input)="definirNota(nota.alunoId, valor($event))"
+              />
+            </li>
+          }
+        </ul>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button class="btn btn-light" type="button" (click)="fecharLancamento()">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Salvar notas</button>
+        </div>
+      </form>
+    }
+  }
+</app-modal>
+
+<app-modal [open]="!!excluindo()" title="Excluir avaliação" (close)="cancelarExclusao()">
+  @if (excluindo(); as avaliacao) {
+    <p>
+      Deseja realmente excluir a avaliação <strong>{{ avaliacao.nome }}</strong> e todas as notas lançadas? Esta ação não
+      pode ser desfeita.
+    </p>
+  }
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusao()">Cancelar</button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
+  </div>
+</app-modal>
+
+<app-confirmar-texto
+  [open]="excluirTudoAberto()"
+  [titulo]="confirmacaoTudo().titulo"
+  [mensagem]="confirmacaoTudo().mensagem"
+  [detalhes]="confirmacaoTudo().detalhes"
+  [rotuloConfirmar]="confirmacaoTudo().rotuloConfirmar"
+  (confirmado)="excluirTodas()"
+  (fechado)="fecharExclusaoTodas()"
+/>

@@ -1,6 +1,8 @@
-﻿import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
+import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
+import { DadosService } from '../../../core/services/dados.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PeriodoLetivo, StatusPeriodoLetivo, rotuloStatusPeriodo } from '../../../core/models/periodo-letivo.model';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
@@ -14,22 +16,25 @@ interface AcaoPendente {
 }
 
 function mensagemErro(erro: unknown): string {
-  return erro instanceof Error ? erro.message : 'NÃ£o foi possÃ­vel concluir a aÃ§Ã£o.';
+  return erro instanceof Error ? erro.message : 'Não foi possível concluir a ação.';
 }
 
 @Component({
   selector: 'app-periodos-letivos',
-  imports: [ModalComponent, PeriodoLetivoFormComponent],
+  imports: [ModalComponent, ConfirmarTextoComponent, PeriodoLetivoFormComponent],
   templateUrl: './periodos-letivos.component.html',
   styleUrl: './periodos-letivos.component.scss',
 })
 export class PeriodosLetivosComponent {
   protected readonly periodos = inject(PeriodosLetivosService);
+  private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
 
   protected readonly modalAberto = signal(false);
   protected readonly editando = signal<PeriodoLetivo | null>(null);
   protected readonly acaoPendente = signal<AcaoPendente | null>(null);
+  protected readonly excluirTudoAberto = signal(false);
+  protected readonly confirmacaoTudo = computed(() => this.dados.confirmacao('periodos'));
 
   protected statusLabel(status: StatusPeriodoLetivo): string {
     return rotuloStatusPeriodo(status);
@@ -42,7 +47,7 @@ export class PeriodosLetivosComponent {
   }
 
   protected formatarData(iso: string): string {
-    if (!iso) return 'â€”';
+    if (!iso) return '—';
     const partes = iso.split('-');
     if (partes.length !== 3) return iso;
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
@@ -77,13 +82,13 @@ export class PeriodosLetivosComponent {
   protected tituloConfirmacao(): string {
     switch (this.acaoPendente()?.tipo) {
       case 'ativar':
-        return 'Ativar perÃ­odo';
+        return 'Ativar período';
       case 'encerrar':
-        return 'Encerrar perÃ­odo';
+        return 'Encerrar período';
       case 'reabrir':
-        return 'Reabrir perÃ­odo';
+        return 'Reabrir período';
       case 'excluir':
-        return 'Excluir perÃ­odo';
+        return 'Excluir período';
       default:
         return 'Confirmar';
     }
@@ -95,13 +100,13 @@ export class PeriodosLetivosComponent {
     const nome = pendente.periodo.nome;
     switch (pendente.tipo) {
       case 'ativar':
-        return `Deseja ativar o perÃ­odo "${nome}"? Se houver outro perÃ­odo ativo, ele serÃ¡ encerrado.`;
+        return `Deseja ativar o período "${nome}"? Se houver outro período ativo, ele será encerrado.`;
       case 'encerrar':
-        return `Deseja encerrar o perÃ­odo "${nome}"? O histÃ³rico serÃ¡ preservado e o perÃ­odo ficarÃ¡ bloqueado para ediÃ§Ãµes.`;
+        return `Deseja encerrar o período "${nome}"? O histórico será preservado e o período ficará bloqueado para edições.`;
       case 'reabrir':
-        return `Deseja reabrir o perÃ­odo "${nome}"? Ele voltarÃ¡ ao status planejado.`;
+        return `Deseja reabrir o período "${nome}"? Ele voltará ao status planejado.`;
       case 'excluir':
-        return `Deseja realmente excluir o perÃ­odo "${nome}"? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`;
+        return `Deseja realmente excluir o período "${nome}"? Esta ação não pode ser desfeita.`;
     }
   }
 
@@ -112,24 +117,38 @@ export class PeriodosLetivosComponent {
       switch (pendente.tipo) {
         case 'ativar':
           await this.periodos.ativar(pendente.periodo.id);
-          this.toast.mostrar('PerÃ­odo ativado.');
+          this.toast.mostrar('Período ativado.');
           break;
         case 'encerrar':
           await this.periodos.encerrar(pendente.periodo.id);
-          this.toast.mostrar('PerÃ­odo encerrado.');
+          this.toast.mostrar('Período encerrado.');
           break;
         case 'reabrir':
           await this.periodos.reabrir(pendente.periodo.id);
-          this.toast.mostrar('PerÃ­odo reaberto.');
+          this.toast.mostrar('Período reaberto.');
           break;
         case 'excluir':
           await this.periodos.remover(pendente.periodo.id);
-          this.toast.mostrar('PerÃ­odo excluÃ­do.', 'info');
+          this.toast.mostrar('Período excluído.', 'info');
           break;
       }
     } catch (erro) {
       this.toast.mostrar(mensagemErro(erro), 'warning');
     }
     this.acaoPendente.set(null);
+  }
+
+  protected abrirExclusaoTodos(): void {
+    this.excluirTudoAberto.set(true);
+  }
+
+  protected fecharExclusaoTodos(): void {
+    this.excluirTudoAberto.set(false);
+  }
+
+  protected async excluirTodos(): Promise<void> {
+    await this.dados.excluir('periodos');
+    this.toast.mostrar('Todos os períodos letivos foram excluídos.', 'info');
+    this.excluirTudoAberto.set(false);
   }
 }

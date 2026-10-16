@@ -1,0 +1,243 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Olá, {{ professorAtual()?.nome || 'professor' }}!</h1>
+      <p class="tl-text-muted">
+        Seu painel de trabalho: indicadores da turma no período e atalhos para as rotinas.
+      </p>
+    </div>
+  </header>
+
+  @if (!professorAtual()) {
+    <div class="empty-state">
+      <span class="empty-state__icon material-symbols-outlined">person_search</span>
+      <h3>Cadastro de professor não encontrado</h3>
+      <p class="tl-text-muted">
+        Seu acesso não está ligado a um cadastro de professor desta instituição. Peça ao
+        administrador para vinculá-lo às suas turmas.
+      </p>
+    </div>
+  } @else if (turmasDoProfessor().length === 0) {
+    <div class="empty-state">
+      <span class="empty-state__icon material-symbols-outlined">school</span>
+      <h3>Nenhuma turma vinculada</h3>
+      <p class="tl-text-muted">
+        Você ainda não está vinculado a turmas. Peça ao administrador para incluí-lo na equipe
+        docente de uma turma em <a class="tl-link-strong" routerLink="/turmas">Turmas</a>.
+      </p>
+    </div>
+  } @else {
+    <div class="page-toolbar">
+      <div class="campo">
+        <label class="tl-small tl-text-muted" for="painel-turma">Turma</label>
+        <select
+          id="painel-turma"
+          class="form-select"
+          [value]="turmaFiltro()"
+          (change)="turmaFiltro.set(valor($event))"
+        >
+          @for (turma of turmasDoProfessor(); track turma.id) {
+            <option [value]="turma.id">{{ turma.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="campo">
+        <label class="tl-small tl-text-muted" for="painel-periodo">Período letivo</label>
+        <select
+          id="painel-periodo"
+          class="form-select"
+          [value]="periodoFiltro()"
+          (change)="periodoFiltro.set(valor($event))"
+        >
+          <option value="">Sem período</option>
+          @for (periodo of periodos.periodos(); track periodo.id) {
+            <option [value]="periodo.id">{{ periodo.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <span class="page-toolbar__spacer"></span>
+      <a class="btn btn-primary btn-sm" routerLink="/frequencia">
+        <span class="material-symbols-outlined">fact_check</span> Chamada
+      </a>
+      <a class="btn btn-light btn-sm" routerLink="/avaliacoes">
+        <span class="material-symbols-outlined">grading</span> Notas
+      </a>
+      <a class="btn btn-light btn-sm" routerLink="/alunos">
+        <span class="material-symbols-outlined">groups</span> Alunos
+      </a>
+    </div>
+
+    <div class="kpi-grid">
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">groups</span></span>
+        <div>
+          <div class="kpi-card__value">{{ alunosAtivos() }}</div>
+          <div class="kpi-card__label">Alunos ativos na turma</div>
+          <p class="tl-small tl-text-muted">Alunos com cadastro ativo vinculados à turma selecionada.</p>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">fact_check</span></span>
+        <div>
+          <div class="kpi-card__value">{{ percentual(frequenciaMedia()) }}</div>
+          <div class="kpi-card__label">Frequência média no período</div>
+          <p class="tl-small tl-text-muted">
+            Presenças computáveis ÷ registros válidos do período, respeitando o abono de faltas
+            justificadas.
+          </p>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">trending_up</span></span>
+        <div>
+          <div class="kpi-card__value">{{ nota(mediaDesempenho()) }}</div>
+          <div class="kpi-card__label">Média de desempenho</div>
+          <p class="tl-small tl-text-muted">
+            @if (medias().length === 0) {
+              Exibida apenas quando há notas lançadas no período.
+            } @else {
+              Média das médias de {{ medias().length }} aluno(s), ponderada quando há pesos.
+            }
+          </p>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">report</span></span>
+        <div>
+          <div class="kpi-card__value">{{ alunosAtencao().length }}</div>
+          <div class="kpi-card__label">Alunos em atenção</div>
+          <p class="tl-small tl-text-muted">
+            Média abaixo de {{ instituicao.mediaMinima() }} ou frequência abaixo de
+            {{ instituicao.frequenciaMinima() }}%.
+          </p>
+        </div>
+      </article>
+    </div>
+
+    <div class="row">
+      <div class="card" style="flex: 1 1 340px;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><span class="material-symbols-outlined">report</span> Alunos em atenção</span>
+          <a class="btn btn-sm btn-light" routerLink="/alunos">Ver alunos</a>
+        </div>
+        <div class="card-body">
+          @if (alunosAtencao().length === 0) {
+            <p class="tl-text-muted mb-0">Nenhum aluno abaixo dos critérios neste período. 🎉</p>
+          } @else {
+            <ul class="list-group">
+              @for (boletim of alunosAtencao(); track boletim.alunoId) {
+                <li class="list-group-item">
+                  <span class="avatar" aria-hidden="true">{{ boletim.alunoNome.charAt(0).toUpperCase() }}</span>
+                  <div class="w-100" style="min-width: 0;">
+                    <strong>{{ boletim.alunoNome }}</strong>
+                    <div class="tl-small tl-text-muted">
+                      Média {{ nota(boletim.mediaGeral) }} · Frequência {{ percentual(boletim.frequenciaGeral) }}
+                    </div>
+                  </div>
+                  <span [class]="'badge ' + situacaoClasse(boletim.situacao)">
+                    {{ situacaoLabel(boletim.situacao) }}
+                  </span>
+                  <a class="btn btn-sm btn-light" [routerLink]="['/boletim', boletim.alunoId]">Boletim</a>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+
+      <div class="card" style="flex: 1 1 340px;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><span class="material-symbols-outlined">pending_actions</span> Avaliações sem lançamento</span>
+          <a class="btn btn-sm btn-light" routerLink="/avaliacoes">Lançar notas</a>
+        </div>
+        <div class="card-body">
+          @if (semLancamento().length === 0) {
+            <p class="tl-text-muted mb-0">Nenhuma avaliação com notas pendentes no período.</p>
+          } @else {
+            <ul class="list-group">
+              @for (avaliacao of semLancamento(); track avaliacao.id) {
+                <li class="list-group-item">
+                  <div class="w-100" style="min-width: 0;">
+                    <strong>{{ avaliacao.nome }}</strong>
+                    <div class="tl-small tl-text-muted">
+                      {{ avaliacao.data ? dataCurta(avaliacao.data) : 'Sem data' }}
+                    </div>
+                  </div>
+                  <span class="badge badge-warning">
+                    {{ resumoPendentes(avaliacao) }} pendente(s)
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card" style="flex: 1 1 340px;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><span class="material-symbols-outlined">event_upcoming</span> Próximas avaliações</span>
+          <a class="btn btn-sm btn-light" routerLink="/avaliacoes">Ver avaliações</a>
+        </div>
+        <div class="card-body">
+          @if (proximasAvaliacoes().length === 0) {
+            <p class="tl-text-muted mb-0">Nenhuma avaliação futura agendada no período.</p>
+          } @else {
+            <ul class="list-group">
+              @for (avaliacao of proximasAvaliacoes(); track avaliacao.id) {
+                <li class="list-group-item">
+                  <span class="material-symbols-outlined" aria-hidden="true">event</span>
+                  <div class="w-100" style="min-width: 0;">
+                    <strong>{{ avaliacao.nome }}</strong>
+                    <div class="tl-small tl-text-muted">{{ dataCurta(avaliacao.data) }}</div>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+
+      <div class="card" style="flex: 1 1 340px;">
+        <div class="card-header">
+          <span><span class="material-symbols-outlined">history</span> Atividades recentes</span>
+        </div>
+        <div class="card-body">
+          @if (atividadesRecentes().length === 0) {
+            <p class="tl-text-muted mb-0">Nenhuma atividade registrada no período ainda.</p>
+          } @else {
+            <ul class="list-group">
+              @for (atividade of atividadesRecentes(); track $index) {
+                <li class="list-group-item">
+                  <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+                  <div class="w-100" style="min-width: 0;">
+                    <strong>{{ atividade.descricao }}</strong>
+                    <div class="tl-small tl-text-muted">{{ dataCurta(atividade.quando) }}</div>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span><span class="material-symbols-outlined">emoji_events</span> Missões e metas</span>
+      </div>
+      <div class="card-body">
+        <p class="tl-text-muted mb-0">
+          Missões e metas pendentes de validação aparecerão aqui quando a gamificação for
+          habilitada (fase futura).
+        </p>
+      </div>
+    </div>
+  }
+</section>

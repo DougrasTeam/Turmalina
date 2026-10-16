@@ -5,14 +5,16 @@ import { AutenticacaoErro } from '../../models/autenticacao-erro';
 import { Credenciais } from '../../models/credenciais.model';
 import { Sessao } from '../../models/sessao.model';
 import { Usuario } from '../../models/usuario.model';
-import { AuthRepository } from './auth.repository';
+import { AuthRepository, ProvedorOAuth } from './auth.repository';
+import { EMAIL_ADMIN_DEMO, EMAIL_ALUNO_DEMO, EMAIL_PROFESSOR_DEMO } from '../contas-demo';
 
-interface UsuarioDemo extends Usuario {
+interface UsuarioDemo extends Omit<Usuario, 'precisaTrocarSenha'> {
   senha: string;
 }
 
 const CHAVE_SESSAO = 'turmalina.sessao';
 const DURACAO_SESSAO_MS = 8 * 60 * 60 * 1000;
+const SENHA_DEMO = 'turmalina';
 
 /**
  * Contas de demonstração (dados sintéticos).
@@ -22,26 +24,26 @@ const USUARIOS_DEMO: readonly UsuarioDemo[] = [
   {
     id: 'usuario-admin',
     nome: 'Ana Administradora',
-    email: 'admin@turmalina.demo',
+    email: EMAIL_ADMIN_DEMO,
     papel: 'administrador',
     ativo: true,
-    senha: 'turmalina',
+    senha: SENHA_DEMO,
   },
   {
     id: 'usuario-professor',
     nome: 'Bruno Professor',
-    email: 'professor@turmalina.demo',
+    email: EMAIL_PROFESSOR_DEMO,
     papel: 'professor',
     ativo: true,
-    senha: 'turmalina',
+    senha: SENHA_DEMO,
   },
   {
     id: 'usuario-aluno',
     nome: 'Carla Aluna',
-    email: 'aluno@turmalina.demo',
+    email: EMAIL_ALUNO_DEMO,
     papel: 'aluno',
     ativo: true,
-    senha: 'turmalina',
+    senha: SENHA_DEMO,
   },
 ];
 
@@ -93,6 +95,22 @@ export class MockAuthRepository extends AuthRepository {
     this.storage.remove(CHAVE_SESSAO);
   }
 
+  suportaOAuth(): boolean {
+    return false;
+  }
+
+  async entrarComProvedor(_provedor: ProvedorOAuth): Promise<void> {
+    throw new AutenticacaoErro('provedor-indisponivel');
+  }
+
+  async alterarSenha(_novaSenha: string): Promise<void> {
+    // Sem backend de autenticação no modo de demonstração.
+  }
+
+  async concluirPrimeiroAcesso(): Promise<void> {
+    // Sem backend de autenticação no modo de demonstração.
+  }
+
   private criarSessao(usuarioDemo: UsuarioDemo): Sessao {
     return {
       token: `demo-${usuarioDemo.id}-${Date.now().toString(36)}`,
@@ -102,6 +120,7 @@ export class MockAuthRepository extends AuthRepository {
         email: usuarioDemo.email,
         papel: usuarioDemo.papel,
         ativo: usuarioDemo.ativo,
+        precisaTrocarSenha: false,
       },
       expiraEm: new Date(Date.now() + DURACAO_SESSAO_MS).toISOString(),
     };

@@ -1,0 +1,90 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Auditoria</h1>
+      <p class="tl-text-muted">
+        Consulte a trilha das alterações críticas: cadastros, matrículas, notas, exclusões e mudanças
+        de instituição e período letivo.
+      </p>
+    </div>
+  </header>
+
+  <div class="page-toolbar">
+    <input
+      class="form-control"
+      type="search"
+      placeholder="Buscar por ação, ator, referência ou detalhe"
+      [value]="busca()"
+      (input)="busca.set(valorDoCampo($event))"
+    />
+    <select
+      class="form-select"
+      aria-label="Filtrar por entidade"
+      [value]="entidadeFiltrada()"
+      (change)="entidadeFiltrada.set(valorDoCampo($event))"
+    >
+      <option value="">Todas as entidades</option>
+      @for (entidade of entidades(); track entidade) {
+        <option [value]="entidade">{{ rotuloEntidade(entidade) }}</option>
+      }
+    </select>
+    <span class="page-toolbar__spacer"></span>
+    <span class="tl-small tl-text-muted">
+      {{ eventosFiltrados().length }} de {{ auditoria.eventos().length }} registro(s)
+    </span>
+  </div>
+
+  <div class="card">
+    @if (auditoria.eventos().length === 0) {
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">history</span>
+        <h3>Nenhum registro de auditoria</h3>
+        <p>As alterações críticas realizadas no sistema aparecerão aqui automaticamente.</p>
+      </div>
+    } @else if (eventosFiltrados().length === 0) {
+      <div class="card-body">
+        <p class="tl-text-muted mb-0">
+          @if (busca()) {
+            Nenhum registro encontrado para "{{ busca() }}".
+          } @else {
+            Nenhum registro corresponde à entidade selecionada.
+          }
+        </p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Data e hora</th>
+              <th>Ator</th>
+              <th>Ação</th>
+              <th>Entidade</th>
+              <th>Referência</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (evento of eventosFiltrados(); track evento.id) {
+              <tr>
+                <td class="auditoria__momento">{{ formatarDataHora(evento.criadoEm) }}</td>
+                <td><strong>{{ evento.atorNome ?? 'Sistema' }}</strong></td>
+                <td>
+                  <span [class]="'badge ' + descricaoDaAcao(evento).classe">
+                    <span class="material-symbols-outlined" aria-hidden="true">
+                      {{ descricaoDaAcao(evento).icone }}
+                    </span>
+                    {{ descricaoDaAcao(evento).rotulo }}
+                  </span>
+                </td>
+                <td>{{ rotuloEntidade(evento.entidade) }}</td>
+                <td>{{ evento.referencia ?? '—' }}</td>
+                <td>{{ evento.detalhes ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>

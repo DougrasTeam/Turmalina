@@ -10,4 +10,9 @@ export interface Usuario {
   email: string;
   papel: Papel;
   ativo: boolean;
+  /**
+   * Quando verdadeiro, o usuário foi criado pelo painel administrativo com uma
+   * senha provisória e precisa definir uma nova senha antes de usar o sistema.
+   */
+  precisaTrocarSenha: boolean;
 }

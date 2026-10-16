@@ -1,0 +1,357 @@
+<section class="page relatorios">
+  <header class="page-header no-print">
+    <div>
+      <h1>Relatórios</h1>
+      <p class="tl-text-muted">
+        Frequência, desempenho e pendências de lançamento por turma e período.
+      </p>
+    </div>
+    <div class="page-toolbar">
+      <label class="visually-hidden" for="relatorio-periodo">Período letivo</label>
+      <select
+        id="relatorio-periodo"
+        class="form-select"
+        [value]="periodoFiltro()"
+        (change)="periodoFiltro.set(valor($event))"
+      >
+        <option value="">Selecione o período</option>
+        @for (periodo of periodos.periodos(); track periodo.id) {
+          <option [value]="periodo.id">{{ periodo.nome }}</option>
+        }
+      </select>
+      <button class="btn btn-light" type="button" [disabled]="!podeExportar()" (click)="imprimir()">
+        <span class="material-symbols-outlined" aria-hidden="true">print</span> Imprimir / PDF
+      </button>
+    </div>
+  </header>
+
+  @if (periodos.periodos().length === 0) {
+    <div class="alert alert-info" role="status">Nenhum período letivo cadastrado ainda.</div>
+  } @else if (semPeriodo()) {
+    <div class="alert alert-warning" role="alert">
+      Selecione um período letivo para gerar os relatórios.
+    </div>
+  } @else {
+    <section class="kpi-grid" aria-label="Resumo institucional do período">
+      <article class="kpi-card">
+        <span class="kpi-card__icon material-symbols-outlined" aria-hidden="true">school</span>
+        <div>
+          <div class="kpi-card__value">{{ resumo().turmasAtivas }}</div>
+          <div class="kpi-card__label">Turmas ativas</div>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon material-symbols-outlined" aria-hidden="true">groups</span>
+        <div>
+          <div class="kpi-card__value">{{ resumo().alunosAtivos }}</div>
+          <div class="kpi-card__label">Alunos ativos</div>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon material-symbols-outlined" aria-hidden="true">fact_check</span>
+        <div>
+          <div class="kpi-card__value">{{ percentual(resumo().frequenciaMedia) }}</div>
+          <div class="kpi-card__label">Frequência média</div>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon material-symbols-outlined" aria-hidden="true">grading</span>
+        <div>
+          <div class="kpi-card__value">{{ nota(resumo().mediaGeral) }}</div>
+          <div class="kpi-card__label">Média geral</div>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon material-symbols-outlined" aria-hidden="true">warning</span>
+        <div>
+          <div class="kpi-card__value">{{ resumo().alunosAbaixoDoLimite }}</div>
+          <div class="kpi-card__label">Abaixo da frequência</div>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon material-symbols-outlined" aria-hidden="true">report</span>
+        <div>
+          <div class="kpi-card__value">{{ resumo().alunosAbaixoDaMedia }}</div>
+          <div class="kpi-card__label">Abaixo da média</div>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-card__icon material-symbols-outlined" aria-hidden="true"
+          >pending_actions</span
+        >
+        <div>
+          <div class="kpi-card__value">{{ resumo().avaliacoesComPendencia }}</div>
+          <div class="kpi-card__label">Avaliações com pendência</div>
+        </div>
+      </article>
+    </section>
+
+    <div class="card no-print">
+      <div class="card-body relatorios__filtros">
+        <div class="page-toolbar">
+          <label class="visually-hidden" for="relatorio-turma">Turma</label>
+          <select
+            id="relatorio-turma"
+            class="form-select relatorios__turma"
+            [disabled]="semTurmas()"
+            [value]="turmaFiltro()"
+            (change)="turmaFiltro.set(valor($event))"
+          >
+            @if (semTurmas()) {
+              <option value="">Nenhuma turma cadastrada</option>
+            }
+            @for (turma of turmas.turmas(); track turma.id) {
+              <option [value]="turma.id">{{ turma.nome }}</option>
+            }
+          </select>
+          <span class="page-toolbar__spacer"></span>
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="!podeExportar()"
+            (click)="exportar()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">download</span>
+            Exportar CSV
+          </button>
+        </div>
+
+        <div class="relatorios__tipos" role="group" aria-label="Tipo de relatório">
+          @for (tipo of tipos; track tipo.value) {
+            <button
+              class="relatorios__tipo"
+              type="button"
+              [class.relatorios__tipo--ativo]="tipoRelatorio() === tipo.value"
+              [attr.aria-pressed]="tipoRelatorio() === tipo.value"
+              (click)="selecionarTipo(tipo.value)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">{{ tipo.icone }}</span>
+              {{ tipo.label }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="relatorios__topo">
+          <div>
+            <h2 class="relatorios__titulo">{{ opcaoAtual().label }}</h2>
+            <p class="tl-small tl-text-muted">{{ opcaoAtual().descricao }}</p>
+          </div>
+          @if (geradoEmAtual(); as emitido) {
+            <span class="tl-small tl-text-muted">Gerado em {{ dataHora(emitido) }}</span>
+          }
+        </div>
+
+        @switch (tipoRelatorio()) {
+          @case ('frequencia') {
+            @if (relatorioFrequencia(); as relatorio) {
+              @if (relatorio.linhas.length === 0) {
+                <div class="empty-state">
+                  <span class="material-symbols-outlined empty-state__icon" aria-hidden="true">
+                    fact_check
+                  </span>
+                  <h3>Sem dados de frequência</h3>
+                  <p>Nenhum aluno ou chamada registrada para esta turma no período.</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Aluno</th>
+                        <th>Matrícula</th>
+                        <th class="relatorios__num">Aulas</th>
+                        <th class="relatorios__num">Presenças</th>
+                        <th class="relatorios__num">Faltas</th>
+                        <th class="relatorios__num">Justificadas</th>
+                        <th class="relatorios__num">Frequência</th>
+                        <th>Situação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (linha of relatorio.linhas; track linha.alunoId) {
+                        <tr [class.relatorios__linha--alerta]="linha.abaixoDoLimite">
+                          <td>
+                            <strong>{{ linha.alunoNome }}</strong>
+                          </td>
+                          <td>{{ linha.alunoMatricula || '—' }}</td>
+                          <td class="relatorios__num">{{ linha.total }}</td>
+                          <td class="relatorios__num">{{ linha.presentes }}</td>
+                          <td class="relatorios__num">{{ linha.faltas }}</td>
+                          <td class="relatorios__num">{{ linha.justificadas }}</td>
+                          <td class="relatorios__num">{{ percentual(linha.percentual) }}</td>
+                          <td>
+                            <span
+                              [class]="
+                                'badge ' + (linha.abaixoDoLimite ? 'badge-danger' : 'badge-success')
+                              "
+                            >
+                              {{ linha.abaixoDoLimite ? 'Abaixo do limite' : 'Regular' }}
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th colspan="6">Média da turma</th>
+                        <th class="relatorios__num">{{ percentual(relatorio.percentualMedio) }}</th>
+                        <th>{{ relatorio.alunosAbaixoDoLimite }} abaixo do limite</th>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <p class="relatorios__regra tl-small tl-text-muted">
+                  Frequência = presenças computáveis ÷ aulas registradas × 100. Faltas justificadas
+                  {{ relatorio.abonaJustificada ? 'abonam' : 'não abonam' }}. Limite mínimo:
+                  {{ relatorio.frequenciaMinima }}%.
+                </p>
+              }
+            }
+          }
+
+          @case ('desempenho') {
+            @if (relatorioDesempenho(); as relatorio) {
+              @if (relatorio.linhas.length === 0 || relatorio.colunas.length === 0) {
+                <div class="empty-state">
+                  <span class="material-symbols-outlined empty-state__icon" aria-hidden="true">
+                    grading
+                  </span>
+                  <h3>Sem dados de desempenho</h3>
+                  <p>
+                    É preciso ter disciplinas na turma e avaliações lançadas no período selecionado.
+                  </p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Aluno</th>
+                        <th>Matrícula</th>
+                        @for (coluna of relatorio.colunas; track coluna.disciplinaId) {
+                          <th class="relatorios__num">{{ coluna.disciplinaNome }}</th>
+                        }
+                        <th class="relatorios__num">Média geral</th>
+                        <th>Situação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (linha of relatorio.linhas; track linha.alunoId) {
+                        <tr [class.relatorios__linha--alerta]="linha.abaixoDaMedia">
+                          <td>
+                            <strong>{{ linha.alunoNome }}</strong>
+                          </td>
+                          <td>{{ linha.alunoMatricula || '—' }}</td>
+                          @for (media of linha.mediasPorDisciplina; track $index) {
+                            <td class="relatorios__num">{{ nota(media) }}</td>
+                          }
+                          <td class="relatorios__num">{{ nota(linha.mediaGeral) }}</td>
+                          <td>
+                            <span
+                              [class]="
+                                'badge ' + (linha.abaixoDaMedia ? 'badge-danger' : 'badge-success')
+                              "
+                            >
+                              {{ linha.abaixoDaMedia ? 'Abaixo da média' : 'Regular' }}
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th [attr.colspan]="relatorio.colunas.length + 2">Média da turma</th>
+                        <th class="relatorios__num">{{ nota(relatorio.mediaGeral) }}</th>
+                        <th>{{ relatorio.alunosAbaixoDaMedia }} abaixo da média</th>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <p class="relatorios__regra tl-small tl-text-muted">
+                  A média usa pesos quando configurados nas avaliações e ignora notas não lançadas e
+                  avaliações arquivadas. Média mínima: {{ nota(relatorio.mediaMinima) }}.
+                </p>
+              }
+            }
+          }
+
+          @case ('avaliacoes-pendentes') {
+            @if (relatorioPendentes(); as relatorio) {
+              @if (relatorio.linhas.length === 0) {
+                <div class="empty-state">
+                  <span class="material-symbols-outlined empty-state__icon" aria-hidden="true">
+                    task_alt
+                  </span>
+                  <h3>Nenhuma pendência</h3>
+                  <p>Todas as avaliações do período estão com as notas lançadas.</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Avaliação</th>
+                        <th>Disciplina</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th class="relatorios__num">Lançadas</th>
+                        <th class="relatorios__num">Pendentes</th>
+                        <th class="relatorios__num">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (linha of relatorio.linhas; track linha.avaliacaoId) {
+                        <tr>
+                          <td>
+                            <strong>{{ linha.nome }}</strong>
+                          </td>
+                          <td>{{ linha.disciplinaNome }}</td>
+                          <td>{{ data(linha.data) }}</td>
+                          <td>
+                            <span [class]="'badge ' + statusClasse(linha.status)">
+                              {{ statusLabel(linha.status) }}
+                            </span>
+                          </td>
+                          <td class="relatorios__num">{{ linha.lancadas }}</td>
+                          <td class="relatorios__num relatorios__pendente">
+                            {{ linha.pendentes }}
+                          </td>
+                          <td class="relatorios__num">{{ linha.total }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th colspan="5">
+                          {{ relatorio.totalAvaliacoes }} avaliações com pendência
+                        </th>
+                        <th class="relatorios__num relatorios__pendente">
+                          {{ relatorio.totalPendentes }}
+                        </th>
+                        <th></th>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <p class="relatorios__regra tl-small tl-text-muted">
+                  Considera avaliações não arquivadas que ainda possuem notas sem lançamento no
+                  período.
+                </p>
+              }
+            }
+          }
+        }
+      </div>
+    </div>
+  }
+</section>

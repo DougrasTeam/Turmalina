@@ -5,6 +5,11 @@
       <p class="tl-text-muted">Matricule alunos individualmente ou importe uma lista via CSV.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+      @if (alunos.total() > 0) {
+        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodos()">
+          <span class="material-symbols-outlined">delete_sweep</span> Excluir todos
+        </button>
+      }
       <button class="btn btn-light" type="button" (click)="abrirImportacao()">
         <span class="material-symbols-outlined">upload_file</span> Importar CSV
       </button>
@@ -28,6 +33,10 @@
         <option [value]="turma.id">{{ turma.nome }}</option>
       }
     </select>
+    <span class="page-toolbar__spacer"></span>
+    <button class="btn btn-light" type="button" [disabled]="filtrados().length === 0" (click)="exportarCsv()">
+      <span class="material-symbols-outlined" aria-hidden="true">download</span> Exportar CSV
+    </button>
   </div>
 
   <div class="card mb-0">
@@ -87,6 +96,12 @@
                 </td>
                 <td>
                   <div class="table-actions">
+                    <a class="btn btn-sm btn-light" [routerLink]="['/boletim', aluno.id]">
+                      <span class="material-symbols-outlined">description</span> Boletim
+                    </a>
+                    <button class="btn btn-sm btn-light" type="button" (click)="abrirHistorico(aluno)">
+                      <span class="material-symbols-outlined">history</span> Histórico
+                    </button>
                     <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(aluno)">
                       <span class="material-symbols-outlined">edit</span> Editar
                     </button>
@@ -124,3 +139,50 @@
     <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
   </div>
 </app-modal>
+
+<app-modal [open]="!!historicoAluno()" [title]="'Histórico de matrículas — ' + (historicoAluno()?.nome || '')" (close)="fecharHistorico()">
+  @if (historicoAluno(); as aluno) {
+    @let lista = matriculasDoAluno(aluno.id);
+    @if (lista.length === 0) {
+      <p class="tl-text-muted mb-0">Este aluno ainda não possui matrículas registradas.</p>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Turma</th>
+              <th>Status</th>
+              <th>Início</th>
+              <th>Fim</th>
+              <th>Motivo de saída</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (matricula of lista; track matricula.id) {
+              <tr>
+                <td>{{ turmaNome(matricula.turmaId) || '—' }}</td>
+                <td><span class="badge badge-neutral">{{ labelStatus(matricula.status) }}</span></td>
+                <td>{{ dataMatricula(matricula.inicioEm) }}</td>
+                <td>{{ dataMatricula(matricula.fimEm) }}</td>
+                <td>{{ matricula.motivoSaida || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="fecharHistorico()">Fechar</button>
+  </div>
+</app-modal>
+
+<app-confirmar-texto
+  [open]="excluirTudoAberto()"
+  [titulo]="confirmacaoTudo().titulo"
+  [mensagem]="confirmacaoTudo().mensagem"
+  [detalhes]="confirmacaoTudo().detalhes"
+  [rotuloConfirmar]="confirmacaoTudo().rotuloConfirmar"
+  (confirmado)="excluirTodos()"
+  (fechado)="fecharExclusaoTodos()"
+/>

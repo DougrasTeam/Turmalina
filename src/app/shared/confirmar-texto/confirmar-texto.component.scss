@@ -1,0 +1,21 @@
+.confirmar-lista {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+
+  li + li {
+    margin-top: 0.25rem;
+  }
+}
+
+.confirmar-aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--tl-danger, #dc3545);
+  font-weight: 600;
+
+  .material-symbols-outlined {
+    font-size: 1.25rem;
+  }
+}

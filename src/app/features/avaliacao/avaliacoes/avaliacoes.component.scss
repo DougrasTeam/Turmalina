@@ -1,0 +1,36 @@
+.notas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--tl-border, #e6e6ef);
+  border-radius: 0.75rem;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.notas-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+
+  & + .notas-item {
+    border-top: 1px solid var(--tl-border, #e6e6ef);
+  }
+}
+
+.notas-item__nome {
+  font-weight: 600;
+}
+
+.notas-item__campo {
+  max-width: 7rem;
+  text-align: right;
+}
+
+.alerta {
+  color: var(--tl-danger, #dc3545);
+  vertical-align: middle;
+  font-size: 1.15rem;
+}

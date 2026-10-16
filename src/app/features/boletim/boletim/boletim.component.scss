@@ -1,0 +1,89 @@
+.boletim {
+  max-width: 21cm;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid var(--tl-border, #e6e6ef);
+  border-radius: 0.75rem;
+}
+
+.boletim__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid var(--tl-border, #e6e6ef);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.boletim__instituicao {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.boletim__titulo {
+  margin: 0.15rem 0 0;
+  color: var(--tl-text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+.boletim__emissao {
+  text-align: right;
+  font-size: 0.85rem;
+
+  span {
+    display: block;
+    color: var(--tl-text-muted, #6b7280);
+  }
+}
+
+.boletim__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1.5rem;
+  margin: 0 0 1rem;
+
+  dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tl-text-muted, #6b7280);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.boletim__tabela {
+  width: 100%;
+}
+
+.boletim__rodape {
+  margin-top: 1rem;
+
+  p {
+    margin: 0.25rem 0;
+  }
+}
+
+@media print {
+  .boletim {
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .boletim__tabela {
+    page-break-inside: avoid;
+
+    tr {
+      page-break-inside: avoid;
+    }
+  }
+}

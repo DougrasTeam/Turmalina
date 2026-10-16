@@ -20,6 +20,83 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   ficar dentro do período e não se sobrepor. Períodos `ativo`/`encerrado` não
   podem ser excluídos — preservação de histórico. Alterações críticas geram
   **auditoria** (ator, ação, entidade, referência, timestamp).
+- **Disciplinas e vínculos (RF-007):** disciplina tem nome único, código único
+  (gerado a partir do nome quando não informado), cor e carga horária não
+  negativa; pode ser ativada/inativada. A turma oferta um conjunto de
+  disciplinas. O vínculo docente associa **professor × turma × disciplina**, é
+  único (sem repetição da mesma combinação) e auditado ao criar/remover.
+- **RF-005 (matrículas):** cada matrícula identifica `alunoId`, `turmaId`,
+  `periodoLetivoId`, `status` (`ativa|transferida|encerrada`), `inicioEm`,
+  `fimEm` e `motivoSaida`; não permite duplicação de matrícula **ativa** no
+  mesmo aluno/turma; transferência arquiva a vigente (status `transferida`,
+  `fimEm` e motivo) e cria nova ativa (mantém **histórico completo**);
+  desmatriculação encerra matrículas ativas com `fimEm` e motivo, sempre
+  preservando o passado (RN-003 — nunca excluir fisicamente).
+- **Isolamento por instituição (tenant-ready):** todo dado carrega
+  `institutionId`; leituras são filtradas pela instituição ativa e escritas não
+  afetam outras instituições. No backend, reforçar com RLS (ver ADR 0005).
+- **RF-010 (frequência):** a chamada registra turma, data e, opcionalmente,
+  disciplina (nulo = frequência geral por aula). Estados: `presente`, `falta`,
+  `falta_justificada`. Não há duas chamadas para o mesmo turma/data/disciplina
+  (o salvamento faz _upsert_). O percentual é
+  `presenças computáveis ÷ registros válidos × 100`, sem registros = "Sem
+  registros" (nunca 0%). A instituição define a **frequência mínima** (%) para
+  alertas e se **falta justificada abona** (conta como presença computável).
+  Toda chamada é auditada.
+- **RF-011 (avaliações e notas):** a avaliação pertence a turma, disciplina e
+  período (etapa e data opcionais) e define nota máxima (padrão 10) e peso
+  (padrão 1). Nota em branco é **"não lançada"** e nunca vira zero; nota acima
+  da máxima ou negativa é rejeitada. O status é `rascunho|publicada|arquivada`;
+  avaliações arquivadas não entram na média. A média é **ponderada quando há
+  pesos diferentes de 1** e **aritmética caso contrário**, com arredondamento
+  configurável pela instituição (nota máxima, média mínima e casas decimais). O
+  período **encerrado bloqueia** criar/editar/lançar notas até ser reaberto.
+   Criar/editar, lançar notas e mudar status geram eventos de auditoria.
+- **RF-013 (boletim):** o boletim consolida, por disciplina e período, a média do
+  aluno, a frequência e a situação, conforme as regras da instituição (média
+  mínima, frequência mínima e abono de falta justificada). Situações:
+  `aprovado`, `recuperacao` (média abaixo da mínima), `reprovado` (frequência
+  abaixo da mínima, mesmo com média alta) e `sem_dados` (sem notas lançadas).
+  "Não lançado" e "sem registros" aparecem como tais, nunca como zero. A
+  frequência de uma disciplina considera chamadas globais (`disciplinaId` nulo)
+  e específicas da disciplina. O documento exibe cabeçalho com aluno, turma,
+  instituição, período e data de emissão, é impresso em A4 (sem cortar linhas) e
+  **não inclui observações privadas**. O aluno acessa apenas o próprio boletim;
+  a equipe acessa por aluno.
+- **RF-014 (relatórios):** restritos ao **administrador** (`/relatorios`). Reusam
+  as mesmas fórmulas do app: a **frequência** usa `calcularResumoFrequencia`
+  (presenças computáveis ÷ registros, com abono de falta justificada conforme a
+  instituição) e o **desempenho** usa `calcularMediaAluno` (ponderada quando há
+  pesos, arquivadas fora e notas não lançadas ignoradas). Os relatórios por turma
+  e período marcam **alunos abaixo do limite de frequência** e **abaixo da média
+  mínima**; o relatório de **avaliações pendentes** lista avaliações não
+  arquivadas com notas ainda sem lançamento. O **resumo institucional** agrega os
+  indicadores do período e mostra data de geração e a regra de cálculo, com
+  valores "sem registros"/"não lançado" tratados como tais. A **exportação CSV**
+  usa delimitador `;`, BOM UTF-8 e neutraliza fórmulas perigosas (`=`, `+`, `-`,
+  `@`) para reduzir risco de CSV injection.
+- **RF-025 (exportação e impressão):** a central `ExportacaoService` concentra a
+  serialização e o download de CSV (delimitador `;`, BOM UTF-8, escaping e
+  neutralização de fórmulas). A exportação existe no boletim e nas listas de
+  alunos, turmas e professores, sempre **respeitando o escopo de acesso e os
+  filtros da tela**; boletim e relatórios também podem ser **impressos/gerados em
+  PDF** (layout A4, ocultando navegação e controles). Toda exportação de dados
+  sensíveis registra evento de auditoria (`relatorio.exportado`,
+  `boletim.exportado`, `aluno.exportado`, `turma.exportado`,
+  `professor.exportado`).
+- **RF-008 (painel do professor):** a rota `/dashboard` é sensível ao papel —
+  administradores veem a visão geral do sistema e professores veem o **painel
+  docente** da própria turma (turmas vêm de `Turma.professorIds` e dos vínculos
+  docentes). Indicadores derivam dos dados existentes (alunos ativos, frequência
+  média e média de desempenho do período, alunos em atenção) e **nunca exibem
+  números artificiais**: sem dados, mostram estado vazio. Cada indicador traz a
+  definição do cálculo e atalhos para chamada, notas e alunos.
+- **Exclusão em massa (demonstração):** as telas de cadastro e a **Zona de
+  perigo** (admin) permitem excluir todos os registros de um tipo ou todos os
+  dados, exigindo digitar `EXCLUIR` (e `EXCLUIR TUDO` para o apagamento total).
+  A exclusão é **em cascata** (`DadosService`): remove matrículas, vínculos e
+  referências relacionadas, sem deixar dados órfãos. É uma exceção deliberada de
+  demonstração à preservação de histórico (RN-003) e não existe no fluxo normal.
 
 ## Transversais (obrigatórias nas próximas fases)
 
