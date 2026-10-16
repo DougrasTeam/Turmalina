@@ -41,7 +41,7 @@ export class SupabaseService {
   private async criarCliente(): Promise<SupabaseClient> {
     const { createClient } = await import('@supabase/supabase-js');
 
-    return createClient(environment.supabaseUrl, environment.supabaseAnonKey, {
+    return createClient(environment.SUPABASE_URL, environment.SUPABASE_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

@@ -44,3 +44,9 @@ Thumbs.db
 
 # Supabase CLI
 supabase/.temp/
+
+# Ambiente / segredos do build
+.env
+src/environments/environment.prod.ts
+src/environments/environments.development.ts
+src/environments/environments.prod.ts
