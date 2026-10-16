@@ -63,6 +63,18 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   instituição, período e data de emissão, é impresso em A4 (sem cortar linhas) e
   **não inclui observações privadas**. O aluno acessa apenas o próprio boletim;
   a equipe acessa por aluno.
+- **RF-014 (relatórios):** restritos ao **administrador** (`/relatorios`). Reusam
+  as mesmas fórmulas do app: a **frequência** usa `calcularResumoFrequencia`
+  (presenças computáveis ÷ registros, com abono de falta justificada conforme a
+  instituição) e o **desempenho** usa `calcularMediaAluno` (ponderada quando há
+  pesos, arquivadas fora e notas não lançadas ignoradas). Os relatórios por turma
+  e período marcam **alunos abaixo do limite de frequência** e **abaixo da média
+  mínima**; o relatório de **avaliações pendentes** lista avaliações não
+  arquivadas com notas ainda sem lançamento. O **resumo institucional** agrega os
+  indicadores do período e mostra data de geração e a regra de cálculo, com
+  valores "sem registros"/"não lançado" tratados como tais. A **exportação CSV**
+  usa delimitador `;`, BOM UTF-8 e neutraliza fórmulas perigosas (`=`, `+`, `-`,
+  `@`) para reduzir risco de CSV injection.
 - **RF-008 (painel do professor):** a rota `/dashboard` é sensível ao papel —
   administradores veem a visão geral do sistema e professores veem o **painel
   docente** da própria turma (turmas vêm de `Turma.professorIds` e dos vínculos

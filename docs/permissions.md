@@ -28,6 +28,7 @@
 | `/instituicao`     | sim           | não       | não |
 | `/periodos-letivos`| sim           | não       | não |
 | `/disciplinas`     | sim           | não       | não |
+| `/relatorios`      | sim           | não       | não |
 | `/reset-dados`     | sim           | não       | não |
 
 Regras aplicadas:
@@ -49,6 +50,8 @@ Regras aplicadas:
 - O boletim é gerado a partir das notas e frequências já registradas: a equipe
   acessa por aluno (`/boletim/:alunoId`) e o aluno acessa **apenas o próprio**
   (`/aluno/boletim`, resolvido pelo e-mail da sessão).
+- Relatórios agregados (`/relatorios`) são restritos ao **administrador**;
+  exportação CSV é permitida apenas nessa tela.
 
 ### Isolamento por instituição (tenant)
 

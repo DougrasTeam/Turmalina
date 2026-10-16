@@ -95,5 +95,6 @@ export * from './matricula.model';
 export * from './papel.model';
 export * from './perfil.model';
 export * from './periodo-letivo.model';
+export * from './relatorio.model';
 export * from './usuario.model';
 export * from './vinculo-docente.model';

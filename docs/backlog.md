@@ -1,4 +1,23 @@
-# Backlog, riscos e limitações
+# Backlog, estado, riscos e limitações
+
+> **Documento-fonte do estado do projeto.** Manter atualizado a cada feature
+> implementada. Comece a leitura por "Roadmap / Próxima etapa".
+
+## Roadmap / Próxima etapa
+
+- **Fase atual:** Fase 1 (MVP acadêmico essencial) **concluída**; **Fase 2 —
+  Relatórios e comunicação** em andamento.
+- **Feature recém-concluída:** **RF-014 — Relatórios** (US-016, P0/P1):
+  frequência e desempenho por turma, avaliações sem lançamento completo e
+  resumo agregado institucional, com filtros de turma/período e exportação CSV
+  (escopo admin).
+- **Próxima feature:** **RF-025 — Exportação CSV/PDF** (levar exportação a
+  boletim e demais listas), depois RF-022 (mural/recados), RF-023 (agenda) e
+  RF-026 (preferências/acessibilidade).
+- **Fase 3:** gamificação — RF-015…RF-021 e RF-009 (XP, moedas, equipes,
+  indicadores/metas, missões, conquistas, loja). RF-012 (pontos extras).
+- **Fase 4:** gestão avançada, tela de projeção, performance/PWA.
+- **Transversal:** extrair o UI Kit como biblioteca Angular (ADR 0004).
 
 ## Implementado
 
@@ -6,9 +25,20 @@
 - Cadastros: turmas (lista, formulário, detalhe com membros), professores,
   alunos (cadastro, formulário, importação CSV com mapeamento de colunas).
 - Painel com indicadores básicos de cadastro.
-- **Autenticação/sessão/autorização (mock plugável):** login, sessão
-  restaurável, guards de autenticação e de papel, shell por papel, área do aluno
-  (placeholder explícito).
+- **Autenticação e autorização reais (RF-001):** Supabase Auth (e-mail/senha;
+  Google preparado), sessão restaurável, papéis a partir da tabela `perfis`
+  (fonte autoritativa), guards de autenticação, de papel e de primeiro acesso,
+  shell por papel e área do aluno. Sem senha/segredo no frontend.
+- **Primeiro acesso e gestão de contas:** criação automática da conta Auth ao
+  cadastrar professor/aluno via **Edge Function `admin-usuarios`** (usa
+  `service_role` no servidor, com rollback), senha provisória exibida uma única
+  vez ao administrador, **troca obrigatória de senha** em `/primeiro-acesso`
+  (RPC `security definer`) e **redefinição de senha** na edição do professor.
+- **Backend real (ADR 0001): Supabase (Auth + Postgres).** Camada de dados com
+  repositórios genéricos e de relacionamentos; `supabase/migrations/0001`
+  (esquema + RLS), `0002` (dados iniciais) e `0003` (primeiro acesso); flag
+  `usarSupabaseDados` (fallback mock/localStorage). RLS por instituição ainda
+  precisa de verificação com dados reais (ver Riscos).
 - **Instituição e período letivo (RF-002):** dados da instituição, períodos com
   um único ativo, etapas de avaliação, validações de data/sobreposição e
   auditoria de operações críticas.
@@ -37,59 +67,69 @@
   mínimos da instituição, "não lançado"/"sem registros" tratados como tais,
   cabeçalho com aluno/turma/instituição/período/data de emissão, impressão em A4
   sem cortar tabelas e sem observações privadas. Rotas `/boletim/:alunoId`
-  (equipe) e `/aluno/boletim` (o próprio aluno), a partir da lista de alunos e do
-  menu do aluno.
+  (equipe) e `/aluno/boletim` (o próprio aluno).
 - **Painel do professor (RF-008):** `/dashboard` sensível ao papel — o professor
   vê indicadores da própria turma/período (alunos ativos, frequência média,
   média de desempenho, alunos em atenção, avaliações sem lançamento/próximas,
   atividades recentes), com definição de cada cálculo, estados vazios e atalhos
   para chamada, notas e alunos.
+- **Relatórios (RF-014):** página `/relatorios` (admin) com KPIs institucionais
+  do período (turmas/alunos ativos, frequência média, média geral, alunos abaixo
+  do limite/da média, avaliações com pendência) e três relatórios por turma +
+  período: **Frequência** (aulas, presenças, faltas, justificadas, % e alerta
+  abaixo do limite), **Desempenho** (média por disciplina e geral, alerta abaixo
+  da média) e **Avaliações pendentes** (lançadas/pendentes/status). Reaproveita
+  as fórmulas de frequência/média dos models, mostra data de geração e a regra
+  de cálculo, permite exportar CSV (delimitador `;`, BOM UTF-8 e proteção contra
+  CSV injection).
+- **Auditoria (RF-027):** `AuditoriaService` registra eventos críticos (período,
+  instituição, disciplina, vínculo, matrícula, frequência, avaliação/nota,
+  conta de acesso) e há tela de consulta `/auditoria` (admin).
 - **Tenant-ready (ADR 0005):** `institutionId` em toda entidade, `TenantService`
-  e isolamento por instituição na camada de dados (repositório), com migração de
-  dados legados. UI intacta; backend real (RLS) fica para a fase de integração.
+  e isolamento por instituição na camada de dados, com migração de dados legados.
 - **Exclusão em massa (Zona de perigo):** botão "Excluir todos" nas telas de
-  alunos, turmas, professores, disciplinas, períodos, frequência e avaliações,
-  com confirmação por digitação (`EXCLUIR`); página admin `/reset-dados` para
-  apagar por grupo ou tudo, sempre em cascata (`DadosService`).
+  cadastro, com confirmação por digitação (`EXCLUIR`); página admin
+  `/reset-dados` para apagar por grupo ou tudo, sempre em cascata (`DadosService`).
 - Documentação: ADRs 0001–0005, arquitetura, permissões, regras de negócio.
-- Testes: `App`, `PainelProfessorComponent`, `AuthService`,
-  `PeriodosLetivosService`, `DisciplinasService`, `VinculosDocentesService`,
-  `MatriculasService`, `FrequenciasService`, `AvaliacoesService`, `BoletimService`,
-  `DadosService`, `LocalStorageRepository` (tenancy) e validações de período,
-  disciplina, matrícula, frequência, avaliação/nota e situação do boletim
-  (93 testes passando).
-
+- Testes: **177 testes passando** (serviços de domínio, mapeadores Supabase,
+  repositórios/tenancy, guards, componentes-chave e validações de período,
+  disciplina, matrícula, frequência, avaliação/nota, situação do boletim,
+  primeiro acesso, agregação de relatórios e serialização/exportação CSV).
 
 ## Pendente (próximas fases — ver especificação §16)
 
-- **Fase 1 (MVP acadêmico):** ~~instituição/período letivo~~ (feito),
-  ~~disciplinas e vínculos~~ (feito), ~~matrículas~~ (feito),
-  ~~frequência~~ (feito), ~~avaliações/notas~~ (feito), ~~boletim~~ (feito),
-  ~~painel docente~~ (feito), auditoria (tela de consulta).
-
-- **Fase 2:** relatórios, mural/recados, agenda, exportação CSV/PDF.
-- **Fase 3:** gamificação (ações/XP, moedas, equipes, indicadores/metas,
-  missões, conquistas/álbum, loja e resgates transacionais).
+- **Fase 2 (em andamento):** RF-025 exportação CSV/PDF,
+  RF-022 mural/recados, RF-023 agenda, RF-026 preferências/acessibilidade.
+- **Fase 3:** gamificação — RF-015 (ações/XP), RF-016 (moedas), RF-017 (equipes),
+  RF-018 (indicadores/metas), RF-019 (missões), RF-020 (conquistas/álbum),
+  RF-021 (loja e resgates transacionais) e RF-009 (placar/perfil individual);
+  RF-012 (pontos extras acadêmicos).
 - **Fase 4:** gestão avançada, projeção, performance/PWA.
-- **UI Kit:** extrair biblioteca Angular `turma-lina-ui` (ADR 0004).
-- **Backend real:** Supabase (Auth + Postgres + RLS) ou API própria (ADR 0001).
+- **UI Kit:** extrair biblioteca Angular `turmalina-ui` (ADR 0004).
+- **Backend:** reforce/verifique RLS e políticas por instituição no Supabase
+  contra dados reais; pondere RPCs/views de agregação para relatórios.
 
 ## Bloqueado
 
-- Integração de backend/autenticação real depende de credenciais e projeto do
-  provedor escolhido.
+- **Deploy da Edge Function via CLI:** `supabase functions deploy` retornou
+  `403 Missing required permission(s): edge_functions_read` (token/org do CLI).
+  Contornado publicando a função pelo **Dashboard** do Supabase.
+- **Validação contra Postgres vivo:** sem Docker/`psql` no ambiente; as
+  migrações foram validadas apenas por parser SQL e são aplicadas no console.
 
 ## Riscos e dívidas técnicas
 
-- **Autenticação e dados são mock:** não usar com dados reais. Não é segurança
-  real (ver ADR 0002).
-- **Sem atomicidade:** `Repository<T>` não oferece transações, necessário para
-  moedas/resgates no futuro.
-- **Modelos de domínio** em transição: tipos principais (turma, professor,
-  aluno) seguem em `core/models/index.ts`; os modelos mais novos já vivem em
-  arquivos próprios (`disciplina.model.ts`, `vinculo-docente.model.ts`,
-  `periodo-letivo.model.ts`). Migrar os restantes para o mesmo padrão.
-- **`institution_id` já presente** nos modelos e no repositório (ADR 0005); falta
-  a aplicação real de RLS/papéis por instituição no backend.
+- **Sem atomicidade:** `Repository<T>` não oferece transações (necessário para
+  moedas/resgates e para operações compostas no futuro).
+- **Modelos de domínio em transição:** tipos principais (turma, professor,
+  aluno) seguem em `core/models/index.ts`; os mais novos já vivem em arquivos
+  próprios (`disciplina.model.ts`, `vinculo-docente.model.ts`,
+  `periodo-letivo.model.ts`, etc.). Migrar os restantes ao mesmo padrão.
+- **RLS por instituição a reforçar:** `institution_id` já existe nos modelos e no
+  repositório (ADR 0005), mas as políticas no Supabase precisam ser verificadas
+  e ampliadas contra o banco real.
+- **Dependência de passos manuais no Supabase:** migrações e deploy da Edge
+  Function exigem ações em console/CLI; sem isso, criação de conta/primeiro
+  acesso ficam indisponíveis (modo demo continua funcionando).
 - **UI Kit não extraído:** não cumpre ainda o critério de compilar isoladamente.
-
+- **Dados de demonstração** sintéticos; não usar com dados reais de pessoas.

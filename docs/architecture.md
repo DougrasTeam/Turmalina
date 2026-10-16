@@ -41,6 +41,8 @@ src/app/
     periodo-letivo/periodo-letivo-form/ Formulário de período letivo
     disciplina/disciplinas/             Catálogo de disciplinas (admin)
     disciplina/disciplina-form/         Formulário de disciplina (modal)
+    boletim/boletim/                    Boletim (equipe e aluno)
+    relatorios/relatorios/              Relatórios institucionais (admin)
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -177,6 +179,28 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 - Impressão A4: regras `@media print` em `src/styles.scss` escondem o shell
   (sidebar, topbar, bottom nav, toasts e `.no-print`) e o próprio boletim evita
   quebra de linhas da tabela. Observações privadas nunca entram no documento.
+
+## Relatórios (RF-014)
+
+- `core/models/relatorio.model.ts` define os tipos de relatório
+  (`TipoRelatorio`, `TIPOS_RELATORIO`), as linhas de frequência
+  (`LinhaRelatorioFrequencia`), desempenho (`LinhaRelatorioDesempenho` com
+  médias por disciplina), avaliações pendentes
+  (`LinhaRelatorioAvaliacaoPendente`) e o `ResumoInstitucional`.
+- `RelatoriosService` (`core/services/relatorios.service.ts`) agrega os dados dos
+  serviços de domínio: `frequenciaDaTurma`, `desempenhoDaTurma`,
+  `avaliacoesPendentes` e `resumoInstitucional`. Reaproveita as mesmas fórmulas
+  do restante do app (`calcularResumoFrequencia` e `calcularMediaAluno`) e
+  espelha o escopo de período usado no boletim (chamadas sem `periodoLetivoId`
+  entram em qualquer período).
+- `ExportacaoService` (`core/services/exportacao.service.ts`) centraliza a
+  exportação CSV: a função pura `serializarCsv` aplica escaping, delimitador `;`
+  e proteção contra CSV injection (campos iniciados por `= + - @ tab CR` recebem
+  apóstrofo); `exportarCsv` gera o arquivo no navegador com BOM UTF-8.
+- A tela `features/relatorios/relatorios/` serve a rota `/relatorios` (apenas
+  **administrador**). Tem seletor de período, KPIs institucionais e abas de tipo
+  de relatório (frequência/desempenho/pendentes), com seletor de turma, data de
+  geração, explicação da regra de cálculo e botão de exportação CSV.
 
 ## Painel do professor (RF-008)
 

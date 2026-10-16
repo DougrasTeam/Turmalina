@@ -45,6 +45,7 @@ const NAV_ADMIN: ItemNav[] = [
   { path: '/instituicao', label: 'Instituição', icon: 'account_balance' },
   { path: '/periodos-letivos', label: 'Períodos letivos', icon: 'calendar_month' },
   { path: '/disciplinas', label: 'Disciplinas', icon: 'menu_book' },
+  { path: '/relatorios', label: 'Relatórios', icon: 'insights' },
   { path: '/auditoria', label: 'Auditoria', icon: 'history' },
   { path: '/reset-dados', label: 'Zona de perigo', icon: 'delete_forever' },
 ];
@@ -108,6 +109,7 @@ export class App {
     { prefixo: '/instituicao', titulo: 'Instituição' },
     { prefixo: '/periodos-letivos', titulo: 'Períodos letivos' },
     { prefixo: '/disciplinas', titulo: 'Disciplinas' },
+    { prefixo: '/relatorios', titulo: 'Relatórios' },
     { prefixo: '/auditoria', titulo: 'Auditoria' },
     { prefixo: '/reset-dados', titulo: 'Zona de perigo' },
     { prefixo: '/boletim', titulo: 'Boletim' },

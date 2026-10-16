@@ -111,6 +111,13 @@ export const routes: Routes = [
       import('./features/disciplina/disciplinas/disciplinas.component').then((m) => m.DisciplinasComponent),
   },
   {
+    path: 'relatorios',
+    title: 'Relatórios · Turmalina',
+    canActivate: [autenticacaoGuard, papelGuard('administrador')],
+    loadComponent: () =>
+      import('./features/relatorios/relatorios/relatorios.component').then((m) => m.RelatoriosComponent),
+  },
+  {
     path: 'auditoria',
     title: 'Auditoria · Turmalina',
     canActivate: [autenticacaoGuard, papelGuard('administrador')],
