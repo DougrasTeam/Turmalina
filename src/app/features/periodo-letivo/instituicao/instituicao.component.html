@@ -1,8 +1,8 @@
 <section class="page">
   <header class="page-header">
     <div>
-      <h1>InstituiÃ§Ã£o</h1>
-      <p class="tl-text-muted">Dados bÃ¡sicos e fuso horÃ¡rio usados em todo o sistema.</p>
+      <h1>Instituição</h1>
+      <p class="tl-text-muted">Dados básicos e fuso horário usados em todo o sistema.</p>
     </div>
   </header>
 
@@ -10,7 +10,7 @@
     <div class="card">
       <div class="card-body">
         <p class="tl-text-muted mb-0">
-          Ainda nÃ£o hÃ¡ dados da instituiÃ§Ã£o cadastrados. Preencha o formulÃ¡rio abaixo para comeÃ§ar.
+          Ainda não há dados da instituição cadastrados. Preencha o formulário abaixo para começar.
         </p>
       </div>
     </div>
@@ -20,7 +20,7 @@
     <div class="card-body">
       <div class="form-grid">
         <div class="span-2">
-          <label class="form-label" for="inst-nome">Nome da instituiÃ§Ã£o *</label>
+          <label class="form-label" for="inst-nome">Nome da instituição *</label>
           <input
             id="inst-nome"
             class="form-control"
@@ -32,7 +32,7 @@
         </div>
 
         <div>
-          <label class="form-label" for="inst-fuso">Fuso horÃ¡rio</label>
+          <label class="form-label" for="inst-fuso">Fuso horário</label>
           <input
             id="inst-fuso"
             class="form-control"
@@ -57,6 +57,74 @@
             (change)="setStatus($event)"
           >
             @for (opcao of statusOpcoes; track opcao.value) {
+              <option [value]="opcao.value">{{ opcao.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="form-label" for="inst-frequencia">Frequência mínima (%)</label>
+          <input
+            id="inst-frequencia"
+            class="form-control"
+            type="number"
+            min="0"
+            max="100"
+            [value]="form().frequenciaMinima"
+            (input)="patchNumero('frequenciaMinima', valor($event))"
+          />
+          <span class="form-text">Usada para alertar alunos abaixo do limite (RF-010).</span>
+        </div>
+
+        <div class="d-flex align-items-end">
+          <label class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [checked]="form().faltaJustificadaAbona"
+              (change)="setAbona($event)"
+            />
+            <span>Falta justificada conta como presença</span>
+          </label>
+        </div>
+
+        <div>
+          <label class="form-label" for="inst-nota-maxima">Nota máxima</label>
+          <input
+            id="inst-nota-maxima"
+            class="form-control"
+            type="number"
+            min="0"
+            step="0.1"
+            [value]="form().notaMaxima"
+            (input)="patchNumero('notaMaxima', valor($event))"
+          />
+          <span class="form-text">Teto das notas (RF-011).</span>
+        </div>
+
+        <div>
+          <label class="form-label" for="inst-media-minima">Média mínima</label>
+          <input
+            id="inst-media-minima"
+            class="form-control"
+            type="number"
+            min="0"
+            step="0.1"
+            [value]="form().mediaMinima"
+            (input)="patchNumero('mediaMinima', valor($event))"
+          />
+          <span class="form-text">Média para aprovação (RF-011).</span>
+        </div>
+
+        <div>
+          <label class="form-label" for="inst-casas">Arredondamento</label>
+          <select
+            id="inst-casas"
+            class="form-select"
+            [value]="form().casasDecimaisNota"
+            (change)="patchNumero('casasDecimaisNota', valor($event))"
+          >
+            @for (opcao of casasOpcoes; track opcao.value) {
               <option [value]="opcao.value">{{ opcao.label }}</option>
             }
           </select>

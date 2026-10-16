@@ -15,6 +15,7 @@ export class TurmasService {
       codigo: '',
       descricao: '',
       professorIds: [],
+      disciplinaIds: [],
       ativa: true,
     }),
   );
@@ -28,7 +29,8 @@ export class TurmasService {
 
   async load(): Promise<void> {
     if (this.carregado) return;
-    this._turmas.set(await this.repo.list());
+    const lista = await this.repo.list();
+    this._turmas.set(lista.map((turma) => this.normalizar(turma)));
     this.carregado = true;
   }
 
@@ -56,5 +58,44 @@ export class TurmasService {
   async remove(id: string): Promise<void> {
     await this.repo.remove(id);
     this._turmas.update((lista) => lista.filter((t) => t.id !== id));
+  }
+
+  async removeTodos(): Promise<void> {
+    for (const turma of this._turmas()) {
+      await this.repo.remove(turma.id);
+    }
+    this._turmas.set([]);
+  }
+
+  async limparProfessores(): Promise<void> {
+    const atualizadas: Turma[] = [];
+    for (const turma of this._turmas()) {
+      if (!turma.professorIds.length) {
+        atualizadas.push(turma);
+        continue;
+      }
+      atualizadas.push(await this.repo.update(turma.id, { professorIds: [] }));
+    }
+    this._turmas.set(atualizadas);
+  }
+
+  async limparDisciplinas(): Promise<void> {
+    const atualizadas: Turma[] = [];
+    for (const turma of this._turmas()) {
+      if (!turma.disciplinaIds.length) {
+        atualizadas.push(turma);
+        continue;
+      }
+      atualizadas.push(await this.repo.update(turma.id, { disciplinaIds: [] }));
+    }
+    this._turmas.set(atualizadas);
+  }
+
+  private normalizar(turma: Turma): Turma {
+    return {
+      ...turma,
+      professorIds: turma.professorIds ?? [],
+      disciplinaIds: turma.disciplinaIds ?? [],
+    };
   }
 }

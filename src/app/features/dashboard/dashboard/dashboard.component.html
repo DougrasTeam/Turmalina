@@ -1,87 +1,91 @@
-<section class="page">
-  <header class="page-header">
-    <div>
-      <h1>Olá! <span class="material-symbols-outlined">waving_hand</span></h1>
-      <p class="tl-text-muted">Bem-vindo ao Turmalina. Comece cadastrando suas turmas, professores e alunos.</p>
+@if (auth.papel() === 'professor') {
+  <app-painel-professor />
+} @else {
+  <section class="page">
+    <header class="page-header">
+      <div>
+        <h1>Olá! <span class="material-symbols-outlined">waving_hand</span></h1>
+        <p class="tl-text-muted">Bem-vindo ao Turmalina. Comece cadastrando suas turmas, professores e alunos.</p>
+      </div>
+    </header>
+
+    <div class="kpi-grid">
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">school</span></span>
+        <div>
+          <div class="kpi-card__value">{{ turmas.total() }}</div>
+          <div class="kpi-card__label">Turmas ({{ turmas.ativas() }} ativas)</div>
+        </div>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">co_present</span></span>
+        <div>
+          <div class="kpi-card__value">{{ professores.total() }}</div>
+          <div class="kpi-card__label">Professores</div>
+        </div>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">groups</span></span>
+        <div>
+          <div class="kpi-card__value">{{ alunos.total() }}</div>
+          <div class="kpi-card__label">Alunos matriculados</div>
+        </div>
+      </article>
     </div>
-  </header>
 
-  <div class="kpi-grid">
-    <article class="kpi-card">
-      <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">school</span></span>
-      <div>
-        <div class="kpi-card__value">{{ turmas.total() }}</div>
-        <div class="kpi-card__label">Turmas ({{ turmas.ativas() }} ativas)</div>
-      </div>
-    </article>
-    <article class="kpi-card">
-      <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">co_present</span></span>
-      <div>
-        <div class="kpi-card__value">{{ professores.total() }}</div>
-        <div class="kpi-card__label">Professores</div>
-      </div>
-    </article>
-    <article class="kpi-card">
-      <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">groups</span></span>
-      <div>
-        <div class="kpi-card__value">{{ alunos.total() }}</div>
-        <div class="kpi-card__label">Alunos matriculados</div>
-      </div>
-    </article>
-  </div>
-
-  <div class="row">
-    <div class="card" style="flex: 1 1 320px;">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><span class="material-symbols-outlined">school</span> Turmas</span>
-        <a class="btn btn-sm btn-light" routerLink="/turmas">Gerenciar</a>
-      </div>
-      <div class="card-body">
-        @if (turmas.total() === 0) {
-          <p class="tl-text-muted mb-0">Nenhuma turma cadastrada ainda.</p>
-        } @else {
-          <ul class="list-group">
-            @for (turma of turmasRecentes(); track turma.id) {
-              <li class="list-group-item">
-                <span class="avatar" aria-hidden="true">{{ turma.nome.charAt(0).toUpperCase() }}</span>
-                <div class="w-100" style="min-width: 0;">
-                  <strong>{{ turma.nome }}</strong>
-                  <div class="tl-small tl-text-muted">
-                    {{ turma.serie || 'Sem série' }} · {{ turno(turma.turno) }} · {{ turma.anoLetivo }}
+    <div class="row">
+      <div class="card" style="flex: 1 1 320px;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><span class="material-symbols-outlined">school</span> Turmas</span>
+          <a class="btn btn-sm btn-light" routerLink="/turmas">Gerenciar</a>
+        </div>
+        <div class="card-body">
+          @if (turmas.total() === 0) {
+            <p class="tl-text-muted mb-0">Nenhuma turma cadastrada ainda.</p>
+          } @else {
+            <ul class="list-group">
+              @for (turma of turmasRecentes(); track turma.id) {
+                <li class="list-group-item">
+                  <span class="avatar" aria-hidden="true">{{ turma.nome.charAt(0).toUpperCase() }}</span>
+                  <div class="w-100" style="min-width: 0;">
+                    <strong>{{ turma.nome }}</strong>
+                    <div class="tl-small tl-text-muted">
+                      {{ turma.serie || 'Sem série' }} · {{ turno(turma.turno) }} · {{ turma.anoLetivo }}
+                    </div>
                   </div>
-                </div>
-                <span class="badge badge-primary">{{ alunos.contarPorTurma(turma.id) }} alunos</span>
-              </li>
-            }
-          </ul>
-        }
+                  <span class="badge badge-primary">{{ alunos.contarPorTurma(turma.id) }} alunos</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
       </div>
-    </div>
 
-    <div class="card" style="flex: 1 1 320px;">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><span class="material-symbols-outlined">co_present</span> Professores</span>
-        <a class="btn btn-sm btn-light" routerLink="/professores">Gerenciar</a>
-      </div>
-      <div class="card-body">
-        @if (professores.total() === 0) {
-          <p class="tl-text-muted mb-0">Nenhum professor cadastrado ainda.</p>
-        } @else {
-          <ul class="list-group">
-            @for (professor of professoresRecentes(); track professor.id) {
-              <li class="list-group-item">
-                <span class="avatar" aria-hidden="true">{{ professor.nome.charAt(0).toUpperCase() }}</span>
-                <div class="w-100" style="min-width: 0;">
-                  <strong>{{ professor.nome }}</strong>
-                  <div class="tl-small tl-text-muted">
-                    {{ professor.disciplinas.length ? professor.disciplinas.join(', ') : 'Sem disciplinas' }}
+      <div class="card" style="flex: 1 1 320px;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><span class="material-symbols-outlined">co_present</span> Professores</span>
+          <a class="btn btn-sm btn-light" routerLink="/professores">Gerenciar</a>
+        </div>
+        <div class="card-body">
+          @if (professores.total() === 0) {
+            <p class="tl-text-muted mb-0">Nenhum professor cadastrado ainda.</p>
+          } @else {
+            <ul class="list-group">
+              @for (professor of professoresRecentes(); track professor.id) {
+                <li class="list-group-item">
+                  <span class="avatar" aria-hidden="true">{{ professor.nome.charAt(0).toUpperCase() }}</span>
+                  <div class="w-100" style="min-width: 0;">
+                    <strong>{{ professor.nome }}</strong>
+                    <div class="tl-small tl-text-muted">
+                      {{ professor.disciplinas.length ? professor.disciplinas.join(', ') : 'Sem disciplinas' }}
+                    </div>
                   </div>
-                </div>
-              </li>
-            }
-          </ul>
-        }
+                </li>
+              }
+            </ul>
+          }
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+}

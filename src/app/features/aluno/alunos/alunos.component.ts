@@ -1,22 +1,28 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
+import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
 import { AlunoFormComponent } from '../aluno-form/aluno-form.component';
 import { AlunoImportComponent, ResumoImport } from '../aluno-import/aluno-import.component';
 import { AlunosService } from '../../../core/services/alunos.service';
+import { DadosService } from '../../../core/services/dados.service';
+import { MatriculasService } from '../../../core/services/matriculas.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
-import { Aluno } from '../../../core/models';
+import { Aluno, Matricula, formatarDataMatricula, labelStatusMatricula } from '../../../core/models';
 
 @Component({
   selector: 'app-alunos',
-  imports: [ModalComponent, AlunoFormComponent, AlunoImportComponent],
+  imports: [RouterLink, ModalComponent, ConfirmarTextoComponent, AlunoFormComponent, AlunoImportComponent],
   templateUrl: './alunos.component.html',
   styleUrl: './alunos.component.scss',
 })
 export class AlunosComponent {
   protected readonly alunos = inject(AlunosService);
   protected readonly turmas = inject(TurmasService);
+  protected readonly matriculas = inject(MatriculasService);
+  private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
 
   protected readonly busca = signal('');
@@ -25,6 +31,9 @@ export class AlunosComponent {
   protected readonly importAberto = signal(false);
   protected readonly editando = signal<Aluno | null>(null);
   protected readonly excluindo = signal<Aluno | null>(null);
+  protected readonly historicoAluno = signal<Aluno | null>(null);
+  protected readonly excluirTudoAberto = signal(false);
+  protected readonly confirmacaoTudo = computed(() => this.dados.confirmacao('alunos'));
 
   readonly filtrados = computed(() => {
     const termo = this.busca().trim().toLowerCase();
@@ -44,6 +53,26 @@ export class AlunosComponent {
   protected turmaNome(turmaId: string): string {
     if (!turmaId) return '';
     return this.turmas.porId(turmaId)?.nome ?? '';
+  }
+
+  protected abrirHistorico(aluno: Aluno): void {
+    this.historicoAluno.set(aluno);
+  }
+
+  protected fecharHistorico(): void {
+    this.historicoAluno.set(null);
+  }
+
+  protected labelStatus(status: Matricula['status']): string {
+    return labelStatusMatricula(status);
+  }
+
+  protected dataMatricula(data: string | null): string {
+    return formatarDataMatricula(data);
+  }
+
+  protected matriculasDoAluno(alunoId: string): Matricula[] {
+    return this.matriculas.matriculasDoAluno(alunoId);
   }
 
   protected abrirNovo(): void {
@@ -88,5 +117,19 @@ export class AlunosComponent {
     await this.alunos.remove(aluno.id);
     this.toast.mostrar('Aluno excluído.', 'info');
     this.excluindo.set(null);
+  }
+
+  protected abrirExclusaoTodos(): void {
+    this.excluirTudoAberto.set(true);
+  }
+
+  protected fecharExclusaoTodos(): void {
+    this.excluirTudoAberto.set(false);
+  }
+
+  protected async excluirTodos(): Promise<void> {
+    await this.dados.excluir('alunos');
+    this.toast.mostrar('Todos os alunos foram excluídos.', 'info');
+    this.excluirTudoAberto.set(false);
   }
 }

@@ -26,6 +26,14 @@ export class PeriodosLetivosService {
     this._periodos.set(this.ordenar(await this.repo.list()));
   }
 
+  porId(id: string): PeriodoLetivo | undefined {
+    return this._periodos().find((item) => item.id === id);
+  }
+
+  periodoEncerrado(id: string): boolean {
+    return this.porId(id)?.status === 'encerrado';
+  }
+
   validar(dados: DadosPeriodoLetivo, idAtual?: string): string[] {
     return validarPeriodoLetivo(dados, this._periodos(), idAtual);
   }
@@ -49,7 +57,7 @@ export class PeriodosLetivosService {
   }
 
   async ativar(id: string): Promise<void> {
-    const periodo = this.encontrar(id);
+    const periodo = this.porId(id);
     if (!periodo) return;
     const outrosAtivos = this._periodos().filter((item) => item.id !== id && item.status === 'ativo');
     for (const outro of outrosAtivos) {
@@ -70,7 +78,7 @@ export class PeriodosLetivosService {
   }
 
   async encerrar(id: string): Promise<void> {
-    const periodo = this.encontrar(id);
+    const periodo = this.porId(id);
     if (!periodo) return;
     const atualizado = await this.repo.update(id, { status: 'encerrado' });
     this._periodos.update((lista) => this.ordenar(lista.map((item) => (item.id === id ? atualizado : item))));
@@ -78,7 +86,7 @@ export class PeriodosLetivosService {
   }
 
   async reabrir(id: string): Promise<void> {
-    const periodo = this.encontrar(id);
+    const periodo = this.porId(id);
     if (!periodo) return;
     const atualizado = await this.repo.update(id, { status: 'planejado' });
     this._periodos.update((lista) => this.ordenar(lista.map((item) => (item.id === id ? atualizado : item))));
@@ -86,7 +94,7 @@ export class PeriodosLetivosService {
   }
 
   async remover(id: string): Promise<void> {
-    const periodo = this.encontrar(id);
+    const periodo = this.porId(id);
     if (periodo && periodo.status !== 'planejado') {
       throw new Error('Apenas períodos planejados podem ser excluídos. Preserve o histórico.');
     }
@@ -97,8 +105,12 @@ export class PeriodosLetivosService {
     }
   }
 
-  private encontrar(id: string): PeriodoLetivo | undefined {
-    return this._periodos().find((item) => item.id === id);
+  async removerTodos(): Promise<void> {
+    for (const periodo of this._periodos()) {
+      await this.repo.remove(periodo.id);
+    }
+    this._periodos.set([]);
+    this.auditoria.registrar('periodo.excluidos-todos', 'PeriodoLetivo', null, null);
   }
 
   private ordenar(lista: PeriodoLetivo[]): PeriodoLetivo[] {

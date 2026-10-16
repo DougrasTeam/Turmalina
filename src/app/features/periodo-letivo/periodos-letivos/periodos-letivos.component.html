@@ -1,19 +1,26 @@
 <section class="page">
   <header class="page-header">
     <div>
-      <h1>PerÃ­odos letivos</h1>
+      <h1>Períodos letivos</h1>
       <p class="tl-text-muted">
-        Defina o perÃ­odo ativo e suas etapas de avaliaÃ§Ã£o (bimestres, trimestres ou etapas).
+        Defina o período ativo e suas etapas de avaliação (bimestres, trimestres ou etapas).
       </p>
     </div>
-    <button class="btn btn-primary" type="button" (click)="abrirNovo()">
-      <span class="material-symbols-outlined" aria-hidden="true">add</span> Novo perÃ­odo
-    </button>
+    <div class="d-flex gap-2 flex-wrap">
+      @if (periodos.periodos().length > 0) {
+        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodos()">
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todos
+        </button>
+      }
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span> Novo período
+      </button>
+    </div>
   </header>
 
   @if (periodos.ativo(); as ativo) {
     <div class="alert alert-info mb-0" role="status">
-      PerÃ­odo ativo: <strong>{{ ativo.nome }}</strong> ({{ formatarData(ativo.dataInicio) }} a
+      Período ativo: <strong>{{ ativo.nome }}</strong> ({{ formatarData(ativo.dataInicio) }} a
       {{ formatarData(ativo.dataFim) }}).
     </div>
   }
@@ -23,8 +30,8 @@
       <div class="card-body">
         <div class="empty-state">
           <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">calendar_month</span>
-          <h3>Nenhum perÃ­odo letivo</h3>
-          <p>Crie um perÃ­odo letivo para comeÃ§ar a organizar turmas, notas e frequÃªncia.</p>
+          <h3>Nenhum período letivo</h3>
+          <p>Crie um período letivo para começar a organizar turmas, notas e frequência.</p>
         </div>
       </div>
     } @else {
@@ -33,7 +40,7 @@
           <thead>
             <tr>
               <th>Nome</th>
-              <th>InÃ­cio</th>
+              <th>Início</th>
               <th>Fim</th>
               <th>Etapas</th>
               <th>Status</th>
@@ -74,7 +81,7 @@
                       <button
                         class="btn btn-sm btn-danger"
                         type="button"
-                        aria-label="Excluir perÃ­odo"
+                        aria-label="Excluir período"
                         (click)="pedir('excluir', periodo)"
                       >
                         <span class="material-symbols-outlined" aria-hidden="true">delete</span>
@@ -111,3 +118,13 @@
     </button>
   </div>
 </app-modal>
+
+<app-confirmar-texto
+  [open]="excluirTudoAberto()"
+  [titulo]="confirmacaoTudo().titulo"
+  [mensagem]="confirmacaoTudo().mensagem"
+  [detalhes]="confirmacaoTudo().detalhes"
+  [rotuloConfirmar]="confirmacaoTudo().rotuloConfirmar"
+  (confirmado)="excluirTodos()"
+  (fechado)="fecharExclusaoTodos()"
+/>

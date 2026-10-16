@@ -47,7 +47,10 @@ export class LoginComponent {
     try {
       const { email, senha } = this.formulario.getRawValue();
       const usuario = await this.auth.entrar({ email, senha });
-      await this.router.navigateByUrl(rotaInicialPorPapel(usuario.papel));
+      const destino = usuario.precisaTrocarSenha
+        ? '/primeiro-acesso'
+        : rotaInicialPorPapel(usuario.papel);
+      await this.router.navigateByUrl(destino);
     } catch (erro) {
       const mensagem =
         erro instanceof AutenticacaoErro ? erro.message : 'Não foi possível entrar. Tente novamente.';

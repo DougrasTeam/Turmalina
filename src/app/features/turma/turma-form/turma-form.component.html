@@ -77,7 +77,15 @@
         @if (professores.total() === 0) {
           <p class="tl-text-muted tl-small mb-0">Nenhum professor cadastrado. Cadastre professores para vinculá-los.</p>
         } @else {
-          <div class="checkbox-grid">
+          <label class="checkbox-chip checkbox-chip--all">
+            <input
+              type="checkbox"
+              [checked]="todosProfessoresSelecionados()"
+              (change)="alternarTodosProfessores($event)"
+            />
+            Selecionar todos
+          </label>
+          <div class="checkbox-grid mt-1">
             @for (prof of professores.professores(); track prof.id) {
               <label class="checkbox-chip">
                 <input
@@ -86,6 +94,34 @@
                   (change)="toggleProfessor(prof.id)"
                 />
                 {{ prof.nome }}
+              </label>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="span-2">
+        <label class="form-label">Disciplinas ofertadas</label>
+        @if (disciplinas.total() === 0) {
+          <p class="tl-text-muted tl-small mb-0">Nenhuma disciplina cadastrada. Cadastre disciplinas para vinculá-las.</p>
+        } @else {
+          <label class="checkbox-chip checkbox-chip--all">
+            <input
+              type="checkbox"
+              [checked]="todasDisciplinasSelecionadas()"
+              (change)="alternarTodasDisciplinas($event)"
+            />
+            Selecionar todas
+          </label>
+          <div class="checkbox-grid mt-1">
+            @for (disciplina of disciplinas.disciplinas(); track disciplina.id) {
+              <label class="checkbox-chip">
+                <input
+                  type="checkbox"
+                  [checked]="form().disciplinaIds.includes(disciplina.id)"
+                  (change)="toggleDisciplina(disciplina.id)"
+                />
+                {{ disciplina.nome }}
               </label>
             }
           </div>

@@ -80,6 +80,63 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><span class="material-symbols-outlined">menu_book</span> Disciplinas ({{ disciplinasDaTurma().length }})</span>
+        <button class="btn btn-sm btn-primary" type="button" (click)="abrirPickerDisciplinas()">
+          <span class="material-symbols-outlined">add</span> Selecionar disciplinas
+        </button>
+      </div>
+      <div class="card-body">
+        @if (disciplinasDaTurma().length === 0) {
+          <p class="tl-text-muted mb-0">Nenhuma disciplina ofertada nesta turma.</p>
+        } @else {
+          <div class="chip-input">
+            @for (disciplina of disciplinasDaTurma(); track disciplina.id) {
+              <span class="chip">
+                <span class="color-dot" [style.background]="disciplina.cor" aria-hidden="true"></span>
+                {{ disciplina.nome }}
+              </span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><span class="material-symbols-outlined">assignment_ind</span> Equipe docente ({{ vinculosDaTurma().length }})</span>
+        <button
+          class="btn btn-sm btn-primary"
+          type="button"
+          [disabled]="professores.professores().length === 0 || disciplinas.disciplinas().length === 0"
+          (click)="abrirVinculo()"
+        >
+          <span class="material-symbols-outlined">add</span> Adicionar vínculo
+        </button>
+      </div>
+      <div class="card-body">
+        @if (vinculosDaTurma().length === 0) {
+          <p class="tl-text-muted mb-0">
+            Nenhum vínculo de professor com disciplina. Vincule professores às disciplinas desta turma.
+          </p>
+        } @else {
+          <div>
+            @for (vinculo of vinculosDaTurma(); track vinculo.id) {
+              <div class="member-row">
+                <span class="avatar" aria-hidden="true">{{ nomeProfessor(vinculo.professorId).charAt(0).toUpperCase() }}</span>
+                <div class="member-row__info">
+                  <strong>{{ nomeProfessor(vinculo.professorId) }}</strong>
+                  <div class="tl-small tl-text-muted">{{ nomeDisciplina(vinculo.disciplinaId) }}</div>
+                </div>
+                <button class="btn btn-sm btn-danger" type="button" (click)="removerVinculo(vinculo.id)">Remover</button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
     <div class="card mb-0">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><span class="material-symbols-outlined">groups</span> Alunos ({{ alunosDaTurma().length }})</span>
@@ -165,6 +222,14 @@
     @if (professoresDisponiveis().length === 0) {
       <p class="tl-text-muted mb-0">Todos os professores já estão vinculados a esta turma.</p>
     } @else {
+      <label class="checkbox-chip checkbox-chip--all mb-1">
+        <input
+          type="checkbox"
+          [checked]="todosProfessoresSelecionados()"
+          (change)="alternarTodosProfessores($event)"
+        />
+        Selecionar todos ({{ professoresDisponiveis().length }})
+      </label>
       <div class="picker-list">
         @for (prof of professoresDisponiveis(); track prof.id) {
           <label class="checkbox-chip">
@@ -205,6 +270,14 @@
       @if (alunosPickerFiltrados().length === 0) {
         <p class="tl-text-muted mb-0">Nenhum aluno encontrado.</p>
       } @else {
+        <label class="checkbox-chip checkbox-chip--all mb-2">
+          <input
+            type="checkbox"
+            [checked]="todosAlunosSelecionados()"
+            (change)="alternarTodosAlunos($event)"
+          />
+          Selecionar todos ({{ alunosPickerFiltrados().length }})
+        </label>
         <div class="picker-list">
           @for (aluno of alunosPickerFiltrados(); track aluno.id) {
             <label class="checkbox-chip">
@@ -233,6 +306,88 @@
         (click)="confirmarAlunos()"
       >
         Adicionar ({{ selecaoAlunos().length }})
+      </button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    [open]="pickerDisciplinasAberto()"
+    title="Disciplinas da turma"
+    (close)="pickerDisciplinasAberto.set(false)"
+  >
+    @if (disciplinas.total() === 0) {
+      <p class="tl-text-muted mb-0">
+        Nenhuma disciplina cadastrada. Cadastre disciplinas na área de Administração.
+      </p>
+    } @else {
+      <label class="checkbox-chip checkbox-chip--all mb-1">
+        <input
+          type="checkbox"
+          [checked]="todasDisciplinasSelecionadas()"
+          (change)="alternarTodasDisciplinas($event)"
+        />
+        Selecionar todas ({{ disciplinas.disciplinas().length }})
+      </label>
+      <div class="picker-list">
+        @for (disciplina of disciplinas.disciplinas(); track disciplina.id) {
+          <label class="checkbox-chip">
+            <input
+              type="checkbox"
+              [checked]="selecaoDisciplinas().includes(disciplina.id)"
+              (change)="toggleDisciplinaSelecao(disciplina.id)"
+            />
+            <span class="d-flex align-items-center gap-2">
+              <span class="color-dot" [style.background]="disciplina.cor" aria-hidden="true"></span>
+              {{ disciplina.nome }}
+            </span>
+          </label>
+        }
+      </div>
+    }
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="pickerDisciplinasAberto.set(false)">Cancelar</button>
+      <button class="btn btn-primary" type="button" (click)="confirmarDisciplinas()">Salvar</button>
+    </div>
+  </app-modal>
+
+  <app-modal [open]="vinculoAberto()" title="Adicionar vínculo docente" (close)="vinculoAberto.set(false)">
+    <div class="form-group">
+      <label class="form-label" for="vinculo-professor">Professor</label>
+      <select
+        id="vinculo-professor"
+        class="form-select"
+        [value]="novoVinculoProfessor()"
+        (change)="novoVinculoProfessor.set(valor($event))"
+      >
+        <option value="">Selecione</option>
+        @for (prof of professores.professores(); track prof.id) {
+          <option [value]="prof.id">{{ prof.nome }}</option>
+        }
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="vinculo-disciplina">Disciplina</label>
+      <select
+        id="vinculo-disciplina"
+        class="form-select"
+        [value]="novoVinculoDisciplina()"
+        (change)="novoVinculoDisciplina.set(valor($event))"
+      >
+        <option value="">Selecione</option>
+        @for (disciplina of disciplinas.disciplinas(); track disciplina.id) {
+          <option [value]="disciplina.id">{{ disciplina.nome }}</option>
+        }
+      </select>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="vinculoAberto.set(false)">Cancelar</button>
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="!novoVinculoProfessor() || !novoVinculoDisciplina()"
+        (click)="confirmarVinculo()"
+      >
+        Adicionar
       </button>
     </div>
   </app-modal>

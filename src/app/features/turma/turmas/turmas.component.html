@@ -4,9 +4,16 @@
       <h1>Turmas</h1>
       <p class="tl-text-muted">Cadastre as turmas e gerencie professores e alunos dentro de cada uma.</p>
     </div>
-    <button class="btn btn-primary" type="button" (click)="abrirNova()">
-      <span class="material-symbols-outlined">add</span> Nova turma
-    </button>
+    <div class="d-flex gap-2 flex-wrap">
+      @if (turmas.total() > 0) {
+        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodas()">
+          <span class="material-symbols-outlined">delete_sweep</span> Excluir todas
+        </button>
+      }
+      <button class="btn btn-primary" type="button" (click)="abrirNova()">
+        <span class="material-symbols-outlined">add</span> Nova turma
+      </button>
+    </div>
   </header>
 
   <div class="page-toolbar">
@@ -100,3 +107,13 @@
     <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
   </div>
 </app-modal>
+
+<app-confirmar-texto
+  [open]="excluirTudoAberto()"
+  [titulo]="confirmacaoTudo().titulo"
+  [mensagem]="confirmacaoTudo().mensagem"
+  [detalhes]="confirmacaoTudo().detalhes"
+  [rotuloConfirmar]="confirmacaoTudo().rotuloConfirmar"
+  (confirmado)="excluirTodas()"
+  (fechado)="fecharExclusaoTodas()"
+/>

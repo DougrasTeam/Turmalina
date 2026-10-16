@@ -49,4 +49,11 @@ export class ProfessoresService {
     await this.repo.remove(id);
     this._professores.update((lista) => lista.filter((p) => p.id !== id));
   }
+
+  async removeTodos(): Promise<void> {
+    for (const professor of this._professores()) {
+      await this.repo.remove(professor.id);
+    }
+    this._professores.set([]);
+  }
 }

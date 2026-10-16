@@ -1,0 +1,43 @@
+<app-modal [open]="open()" [title]="titulo()" (close)="fechado.emit()">
+  @if (mensagem()) {
+    <p>{{ mensagem() }}</p>
+  }
+
+  @if (detalhes().length) {
+    <ul class="confirmar-lista">
+      @for (linha of detalhes(); track linha) {
+        <li>{{ linha }}</li>
+      }
+    </ul>
+  }
+
+  <p class="confirmar-aviso">
+    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+    Esta ação não pode ser desfeita.
+  </p>
+
+  <label class="form-label" for="confirmar-texto-campo">
+    Digite <strong>{{ palavra() }}</strong> para confirmar:
+  </label>
+  <input
+    id="confirmar-texto-campo"
+    class="form-control"
+    type="text"
+    autocomplete="off"
+    [attr.placeholder]="palavra()"
+    [value]="digitado()"
+    (input)="digitado.set(valor($event))"
+  />
+
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="fechado.emit()">Cancelar</button>
+    <button
+      [class]="'btn btn-' + tipo()"
+      type="button"
+      [disabled]="!podeConfirmar()"
+      (click)="confirmar()"
+    >
+      {{ rotuloConfirmar() }}
+    </button>
+  </div>
+</app-modal>

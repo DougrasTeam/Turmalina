@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { AuthRepository } from './core/auth/data-access/auth.repository';
-import { MockAuthRepository } from './core/auth/data-access/mock-auth.repository';
+import { SupabaseAuthRepository } from './core/auth/data-access/supabase-auth.repository';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -12,8 +12,8 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
-    // Ponto de troca da autenticação: substituir por SupabaseAuthRepository
-    // (ou API própria) sem alterar consumidores.
-    { provide: AuthRepository, useClass: MockAuthRepository },
+    // Autenticação via Supabase Auth (login por e-mail/senha; OAuth pronto).
+    // Para voltar ao mock local, troque por MockAuthRepository.
+    { provide: AuthRepository, useClass: SupabaseAuthRepository },
   ],
 };

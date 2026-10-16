@@ -12,6 +12,7 @@ const USUARIO_AUTENTICADO: Usuario = {
   email: 'ana@turmalina.demo',
   papel: 'administrador',
   ativo: true,
+  precisaTrocarSenha: false,
 };
 
 const authAutenticado = {

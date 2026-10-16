@@ -68,4 +68,23 @@ export class AlunosService {
     await this.repo.remove(id);
     this._alunos.update((lista) => lista.filter((a) => a.id !== id));
   }
+
+  async removeTodos(): Promise<void> {
+    for (const aluno of this._alunos()) {
+      await this.repo.remove(aluno.id);
+    }
+    this._alunos.set([]);
+  }
+
+  async limparTurmas(): Promise<void> {
+    const atualizados: Aluno[] = [];
+    for (const aluno of this._alunos()) {
+      if (!aluno.turmaId) {
+        atualizados.push(aluno);
+        continue;
+      }
+      atualizados.push(await this.repo.update(aluno.id, { turmaId: '' }));
+    }
+    this._alunos.set(atualizados);
+  }
 }

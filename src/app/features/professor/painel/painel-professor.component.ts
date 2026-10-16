@@ -1,0 +1,151 @@
+import { Component, computed, inject, linkedSignal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+import { AlunosService } from '../../../core/services/alunos.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { AvaliacoesService } from '../../../core/services/avaliacoes.service';
+import { BoletimService } from '../../../core/services/boletim.service';
+import { FrequenciasService } from '../../../core/services/frequencias.service';
+import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
+import { ProfessoresService } from '../../../core/services/professores.service';
+import { TurmasService } from '../../../core/services/turmas.service';
+import { VinculosDocentesService } from '../../../core/services/vinculos-docentes.service';
+import { Avaliacao, formatarNota, resumoNotas } from '../../../core/models/avaliacao.model';
+import { classeSituacao, rotuloSituacao } from '../../../core/models/boletim.model';
+import { dataHoje, formatarDataFrequencia, formatarPercentual, calcularResumoFrequencia } from '../../../core/models/frequencia.model';
+import { InstituicaoService } from '../../../core/services/instituicao.service';
+
+@Component({
+  selector: 'app-painel-professor',
+  imports: [RouterLink],
+  templateUrl: './painel-professor.component.html',
+  styleUrl: './painel-professor.component.scss',
+})
+export class PainelProfessorComponent {
+  private readonly auth = inject(AuthService);
+  protected readonly turmas = inject(TurmasService);
+  protected readonly alunos = inject(AlunosService);
+  protected readonly professores = inject(ProfessoresService);
+  protected readonly periodos = inject(PeriodosLetivosService);
+  protected readonly avaliacoes = inject(AvaliacoesService);
+  protected readonly frequencias = inject(FrequenciasService);
+  protected readonly boletimService = inject(BoletimService);
+  private readonly vinculos = inject(VinculosDocentesService);
+  protected readonly instituicao = inject(InstituicaoService);
+
+  protected readonly professorAtual = computed(() => {
+    const email = this.auth.usuario()?.email;
+    if (!email) return null;
+    return this.professores.professores().find((professor) => professor.email === email) ?? null;
+  });
+
+  protected readonly turmasDoProfessor = computed(() => {
+    const professor = this.professorAtual();
+    if (!professor) return [];
+    const vinculadas = new Set(this.vinculos.porProfessor(professor.id).map((vinculo) => vinculo.turmaId));
+    return this.turmas
+      .turmas()
+      .filter((turma) => turma.professorIds.includes(professor.id) || vinculadas.has(turma.id))
+      .sort((primeira, segunda) => primeira.nome.localeCompare(segunda.nome, 'pt-BR'));
+  });
+
+  protected readonly turmaFiltro = linkedSignal(() => this.turmasDoProfessor()[0]?.id ?? '');
+  protected readonly periodoFiltro = linkedSignal(
+    () => this.periodos.ativo()?.id ?? this.periodos.periodos()[0]?.id ?? '',
+  );
+
+  protected readonly turmaSelecionada = computed(
+    () => this.turmas.porId(this.turmaFiltro()) ?? null,
+  );
+
+  protected readonly periodoSelecionado = computed(() => this.periodos.porId(this.periodoFiltro()) ?? null);
+
+  private readonly boletins = computed(() =>
+    this.turmaFiltro() ? this.boletimService.gerarPorTurma(this.turmaFiltro(), this.periodoFiltro()) : [],
+  );
+
+  protected readonly alunosAtivos = computed(() =>
+    this.turmaFiltro() ? this.alunos.porTurma(this.turmaFiltro()).filter((aluno) => aluno.ativo).length : 0,
+  );
+
+  protected readonly frequenciaMedia = computed(() => {
+    if (!this.turmaFiltro() || !this.periodoFiltro()) return null;
+    const registros = this.frequencias
+      .porTurma(this.turmaFiltro())
+      .filter((chamada) => chamada.periodoLetivoId === this.periodoFiltro())
+      .flatMap((chamada) => chamada.registros);
+    return calcularResumoFrequencia(registros, this.instituicao.faltaJustificadaAbona()).percentual;
+  });
+
+  protected readonly medias = computed(() => this.boletins().map((boletim) => boletim.mediaGeral).filter((media): media is number => media !== null));
+
+  protected readonly mediaDesempenho = computed(() => {
+    const medias = this.medias();
+    if (medias.length === 0) return null;
+    const soma = medias.reduce((acumulado, media) => acumulado + media, 0);
+    return Math.round((soma / medias.length) * 10) / 10;
+  });
+
+  protected readonly alunosAtencao = computed(() =>
+    this.boletins().filter(
+      (boletim) => boletim.situacao === 'recuperacao' || boletim.situacao === 'reprovado',
+    ),
+  );
+
+  private readonly avaliacoesPeriodo = computed(() =>
+    this.turmaFiltro() ? this.avaliacoes.porTurmaEPeriodo(this.turmaFiltro(), this.periodoFiltro()) : [],
+  );
+
+  protected readonly semLancamento = computed(() =>
+    this.avaliacoesPeriodo().filter((avaliacao) => resumoNotas(avaliacao).pendentes > 0),
+  );
+
+  protected readonly proximasAvaliacoes = computed(() => {
+    const hoje = dataHoje();
+    return this.avaliacoesPeriodo()
+      .filter((avaliacao) => avaliacao.data !== null && avaliacao.data >= hoje)
+      .sort((primeira, segunda) => primeira.data!.localeCompare(segunda.data!));
+  });
+
+  protected readonly atividadesRecentes = computed(() => {
+    const eventos: { descricao: string; quando: string }[] = [];
+    for (const avaliacao of this.avaliacoesPeriodo()) {
+      eventos.push({ descricao: `Avaliação «${avaliacao.nome}»`, quando: avaliacao.atualizadoEm });
+    }
+    for (const frequencia of this.frequencias
+      .porTurma(this.turmaFiltro())
+      .filter((chamada) => chamada.periodoLetivoId === this.periodoFiltro())) {
+      eventos.push({ descricao: `Chamada de ${formatarDataFrequencia(frequencia.data)}`, quando: frequencia.atualizadoEm });
+    }
+    return eventos.sort((primeiro, segundo) => segundo.quando.localeCompare(primeiro.quando)).slice(0, 5);
+  });
+
+  protected valor(evento: Event): string {
+    return (evento.target as HTMLSelectElement).value;
+  }
+
+  protected nota(valor: number | null): string {
+    return formatarNota(valor, this.instituicao.casasDecimaisNota());
+  }
+
+  protected percentual(valor: number | null): string {
+    return formatarPercentual(valor);
+  }
+
+  protected dataCurta(iso: string | null): string {
+    if (!iso) return 'sem data';
+    return formatarDataFrequencia(iso.slice(0, 10));
+  }
+
+  protected situacaoLabel(situacao: string): string {
+    return rotuloSituacao(situacao as never);
+  }
+
+  protected situacaoClasse(situacao: string): string {
+    return classeSituacao(situacao as never);
+  }
+
+  protected resumoPendentes(avaliacao: Avaliacao): number {
+    return resumoNotas(avaliacao).pendentes;
+  }
+}

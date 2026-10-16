@@ -22,3 +22,31 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+@media print {
+  .tl-sidebar,
+  .tl-topbar,
+  .tl-bottomnav,
+  .tl-toasts,
+  .tl-scrim,
+  .no-print {
+    display: none !important;
+  }
+
+  .tl-app {
+    display: block;
+  }
+
+  .tl-main {
+    padding: 0 !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+}

@@ -1,0 +1,124 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Disciplinas</h1>
+      <p class="tl-text-muted">Cadastre as disciplinas da escola e vincule-as às turmas e professores.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      @if (disciplinas.total() > 0) {
+        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodas()">
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todas
+        </button>
+      }
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova disciplina
+      </button>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="search-input">
+        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+        <input
+          class="form-control"
+          type="search"
+          placeholder="Buscar por nome ou código"
+          [value]="busca()"
+          (input)="busca.set(valor($event))"
+        />
+      </div>
+      <span class="tl-small tl-text-muted">{{ disciplinas.total() }} disciplina(s)</span>
+    </div>
+
+    @if (disciplinas.disciplinas().length === 0) {
+      <div class="card-body">
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">menu_book</span>
+          <h3>Nenhuma disciplina</h3>
+          <p>Cadastre disciplinas para associá-las às turmas e aos professores.</p>
+        </div>
+      </div>
+    } @else if (filtradas().length === 0) {
+      <div class="card-body">
+        <p class="tl-text-muted mb-0">Nenhuma disciplina encontrada para "{{ busca() }}".</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Disciplina</th>
+              <th>Código</th>
+              <th>Carga horária</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (disciplina of filtradas(); track disciplina.id) {
+              <tr>
+                <td>
+                  <span class="disciplina-nome">
+                    <span class="color-dot" [style.background]="disciplina.cor" aria-hidden="true"></span>
+                    <strong>{{ disciplina.nome }}</strong>
+                  </span>
+                </td>
+                <td><span class="badge badge-neutral">{{ disciplina.codigo }}</span></td>
+                <td>{{ disciplina.cargaHoraria }} h</td>
+                <td>
+                  <span [class]="'badge ' + (disciplina.ativa ? 'badge-success' : 'badge-neutral')">
+                    {{ disciplina.ativa ? 'Ativa' : 'Inativa' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button class="btn btn-sm btn-light" type="button" (click)="alternarAtiva(disciplina)">
+                      <span class="material-symbols-outlined" aria-hidden="true">
+                        {{ disciplina.ativa ? 'toggle_on' : 'toggle_off' }}
+                      </span>
+                      {{ disciplina.ativa ? 'Desativar' : 'Ativar' }}
+                    </button>
+                    <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(disciplina)">
+                      <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+                    </button>
+                    <button
+                      class="btn btn-sm btn-light"
+                      type="button"
+                      aria-label="Excluir disciplina"
+                      (click)="pedirExclusao(disciplina)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
+
+<app-disciplina-form [open]="modalAberto()" [disciplina]="editando()" (salvo)="onSalvo()" (fechado)="fechar()" />
+
+<app-modal [open]="exclusaoAberta()" title="Excluir disciplina" (close)="cancelarExclusao()">
+  @if (disciplinaEmExclusao(); as disciplina) {
+    <p>Deseja realmente excluir a disciplina "{{ disciplina.nome }}"? Esta ação não pode ser desfeita.</p>
+  }
+  <div class="d-flex justify-content-between gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusao()">Cancelar</button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
+  </div>
+</app-modal>
+
+<app-confirmar-texto
+  [open]="excluirTudoAberto()"
+  [titulo]="confirmacaoTudo().titulo"
+  [mensagem]="confirmacaoTudo().mensagem"
+  [detalhes]="confirmacaoTudo().detalhes"
+  [rotuloConfirmar]="confirmacaoTudo().rotuloConfirmar"
+  (confirmado)="excluirTodas()"
+  (fechado)="fecharExclusaoTodas()"
+/>

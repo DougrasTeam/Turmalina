@@ -1,12 +1,12 @@
 <app-modal
   [open]="open()"
-  [title]="periodo() ? 'Editar perÃ­odo letivo' : 'Novo perÃ­odo letivo'"
+  [title]="periodo() ? 'Editar período letivo' : 'Novo período letivo'"
   (close)="fechar()"
 >
   <form (submit)="salvar($event)">
     <div class="form-grid">
       <div class="span-2">
-        <label class="form-label" for="periodo-nome">Nome do perÃ­odo *</label>
+        <label class="form-label" for="periodo-nome">Nome do período *</label>
         <input
           id="periodo-nome"
           class="form-control"
@@ -41,7 +41,7 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center mt-3">
-      <h3 class="tl-small mb-0">Etapas de avaliaÃ§Ã£o</h3>
+      <h3 class="tl-small mb-0">Etapas de avaliação</h3>
       <button class="btn btn-sm btn-light" type="button" (click)="adicionarEtapa()">
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
         Adicionar etapa
@@ -60,7 +60,7 @@
                 [id]="'etapa-nome-' + i"
                 class="form-control"
                 type="text"
-                placeholder="Ex.: 1Âº Bimestre"
+                placeholder="Ex.: 1º Bimestre"
                 [value]="etapa.nome"
                 (input)="setEtapaNome(i, valor($event))"
               />
@@ -79,7 +79,7 @@
               </select>
             </div>
             <div>
-              <label class="form-label" [attr.for]="'etapa-inicio-' + i">InÃ­cio *</label>
+              <label class="form-label" [attr.for]="'etapa-inicio-' + i">Início *</label>
               <input
                 [id]="'etapa-inicio-' + i"
                 class="form-control"
@@ -124,7 +124,7 @@
     <div class="d-flex justify-content-between gap-2 mt-3">
       <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
       <button class="btn btn-primary" type="submit">
-        {{ periodo() ? 'Salvar alteraÃ§Ãµes' : 'Criar perÃ­odo' }}
+        {{ periodo() ? 'Salvar alterações' : 'Criar período' }}
       </button>
     </div>
   </form>

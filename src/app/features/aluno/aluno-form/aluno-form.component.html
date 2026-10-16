@@ -103,3 +103,12 @@
     </div>
   </form>
 </app-modal>
+
+<app-credenciais-acesso
+  [open]="!!credenciais()"
+  titulo="Conta de acesso do aluno"
+  [credenciais]="credenciais()"
+  [regenerando]="regenerando()"
+  (gerarNovaSenha)="gerarNovaSenha()"
+  (fechado)="fecharCredenciais()"
+/>

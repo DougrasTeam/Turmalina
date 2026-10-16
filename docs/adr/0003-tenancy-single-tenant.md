@@ -1,6 +1,6 @@
 # ADR 0003 — Tenancy: uma instituição por implantação no MVP
 
-- **Status:** Aceito
+- **Status:** Aceito (revisado por [ADR 0005](0005-tenancy-tenant-ready.md))
 - **Data:** 2026-10-14
 
 ## Contexto

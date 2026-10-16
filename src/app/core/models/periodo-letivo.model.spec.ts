@@ -4,6 +4,7 @@ import { DadosPeriodoLetivo, PeriodoLetivo, validarPeriodoLetivo } from './perio
 function periodo(sobrescrever: Partial<PeriodoLetivo> = {}): PeriodoLetivo {
   return {
     id: 'periodo-1',
+    institutionId: 'instituicao-padrao',
     nome: 'Período existente',
     dataInicio: '2026-01-01',
     dataFim: '2026-12-31',

@@ -1,4 +1,4 @@
-﻿import { Component, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { Component, inject, input, linkedSignal, output, signal } from '@angular/core';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { createId } from '../../../core/models';
@@ -12,7 +12,7 @@ import { DadosPeriodoLetivo, PeriodoLetivo } from '../../../core/models/periodo-
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 
 function mensagemErro(erro: unknown): string {
-  return erro instanceof Error ? erro.message : 'NÃ£o foi possÃ­vel salvar.';
+  return erro instanceof Error ? erro.message : 'Não foi possível salvar.';
 }
 
 @Component({
@@ -106,10 +106,10 @@ export class PeriodoLetivoFormComponent {
       const atual = this.periodo();
       if (atual) {
         await this.periodos.atualizar(atual.id, dados);
-        this.toast.mostrar('PerÃ­odo letivo atualizado com sucesso!');
+        this.toast.mostrar('Período letivo atualizado com sucesso!');
       } else {
         await this.periodos.criar(dados);
-        this.toast.mostrar('PerÃ­odo letivo criado com sucesso!');
+        this.toast.mostrar('Período letivo criado com sucesso!');
       }
       this.erros.set([]);
       this.salvo.emit();

@@ -1,0 +1,77 @@
+<app-modal [open]="open()" [title]="disciplina() ? 'Editar disciplina' : 'Nova disciplina'" (close)="fechar()">
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div class="span-2">
+        <label class="form-label" for="disciplina-nome">Nome</label>
+        <input
+          id="disciplina-nome"
+          class="form-control"
+          type="text"
+          placeholder="Ex.: Matemática"
+          [value]="form().nome"
+          (input)="patch('nome', valor($event))"
+          (blur)="sugerirCodigo()"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="disciplina-codigo">Código</label>
+        <input
+          id="disciplina-codigo"
+          class="form-control"
+          type="text"
+          placeholder="Ex.: MAT"
+          [value]="form().codigo"
+          (input)="patch('codigo', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="disciplina-carga">Carga horária (h)</label>
+        <input
+          id="disciplina-carga"
+          class="form-control"
+          type="number"
+          min="0"
+          [value]="form().cargaHoraria"
+          (input)="patch('cargaHoraria', +valor($event))"
+        />
+      </div>
+
+      <div class="span-2">
+        <label class="form-label">Cor</label>
+        <div class="color-picker">
+          @for (cor of cores; track cor) {
+            <button
+              type="button"
+              class="color-swatch"
+              [class.is-selected]="form().cor === cor"
+              [style.background]="cor"
+              [attr.aria-label]="'Selecionar cor ' + cor"
+              (click)="selecionarCor(cor)"
+            ></button>
+          }
+        </div>
+      </div>
+
+      <div class="span-2">
+        <label class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            [checked]="form().ativa"
+            (change)="patch('ativa', marcado($event))"
+          />
+          <span>Disciplina ativa</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="submit">
+        {{ disciplina() ? 'Salvar alterações' : 'Cadastrar disciplina' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

@@ -1,0 +1,43 @@
+<app-modal [open]="open()" [title]="titulo()" (close)="emitirFechado()">
+  @if (credenciais(); as dados) {
+    <p class="tl-text-muted">
+      Guarde ou repasse estas credenciais agora. A senha provisória não será exibida novamente. No
+      primeiro acesso, o usuário será obrigado a definir uma nova senha.
+    </p>
+
+    <div class="credenciais__campo">
+      <span class="form-label">E-mail de acesso</span>
+      <div class="credenciais__valor">
+        <code>{{ dados.email }}</code>
+        <button class="btn btn-sm btn-light" type="button" (click)="copiar('email', dados.email)">
+          <span class="material-symbols-outlined">content_copy</span>
+          {{ campoCopiado() === 'email' ? 'Copiado' : 'Copiar' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="credenciais__campo">
+      <span class="form-label">Senha provisória</span>
+      <div class="credenciais__valor">
+        <code>{{ dados.senha }}</code>
+        <button class="btn btn-sm btn-light" type="button" (click)="copiar('senha', dados.senha)">
+          <span class="material-symbols-outlined">content_copy</span>
+          {{ campoCopiado() === 'senha' ? 'Copiado' : 'Copiar' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      <button
+        class="btn btn-light"
+        type="button"
+        (click)="emitirGerarNovaSenha()"
+        [disabled]="regenerando()"
+      >
+        <span class="material-symbols-outlined">refresh</span>
+        {{ regenerando() ? 'Gerando…' : 'Gerar nova senha' }}
+      </button>
+      <button class="btn btn-primary" type="button" (click)="emitirFechado()">Concluir</button>
+    </div>
+  }
+</app-modal>

@@ -9,7 +9,7 @@ Sistema de gestão escolar gamificado (turmaLina), construído com
 - **Regras de negócio:** `docs/business-rules.md`
 - **Backlog e riscos:** `docs/backlog.md`
 - **Decisões de arquitetura (ADRs):** `docs/adr/`
-- **Regras de desenvolvimento:** `agents/AGENTS.md`
+- **Regras de desenvolvimento:** `AGENTS.md`
 
 ## Estado atual
 

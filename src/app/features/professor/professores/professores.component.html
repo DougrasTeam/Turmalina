@@ -4,9 +4,16 @@
       <h1>Professores</h1>
       <p class="tl-text-muted">Cadastre os professores e suas disciplinas.</p>
     </div>
-    <button class="btn btn-primary" type="button" (click)="abrirNovo()">
-      <span class="material-symbols-outlined">add</span> Novo professor
-    </button>
+    <div class="d-flex gap-2 flex-wrap">
+      @if (professores.total() > 0) {
+        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodos()">
+          <span class="material-symbols-outlined">delete_sweep</span> Excluir todos
+        </button>
+      }
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+        <span class="material-symbols-outlined">add</span> Novo professor
+      </button>
+    </div>
   </header>
 
   <div class="page-toolbar">
@@ -173,11 +180,25 @@
       </div>
     </div>
 
-    <div class="d-flex justify-content-between gap-2 mt-3">
-      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
-      <button class="btn btn-primary" type="submit">
-        {{ editandoId() ? 'Salvar alterações' : 'Cadastrar professor' }}
-      </button>
+    <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+      @if (editandoId() && podeGerenciarAcesso) {
+        <button
+          class="btn btn-light"
+          type="button"
+          [disabled]="regenerando()"
+          (click)="redefinirSenhaDoProfessor()"
+        >
+          <span class="material-symbols-outlined">key</span> Redefinir senha
+        </button>
+      } @else {
+        <span></span>
+      }
+      <div class="d-flex gap-2">
+        <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+        <button class="btn btn-primary" type="submit">
+          {{ editandoId() ? 'Salvar alterações' : 'Cadastrar professor' }}
+        </button>
+      </div>
     </div>
   </form>
 </app-modal>
@@ -191,3 +212,22 @@
     <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
   </div>
 </app-modal>
+
+<app-confirmar-texto
+  [open]="excluirTudoAberto()"
+  [titulo]="confirmacaoTudo().titulo"
+  [mensagem]="confirmacaoTudo().mensagem"
+  [detalhes]="confirmacaoTudo().detalhes"
+  [rotuloConfirmar]="confirmacaoTudo().rotuloConfirmar"
+  (confirmado)="excluirTodos()"
+  (fechado)="fecharExclusaoTodos()"
+/>
+
+<app-credenciais-acesso
+  [open]="!!credenciais()"
+  [titulo]="tituloCredenciais()"
+  [credenciais]="credenciais()"
+  [regenerando]="regenerando()"
+  (gerarNovaSenha)="gerarNovaSenha()"
+  (fechado)="fecharCredenciais()"
+/>
