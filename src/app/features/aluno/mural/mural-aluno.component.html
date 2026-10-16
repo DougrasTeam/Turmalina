@@ -1,0 +1,75 @@
+<section class="page mural">
+  <header class="page-header">
+    <div>
+      <h1>Meu mural</h1>
+      <p class="tl-text-muted">Avisos da sua turma e recados enviados pelos professores.</p>
+    </div>
+  </header>
+
+  @if (!alunoProprio()) {
+    <div class="alert alert-warning" role="alert">
+      Não encontramos seu cadastro de aluno. Procure a secretaria da escola.
+    </div>
+  } @else {
+    <h2 class="mural__secao-titulo">Mural da turma</h2>
+
+    @if (publicacoesDaTurma().length === 0) {
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state__icon" aria-hidden="true">
+            <span class="material-symbols-outlined">campaign</span>
+          </div>
+          <h3>Sem avisos por aqui</h3>
+          <p>Quando houver novidades para a sua turma, elas aparecerão neste espaço.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="mural__feed">
+        @for (publicacao of publicacoesDaTurma(); track publicacao.id) {
+          <article class="card mural__item">
+            <div class="card-body">
+              <h3 class="mural__titulo">{{ publicacao.titulo }}</h3>
+              <p class="tl-small tl-text-muted mural__meta">
+                {{ publicacao.autorNome }} · {{ formatarDataHora(publicacao.publicadaEm) }}
+              </p>
+              <p class="mural__conteudo">{{ publicacao.conteudo }}</p>
+              @if (publicacao.expiraEm) {
+                <p class="tl-small tl-text-muted">
+                  Expira em {{ formatarData(publicacao.expiraEm) }}
+                </p>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+
+    <h2 class="mural__secao-titulo">Meus recados</h2>
+
+    @if (meusRecados().length === 0) {
+      <div class="card mb-0">
+        <div class="empty-state">
+          <div class="empty-state__icon" aria-hidden="true">
+            <span class="material-symbols-outlined">mark_email_read</span>
+          </div>
+          <h3>Nenhum recado</h3>
+          <p>Você ainda não recebeu recados individuais.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="mural__feed">
+        @for (recado of meusRecados(); track recado.id) {
+          <article class="card mural__item">
+            <div class="card-body">
+              <h3 class="mural__titulo">{{ recado.titulo }}</h3>
+              <p class="tl-small tl-text-muted mural__meta">
+                {{ recado.autorNome }} · {{ formatarDataHora(recado.criadoEm) }}
+              </p>
+              <p class="mural__conteudo">{{ recado.conteudo }}</p>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+</section>

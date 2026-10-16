@@ -43,6 +43,10 @@ src/app/
     disciplina/disciplina-form/         Formulário de disciplina (modal)
     boletim/boletim/                    Boletim (equipe e aluno)
     relatorios/relatorios/              Relatórios institucionais (admin)
+    mural/mural/                        Mural e recados (equipe)
+    mural/publicacao-form/              Formulário de publicação (modal)
+    mural/comunicado-form/              Formulário de recado/observação (modal)
+    aluno/mural/                        Mural/recados do aluno
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -208,6 +212,35 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   nas listas de alunos, turmas e professores; cada exportação registra evento via
   `AuditoriaService`. O boletim e os relatórios usam `window.print()` sobre um
   layout A4 definido em `src/styles.scss`.
+
+## Mural e recados (RF-022)
+
+- `Publicacao` (`core/models/publicacao.model.ts`): título, conteúdo, `turmaId`
+  (`null` = toda a instituição), `publicadaEm` (timestamp ISO), `expiraEm`
+  (`yyyy-mm-dd` opcional), `status` (`publicada|arquivada`) e autoria
+  (`autorId`/`autorNome`). Helpers `validarPublicacao`, `alcancePublicacao`
+  (destino alcança uma turma?) e `publicacaoVigente` (publicada e não expirada).
+- `Comunicado` (`core/models/comunicado.model.ts`): mensagem **individual**
+  (`alunoId`) com `tipo` `recado` (visível ao próprio aluno) ou `observacao`
+  (privada, só a equipe), mais autoria.
+- `sanitizarConteudo` (`core/models/conteudo.model.ts`) normaliza o texto (CRLF,
+  caracteres de controle, excesso de quebras) e o conteúdo é exibido apenas por
+  interpolação Angular — **nunca** via `innerHTML` —, impedindo HTML/script
+  (RN). O texto preserva quebras com `white-space: pre-wrap`.
+- `PublicacoesService` (`turmalina.publicacoes`) expõe `ordenadas`,
+  `vigentesParaTurma` e operações `criar/atualizar/arquivar/restaurar/remover`
+  (todas auditadas). `ComunicadosService` (`turmalina.comunicados`) expõe
+  `porAluno`, `recadosDoAluno` e `criar/remover` (auditados).
+- Página `features/mural/mural/` (`/mural`, admin/professor) com abas Mural e
+  Recados; admin vê tudo, professor vê as publicações institucionais e das suas
+  turmas, e os alunos das suas turmas. A visão do aluno
+  (`features/aluno/mural/`, `/aluno/mural`) mostra somente as publicações
+  vigentes da sua turma (mais institucionais) e os próprios recados. Sem chat em
+  tempo real e sem mensagem aluno→aluno.
+- No Supabase, as leituras são restritas por RLS
+  (`supabase/migrations/0004_mural_comunicados.sql`): equipe lê tudo; aluno lê
+  publicações publicadas do seu escopo (turma ou instituição) e não expiradas, e
+  apenas os recados endereçados a ele.
 
 ## Painel do professor (RF-008)
 

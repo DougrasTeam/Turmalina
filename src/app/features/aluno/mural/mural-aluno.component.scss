@@ -1,0 +1,30 @@
+.mural__feed {
+  display: grid;
+  gap: 1rem;
+}
+
+.mural__titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.mural__meta {
+  margin: 0.25rem 0 0;
+}
+
+.mural__conteudo {
+  margin: 0.75rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mural__secao-titulo {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+
+  &:not(:first-of-type) {
+    margin-top: 1.5rem;
+  }
+}

@@ -91,6 +91,18 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   média e média de desempenho do período, alunos em atenção) e **nunca exibem
   números artificiais**: sem dados, mostram estado vazio. Cada indicador traz a
   definição do cálculo e atalhos para chamada, notas e alunos.
+- **RF-022 (mural e recados):** o **mural** reúne publicações coletivas de uma
+  turma ou de toda a instituição (`turmaId` nulo = institucional), com título,
+  texto, data de publicação e expiração opcional; a publicação pode ser editada,
+  **arquivada** (some do aluno) ou restaurada, sempre com autoria. O aluno vê
+  apenas as publicações **vigentes** (publicadas e não expiradas) da sua turma
+  mais as institucionais. Os **comunicados** são individuais e privados:
+  **recado** é visível ao próprio aluno; **observação** é privada e só a equipe
+  vê — observações privadas nunca aparecem para o aluno, no boletim ou em
+  exportações. O conteúdo é **sanitizado** e exibido apenas como texto (sem
+  HTML/script, sem `innerHTML`). Não há chat em tempo real nem mensagem
+  aluno→aluno. Criar/editar/arquivar publicações e enviar/remover comunicados
+  geram eventos de auditoria.
 - **Exclusão em massa (demonstração):** as telas de cadastro e a **Zona de
   perigo** (admin) permitem excluir todos os registros de um tipo ou todos os
   dados, exigindo digitar `EXCLUIR` (e `EXCLUIR TUDO` para o apagamento total).

@@ -7,12 +7,12 @@
 
 - **Fase atual:** Fase 1 (MVP acadêmico essencial) **concluída**; **Fase 2 —
   Relatórios e comunicação** em andamento.
-- **Feature recém-concluída:** **RF-025 — Exportação CSV/PDF** (US-011/US-016):
-  exportação CSV no boletim e nas listas de alunos, turmas e professores, com
-  impressão/PDF do boletim e dos relatórios e auditoria das exportações de dados
-  sensíveis.
-- **Próxima feature:** **RF-022 — Mural/recados**, depois RF-023 (agenda) e
-  RF-026 (preferências/acessibilidade).
+- **Feature recém-concluída:** **RF-022 — Mural/recados** (US-012/US-013):
+  publicações coletivas por turma ou instituição, recados individuais (visíveis
+  ao aluno) e observações privadas (só a equipe), com sanitização de conteúdo,
+  arquivamento com autoria e leitura restrita por turma/aluno.
+- **Próxima feature:** **RF-023 — Agenda**, depois RF-026
+  (preferências/acessibilidade).
 - **Fase 3:** gamificação — RF-015…RF-021 e RF-009 (XP, moedas, equipes,
   indicadores/metas, missões, conquistas, loja). RF-012 (pontos extras).
 - **Fase 4:** gestão avançada, tela de projeção, performance/PWA.
@@ -34,8 +34,9 @@
   vez ao administrador, **troca obrigatória de senha** em `/primeiro-acesso`
   (RPC `security definer`) e **redefinição de senha** na edição do professor.
 - **Backend real (ADR 0001): Supabase (Auth + Postgres).** Camada de dados com
-  repositórios genéricos e de relacionamentos; `supabase/migrations/0001`
-  (esquema + RLS), `0002` (dados iniciais) e `0003` (primeiro acesso); flag
+  repositórios genéricos e de relacionamentos;   `supabase/migrations/0001`
+  (esquema + RLS), `0002` (dados iniciais), `0003` (primeiro acesso) e `0004`
+  (mural/comunicados); flag
   `usarSupabaseDados` (fallback mock/localStorage). RLS por instituição ainda
   precisa de verificação com dados reais (ver Riscos).
 - **Instituição e período letivo (RF-002):** dados da instituição, períodos com
@@ -87,6 +88,15 @@
   listas de **alunos**, **turmas** e **professores**; **impressão/PDF** do
   boletim e dos relatórios (layout A4, ocultando navegação e controles) e
   **auditoria** de toda exportação de dados sensíveis.
+- **Mural/recados (RF-022):** página `/mural` (admin/professor) com feed de
+  **publicações** para uma turma ou para toda a instituição (título, texto,
+  data de publicação e expiração, `publicada|arquivada`) e lista de
+  **comunicados** ao aluno — **recados** (visíveis ao próprio aluno) e
+  **observações** (privadas, só a equipe). Conteúdo é sanitizado (`sanitizarConteudo`)
+  e renderizado apenas por interpolação (sem `innerHTML`, sem HTML/script);
+  edição/arquivamento com autoria e auditoria; aluno acessa `/aluno/mural` vendo
+  apenas as publicações vigentes da sua turma (e institucionais) e os próprios
+  recados. Sem chat em tempo real e sem mensagem aluno→aluno.
 - **Auditoria (RF-027):** `AuditoriaService` registra eventos críticos (período,
   instituição, disciplina, vínculo, matrícula, frequência, avaliação/nota,
   conta de acesso) e há tela de consulta `/auditoria` (admin).
@@ -96,16 +106,17 @@
   cadastro, com confirmação por digitação (`EXCLUIR`); página admin
   `/reset-dados` para apagar por grupo ou tudo, sempre em cascata (`DadosService`).
 - Documentação: ADRs 0001–0005, arquitetura, permissões, regras de negócio.
-- Testes: **182 testes passando** (serviços de domínio, mapeadores Supabase,
+- Testes: **192 testes passando** (serviços de domínio, mapeadores Supabase,
   repositórios/tenancy, guards, componentes-chave e validações de período,
   disciplina, matrícula, frequência, avaliação/nota, situação do boletim,
-  primeiro acesso, agregação de relatórios e serialização/exportação CSV,
-  incluindo helpers de nome de arquivo e formatação de campos).
+  primeiro acesso, agregação de relatórios, serialização/exportação CSV e
+  publicações/comunicados do mural, incluindo helpers de nome de arquivo e
+  formatação de campos).
 
 ## Pendente (próximas fases — ver especificação §16)
 
-- **Fase 2 (em andamento):** RF-022 mural/recados, RF-023 agenda,
-  RF-026 preferências/acessibilidade.
+- **Fase 2 (em andamento):** RF-023 agenda, RF-026
+  preferências/acessibilidade.
 - **Fase 3:** gamificação — RF-015 (ações/XP), RF-016 (moedas), RF-017 (equipes),
   RF-018 (indicadores/metas), RF-019 (missões), RF-020 (conquistas/álbum),
   RF-021 (loja e resgates transacionais) e RF-009 (placar/perfil individual);

@@ -86,7 +86,9 @@ export function labelTurno(turno: Turno): string {
 export * from './auditoria.model';
 export * from './avaliacao.model';
 export * from './boletim.model';
+export * from './comunicado.model';
 export * from './conta-usuario.model';
+export * from './conteudo.model';
 export * from './disciplina.model';
 export * from './etapa-avaliacao.model';
 export * from './frequencia.model';
@@ -95,6 +97,7 @@ export * from './matricula.model';
 export * from './papel.model';
 export * from './perfil.model';
 export * from './periodo-letivo.model';
+export * from './publicacao.model';
 export * from './relatorio.model';
 export * from './usuario.model';
 export * from './vinculo-docente.model';

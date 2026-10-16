@@ -23,8 +23,10 @@
 | `/frequencia`      | sim           | sim       | não |
 | `/avaliacoes`      | sim           | sim       | não |
 | `/boletim/:alunoId`| sim           | sim       | não |
+| `/mural`           | sim           | sim       | não |
 | `/aluno/inicio`    | não           | não       | sim |
 | `/aluno/boletim`   | não           | não       | sim |
+| `/aluno/mural`     | não           | não       | sim |
 | `/instituicao`     | sim           | não       | não |
 | `/periodos-letivos`| sim           | não       | não |
 | `/disciplinas`     | sim           | não       | não |
@@ -51,6 +53,14 @@ Regras aplicadas:
   acessa por aluno (`/boletim/:alunoId`) e o aluno acessa **apenas o próprio**
   (`/aluno/boletim`, resolvido pelo e-mail da sessão).
 - Relatórios agregados (`/relatorios`) são restritos ao **administrador**.
+- Mural e recados (`/mural`) são operados pelo administrador/professor:
+  publicações coletivas (turma ou instituição) e comunicados individuais
+  (**recado** ao aluno e **observação** privada). O professor edita/arquiva as
+  próprias publicações e envia recados aos alunos das suas turmas; o aluno acessa
+  `/aluno/mural` e vê apenas as publicações vigentes da sua turma (mais as
+  institucionais) e os **próprios recados** — nunca observações privadas nem
+  publicações de outras turmas. Sem envio de mensagem aluno→aluno. No Supabase, o
+  escopo é reforçado por RLS (migração `0004`).
 - Exportação CSV respeita o mesmo escopo de acesso da tela: boletim (equipe e o
   próprio aluno) e listas de alunos/turmas/professores e relatórios (equipe/admin,
   conforme a tela). Toda exportação de dados sensíveis registra evento de
