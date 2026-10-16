@@ -1,0 +1,102 @@
+<app-modal [open]="open()" [title]="evento() ? 'Editar evento' : 'Novo evento'" (close)="fechar()">
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div class="span-2">
+        <label class="form-label" for="evento-titulo">Título *</label>
+        <input
+          id="evento-titulo"
+          class="form-control"
+          type="text"
+          [attr.maxlength]="tituloMax"
+          placeholder="Ex.: Prova de matemática"
+          [value]="form().titulo"
+          (input)="patch('titulo', valor($event))"
+        />
+      </div>
+
+      <div>
+        <label class="form-label" for="evento-tipo">Tipo *</label>
+        <select
+          id="evento-tipo"
+          class="form-select"
+          [value]="form().tipo"
+          (change)="alterarTipo($event)"
+        >
+          @for (tipo of tipos; track tipo.value) {
+            <option [value]="tipo.value">{{ tipo.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="evento-inicio">Data e hora *</label>
+        <input
+          id="evento-inicio"
+          class="form-control"
+          type="datetime-local"
+          [value]="form().inicioEm"
+          (input)="patch('inicioEm', valor($event))"
+        />
+        <p class="form-text">Horário local: {{ fusoHorario }}.</p>
+      </div>
+
+      @if (turmaFixa()) {
+        <div class="span-2">
+          <label class="form-label" for="evento-turma-fixa">Destino</label>
+          <input
+            id="evento-turma-fixa"
+            class="form-control"
+            type="text"
+            [value]="nomeTurmaFixa()"
+            disabled
+          />
+          <p class="form-text">Este evento será vinculado a esta turma.</p>
+        </div>
+      } @else {
+        <div class="span-2">
+          <label class="form-label" for="evento-turma">Destino</label>
+          <select
+            id="evento-turma"
+            class="form-select"
+            [value]="form().turmaId"
+            (change)="patch('turmaId', valor($event))"
+          >
+            @if (permitirInstitucional()) {
+              <option value="">Toda a instituição</option>
+            }
+            @for (turma of turmas(); track turma.id) {
+              <option [value]="turma.id">{{ turma.nome }}</option>
+            }
+          </select>
+          <p class="form-text">
+            @if (permitirInstitucional()) {
+              Escolha uma turma específica ou agende para todos os alunos da instituição.
+            } @else {
+              Escolha uma das suas turmas para agendar.
+            }
+          </p>
+        </div>
+      }
+
+      <div class="span-2">
+        <label class="form-label" for="evento-descricao">Descrição</label>
+        <textarea
+          id="evento-descricao"
+          class="form-control"
+          rows="4"
+          [attr.maxlength]="descricaoMax"
+          placeholder="Detalhes, conteúdo, local…"
+          [value]="form().descricao"
+          (input)="patch('descricao', valor($event))"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="submit" [disabled]="salvando()">
+        {{ salvando() ? 'Salvando…' : evento() ? 'Salvar alterações' : 'Criar evento' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

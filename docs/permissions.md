@@ -24,9 +24,11 @@
 | `/avaliacoes`      | sim           | sim       | não |
 | `/boletim/:alunoId`| sim           | sim       | não |
 | `/mural`           | sim           | sim       | não |
+| `/agenda`          | sim           | sim       | não |
 | `/aluno/inicio`    | não           | não       | sim |
 | `/aluno/boletim`   | não           | não       | sim |
 | `/aluno/mural`     | não           | não       | sim |
+| `/aluno/agenda`    | não           | não       | sim |
 | `/instituicao`     | sim           | não       | não |
 | `/periodos-letivos`| sim           | não       | não |
 | `/disciplinas`     | sim           | não       | não |
@@ -67,6 +69,11 @@ Regras aplicadas:
   bucket `mural-publicacoes` do Storage: leitura pública (para o feed), mas
   **envio/remoção apenas pela equipe** (política na migração `0005`, via
   `public.eh_equipe()`).
+- Agenda (`/agenda`) é operada pelo administrador/professor: criam, editam e
+  removem eventos escolares para uma turma específica ou para **toda a
+  instituição** (`turmaId` nulo). O aluno acessa `/aluno/agenda` e vê apenas os
+  eventos da sua turma e os da escola. No Supabase, o escopo é reforçado por RLS
+  (migração `0006`).
 - Exportação CSV respeita o mesmo escopo de acesso da tela: boletim (equipe e o
   próprio aluno) e listas de alunos/turmas/professores e relatórios (equipe/admin,
   conforme a tela). Toda exportação de dados sensíveis registra evento de

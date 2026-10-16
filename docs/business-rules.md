@@ -110,6 +110,16 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   HTML/script, sem `innerHTML`). Não há chat em tempo real nem mensagem
   aluno→aluno. Criar/editar/arquivar publicações e enviar/remover comunicados
   geram eventos de auditoria.
+- **RF-023 (agenda):** a agenda reúne **eventos escolares** de tipos `aula`,
+  `avaliacao`, `entrega`, `atividade` e `aviso`, cada um com título, descrição,
+  data-hora e turma-alvo opcional (`turmaId` nulo = toda a escola). Os eventos são
+  listados em **ordem cronológica** e podem ser filtrados por **escopo** (tudo /
+  escola toda / turma) e por **período** (próximos / semana / mês / todos);
+  eventos passados permanecem no **histórico** (consultáveis). O sistema **bloqueia
+  eventos duplicados** (mesmo título, tipo e data-hora). A data-hora é exibida no
+  **fuso local** do usuário, sem deslocamento inesperado. O aluno vê apenas os
+  eventos da sua turma e os da escola. Criar/editar/remover eventos — inclusive em
+  cascata ao excluir turmas — geram eventos de auditoria.
 - **Exclusão em massa (demonstração):** as telas de cadastro e a **Zona de
   perigo** (admin) permitem excluir todos os registros de um tipo ou todos os
   dados, exigindo digitar `EXCLUIR` (e `EXCLUIR TUDO` para o apagamento total).

@@ -75,6 +75,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/mural/mural/mural.component').then((m) => m.MuralComponent),
   },
   {
+    path: 'agenda',
+    title: 'Agenda · Turmalina',
+    canActivate: equipeDocente,
+    loadComponent: () => import('./features/agenda/agenda/agenda.component').then((m) => m.AgendaComponent),
+  },
+  {
     path: 'aluno/inicio',
     title: 'Minha área · Turmalina',
     canActivate: [autenticacaoGuard, papelGuard('aluno')],
@@ -93,6 +99,13 @@ export const routes: Routes = [
     canActivate: [autenticacaoGuard, papelGuard('aluno')],
     loadComponent: () =>
       import('./features/aluno/mural/mural-aluno.component').then((m) => m.MuralAlunoComponent),
+  },
+  {
+    path: 'aluno/agenda',
+    title: 'Minha agenda · Turmalina',
+    canActivate: [autenticacaoGuard, papelGuard('aluno')],
+    loadComponent: () =>
+      import('./features/aluno/agenda/agenda-aluno.component').then((m) => m.AgendaAlunoComponent),
   },
   {
     path: 'boletim/:alunoId',

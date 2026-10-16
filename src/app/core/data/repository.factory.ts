@@ -36,6 +36,7 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
     nulaveis: ['turma_id', 'imagem_url'],
   },
   'turmalina.comunicados': { tabela: 'comunicados', ordenacao: 'criado_em' },
+  'turmalina.eventos': { tabela: 'eventos', ordenacao: 'inicio_em', nulaveis: ['turma_id'] },
   'turmalina.auditoria': { tabela: 'eventos_auditoria', ordenacao: 'criado_em' },
 };
 

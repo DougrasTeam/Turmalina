@@ -1,0 +1,66 @@
+@if (eventos().length === 0) {
+  <div class="card mb-0">
+    <div class="empty-state">
+      <div class="empty-state__icon" aria-hidden="true">
+        <span class="material-symbols-outlined">event_available</span>
+      </div>
+      <h3>{{ vazioTitulo() }}</h3>
+      <p>{{ vazioTexto() }}</p>
+    </div>
+  </div>
+} @else {
+  <div class="agenda-lista" role="list">
+    @for (evento of eventos(); track evento.id) {
+      <article
+        class="card agenda-item"
+        [class.agenda-item--passado]="passado(evento)"
+        role="listitem"
+      >
+        <div class="agenda-item__quando" aria-hidden="true">
+          <span class="agenda-item__dia">{{ dia(evento) }}</span>
+          <span class="agenda-item__mes">{{ mes(evento) }}</span>
+          <span class="agenda-item__hora">{{ hora(evento) }}</span>
+        </div>
+
+        <div class="agenda-item__corpo">
+          <div class="agenda-item__topo">
+            <h2 class="agenda-item__titulo">{{ evento.titulo }}</h2>
+            <span [class]="'badge ' + classeTipo(evento)">
+              <span class="material-symbols-outlined" aria-hidden="true">{{
+                iconeTipo(evento)
+              }}</span>
+              {{ tipo(evento) }}
+            </span>
+          </div>
+
+          <p class="tl-small tl-text-muted agenda-item__meta">
+            {{ destino(evento) }} · {{ evento.autorNome || 'Equipe' }}
+            @if (passado(evento)) {
+              · <span class="agenda-item__status">Encerrado</span>
+            }
+          </p>
+
+          @if (evento.descricao) {
+            <p class="agenda-item__descricao">{{ evento.descricao }}</p>
+          }
+        </div>
+
+        @if (gerenciar()) {
+          <div class="agenda-item__acoes">
+            <button class="btn btn-sm btn-light" type="button" (click)="editar.emit(evento)">
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+            </button>
+            <button
+              class="btn btn-sm btn-danger"
+              type="button"
+              [attr.aria-label]="'Excluir evento ' + evento.titulo"
+              (click)="excluir.emit(evento)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+            </button>
+          </div>
+        }
+      </article>
+    }
+  </div>
+}

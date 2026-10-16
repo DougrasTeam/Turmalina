@@ -70,6 +70,12 @@ export class ResetDadosComponent {
       icone: 'campaign',
       descricao: 'Exclui as publicações do mural, os recados e as observações privadas.',
     },
+    {
+      chave: 'agenda',
+      rotulo: 'Agenda',
+      icone: 'event',
+      descricao: 'Exclui todos os eventos da agenda (aulas, avaliações, entregas e avisos).',
+    },
   ];
 
   protected readonly alvo = signal<AlvoLimpeza | null>(null);

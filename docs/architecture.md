@@ -48,6 +48,10 @@ src/app/
     mural/publicacao-form/              Formulário de publicação (modal)
     mural/comunicado-form/              Formulário de recado/observação (modal)
     aluno/mural/                        Feed/recados do aluno
+    agenda/agenda/                      Agenda escolar (equipe)
+    agenda/lista-eventos/               Lista de eventos reutilizável
+    agenda/evento-form/                 Formulário de evento (modal)
+    aluno/agenda/                       Agenda do aluno
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -265,6 +269,31 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   `supabase/migrations/0005_mural_imagens.sql` adiciona a coluna `imagem_url` e o
   bucket `mural-publicacoes` (público para leitura; escrita apenas para a equipe
   via `public.eh_equipe()`).
+
+## Agenda (RF-023)
+
+- Modelo `Evento` (`core/models/evento.model.ts`) com `titulo`, `descricao`,
+  `tipo` (`aula|avaliacao|entrega|atividade|aviso`), `inicioEm` (ISO),
+  `turmaId` (opcional; `null` = escola toda), `autorId` e `autorNome`. Helpers de
+  domínio: `validarEvento`, `eventoDuplicado`, `ordenarEventosPorInicio`,
+  `eventoPassado`, `alcanceEvento` e formatação de data-hora no fuso local
+  (`formatarInicioEvento`, `paraValorInputDataHora`/`deValorInputDataHora`).
+- `EventosService` (`turmalina.eventos`) expõe `ordenados`, `proximos`,
+  `eventosParaTurma`, `encontrarDuplicado` e `criar`/`atualizar`/`remover`/
+  `removerTodas`/`removerVinculadasATurmas` (todas auditadas). Valida os campos e
+  bloqueia eventos duplicados (mesmo título/tipo/data).
+- **Lista reutilizável** `features/agenda/lista-eventos/` e **formulário modal**
+  `features/agenda/evento-form/`. Página `features/agenda/agenda/` (`/agenda`,
+  admin/professor) com filtros por escopo (tudo / escola toda / turma) e por
+  período (próximos / semana / mês / todos) via `aplicarFiltroEventos`
+  (`core/models/filtro-eventos.model.ts`); eventos passados ficam disponíveis no
+  histórico. `features/aluno/agenda/` (`/aluno/agenda`) mostra ao aluno os eventos
+  da própria turma e os da escola.
+- No Supabase, a tabela `eventos` (`supabase/migrations/0006_agenda.sql`) usa RLS:
+  equipe lê/escreve tudo; aluno lê eventos da sua turma e os da escola
+  (`public.auth_turma_id()` / `public.eh_equipe()`). A exclusão em massa
+  (`DadosService`, grupo `agenda`) e a cascata de exclusão de turmas também
+  removem os eventos relacionados.
 
 ## Painel do professor (RF-008)
 
