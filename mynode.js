@@ -158,8 +158,10 @@ export const environment = {
   SUPABASE_KEY: '${key}',
   // Persistencia no Supabase ligada no build de producao.
   usarSupabaseDados: true,
-  // Sem barra no final: o redirect concatena o caminho.
-  REDIRECT_URL: ${redirectNormalizado ? `'${redirectNormalizado}'` : 'window.location.origin'},
+  // Sem barra no final: o redirect concatena o caminho. Vazio quando a variavel
+  // nao chegou: NAO usar window aqui, porque este valor e avaliado no
+  // carregamento do modulo tambem no servidor (SSR), onde window nao existe.
+  REDIRECT_URL: '${redirectNormalizado}',
   // Vazio quando a variavel nao chegou: o app avisa que notificacao esta
   // indisponivel em vez de pedir permissao que nunca vai funcionar.
   VAPID_PUBLIC: '${vapidPublic}',
@@ -171,7 +173,7 @@ export const environment = {
 fs.writeFileSync(destino, conteudo);
 console.log(ok, '\u2705 src/environments/environment.prod.ts gerado');
 console.log(ok, `   SUPABASE_URL: ${url}`);
-console.log(ok, `   REDIRECT_URL: ${redirectNormalizado || '(fallback: window.location.origin)'}`);
+console.log(ok, `   REDIRECT_URL: ${redirectNormalizado || '(vazio)'}`);
 
 // A marca vai depois do arquivo, para o build ja comecar com public/ na versao certa.
 aplicarMarcaPwa();
