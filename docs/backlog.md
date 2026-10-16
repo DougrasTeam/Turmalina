@@ -6,7 +6,7 @@
 ## Roadmap / Próxima etapa
 
 - **Fase atual:** Fase 1 (MVP acadêmico essencial) **concluída**; **Fase 2 —
-  Relatórios e comunicação** em andamento.
+  Preferências e acessibilidade** em andamento.
 - **Feature recém-concluída:** **RF-023 — Agenda** (US-014): eventos escolares
   (aula, avaliação, entrega, atividade, aviso) com título, descrição, data-hora,
   turma-alvo opcional (escola toda quando ausente) e tipo; lista em ordem
@@ -14,7 +14,7 @@
   / semana / mês / todos), histórico de eventos passados, bloqueio de
   duplicidades, exibição de data-hora no fuso local e página do aluno
   (`/aluno/agenda`).
-- **Próxima feature:** **RF-026** (preferências/acessibilidade).
+- **Próxima feature:** **RF-027 — Auditoria** (após RF-026 concluir).
 - **Fase 3:** gamificação — RF-015…RF-021 e RF-009 (XP, moedas, equipes,
   indicadores/metas, missões, conquistas, loja). RF-012 (pontos extras).
 - **Fase 4:** gestão avançada, tela de projeção, performance/PWA.

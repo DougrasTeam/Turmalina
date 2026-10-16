@@ -78,7 +78,8 @@
   height: 3rem;
   border-radius: 1rem;
   font-size: 1.5rem;
-  background: #f0edff;
+  background: var(--tl-primary-dark);
+  color: #f0edff !important;
 }
 
 .kpi-card__value {
@@ -125,12 +126,13 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 0.75rem;
-  border: 2px solid var(--tl-border);
   border-radius: var(--tl-radius);
-  background: #fff;
   font-weight: 800;
   font-size: 0.9rem;
   cursor: pointer;
+  background: var(--tl-input-bg);
+  color: var(--tl-ink);
+  border: 2px solid var(--tl-border);
 }
 
 .checkbox-chip input {

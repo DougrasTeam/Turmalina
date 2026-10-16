@@ -139,6 +139,18 @@ export class App {
   constructor() {
     void this.auth.garantirSessaoCarregada();
 
+    // Initialize theme from localStorage
+    const html = document.documentElement;
+    const storedTheme = localStorage.getItem('tl-theme');
+    if (storedTheme === 'dark') {
+      html.setAttribute('data-tl-theme', 'dark');
+    } else if (storedTheme === 'light') {
+      html.removeAttribute('data-tl-theme');
+    } else {
+      // respect system setting via UI kit
+      html.removeAttribute('data-tl-theme');
+    }
+
     effect(() => {
       if (this.auth.autenticado()) {
         void this.carregarDados();
@@ -199,5 +211,17 @@ export class App {
     await this.auth.sair();
     this.closeSidebar();
     await this.router.navigateByUrl('/login');
+  }
+
+  themeToggle(): void {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-tl-theme');
+    if (current === 'dark') {
+      html.removeAttribute('data-tl-theme');
+      localStorage.setItem('tl-theme', 'light');
+    } else {
+      html.setAttribute('data-tl-theme', 'dark');
+      localStorage.setItem('tl-theme', 'dark');
+    }
   }
 }
