@@ -6,7 +6,9 @@ import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirm
 import { AlunoFormComponent } from '../aluno-form/aluno-form.component';
 import { AlunoImportComponent, ResumoImport } from '../aluno-import/aluno-import.component';
 import { AlunosService } from '../../../core/services/alunos.service';
+import { AuditoriaService } from '../../../core/services/auditoria.service';
 import { DadosService } from '../../../core/services/dados.service';
+import { ExportacaoService, nomeArquivoCsv } from '../../../core/services/exportacao.service';
 import { MatriculasService } from '../../../core/services/matriculas.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
@@ -24,6 +26,8 @@ export class AlunosComponent {
   protected readonly matriculas = inject(MatriculasService);
   private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
+  private readonly exportacao = inject(ExportacaoService);
+  private readonly auditoria = inject(AuditoriaService);
 
   protected readonly busca = signal('');
   protected readonly turmaFiltro = signal('');
@@ -53,6 +57,31 @@ export class AlunosComponent {
   protected turmaNome(turmaId: string): string {
     if (!turmaId) return '';
     return this.turmas.porId(turmaId)?.nome ?? '';
+  }
+
+  protected exportarCsv(): void {
+    const alunos = this.filtrados();
+    if (alunos.length === 0) return;
+    const cabecalhos = [
+      'Nome',
+      'E-mail',
+      'Matrícula',
+      'Turma',
+      'Responsável',
+      'Telefone do responsável',
+      'Status',
+    ];
+    const linhas = alunos.map((aluno) => [
+      aluno.nome,
+      aluno.email,
+      aluno.matricula,
+      this.turmaNome(aluno.turmaId),
+      aluno.responsavel,
+      aluno.telefoneResponsavel,
+      aluno.ativo ? 'Ativo' : 'Inativo',
+    ]);
+    this.exportacao.exportarCsv(nomeArquivoCsv('alunos'), cabecalhos, linhas);
+    this.auditoria.registrar('aluno.exportado', 'Aluno', null, `${alunos.length} aluno(s)`);
   }
 
   protected abrirHistorico(aluno: Aluno): void {

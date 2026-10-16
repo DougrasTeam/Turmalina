@@ -22,6 +22,39 @@ function formatarCampoCsv(valor: string | number | null | undefined, delimitador
   return precisaAspas ? `"${comProtecao.replace(/"/g, '""')}"` : comProtecao;
 }
 
+/** Converte um texto livre em um trecho seguro para compor o nome do arquivo. */
+export function slugParaArquivo(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
+/** Compõe um nome de arquivo a partir de um prefixo e partes livres. */
+export function nomeArquivoCsv(prefixo: string, ...partes: readonly string[]): string {
+  const sufixo = partes
+    .map((parte) => slugParaArquivo(parte))
+    .filter((parte) => parte.length > 0)
+    .join('-');
+  return sufixo ? `${prefixo}-${sufixo}` : prefixo;
+}
+
+/** Formata um número para CSV com casas fixas; `null` vira campo vazio. */
+export function numeroParaCsv(valor: number | null, casas: number): string {
+  if (valor === null) return '';
+  return valor.toLocaleString('pt-BR', {
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
+  });
+}
+
+/** Formata um percentual para CSV; `null` vira campo vazio. */
+export function percentualParaCsv(valor: number | null): string {
+  return valor === null ? '' : valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+}
+
 /**
  * Serializa cabeçalho e linhas em CSV, aplicando escaping e proteção contra
  * injeção de fórmulas (RF-014 / RF-025).

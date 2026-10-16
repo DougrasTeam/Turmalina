@@ -1,5 +1,5 @@
 <section class="page relatorios">
-  <header class="page-header">
+  <header class="page-header no-print">
     <div>
       <h1>Relatórios</h1>
       <p class="tl-text-muted">
@@ -19,6 +19,9 @@
           <option [value]="periodo.id">{{ periodo.nome }}</option>
         }
       </select>
+      <button class="btn btn-light" type="button" [disabled]="!podeExportar()" (click)="imprimir()">
+        <span class="material-symbols-outlined" aria-hidden="true">print</span> Imprimir / PDF
+      </button>
     </div>
   </header>
 
@@ -89,7 +92,7 @@
       </article>
     </section>
 
-    <div class="card">
+    <div class="card no-print">
       <div class="card-body relatorios__filtros">
         <div class="page-toolbar">
           <label class="visually-hidden" for="relatorio-turma">Turma</label>

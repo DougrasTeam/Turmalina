@@ -196,11 +196,18 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 - `ExportacaoService` (`core/services/exportacao.service.ts`) centraliza a
   exportação CSV: a função pura `serializarCsv` aplica escaping, delimitador `;`
   e proteção contra CSV injection (campos iniciados por `= + - @ tab CR` recebem
-  apóstrofo); `exportarCsv` gera o arquivo no navegador com BOM UTF-8.
+  apóstrofo); `exportarCsv` gera o arquivo no navegador com BOM UTF-8. Helpers de
+  módulo (`slugParaArquivo`, `nomeArquivoCsv`, `numeroParaCsv`, `percentualParaCsv`)
+  padronizam nome de arquivo e formatação de campos entre as telas (RF-025).
 - A tela `features/relatorios/relatorios/` serve a rota `/relatorios` (apenas
   **administrador**). Tem seletor de período, KPIs institucionais e abas de tipo
   de relatório (frequência/desempenho/pendentes), com seletor de turma, data de
-  geração, explicação da regra de cálculo e botão de exportação CSV.
+  geração, explicação da regra de cálculo, botão de exportação CSV e botão de
+  impressão/PDF (classes `no-print` + `@media print`).
+- A exportação/impressão (RF-025) reaproveita `ExportacaoService` no boletim e
+  nas listas de alunos, turmas e professores; cada exportação registra evento via
+  `AuditoriaService`. O boletim e os relatórios usam `window.print()` sobre um
+  layout A4 definido em `src/styles.scss`.
 
 ## Painel do professor (RF-008)
 

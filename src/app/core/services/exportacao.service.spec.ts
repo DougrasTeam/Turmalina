@@ -1,7 +1,14 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { ExportacaoService, serializarCsv } from './exportacao.service';
+import {
+  ExportacaoService,
+  nomeArquivoCsv,
+  numeroParaCsv,
+  percentualParaCsv,
+  serializarCsv,
+  slugParaArquivo,
+} from './exportacao.service';
 
 describe('serializarCsv', () => {
   it('junta cabeçalho e linhas com ; e quebra de linha CRLF', () => {
@@ -43,6 +50,32 @@ describe('serializarCsv', () => {
   it('trata nulos como campo vazio', () => {
     const csv = serializarCsv(['Nome', 'Valor'], [['Ana', null]]);
     expect(csv).toBe('Nome;Valor\r\nAna;');
+  });
+});
+
+describe('helpers de exportação', () => {
+  it('gera slug sem acentos e sem espaços', () => {
+    expect(slugParaArquivo('Turma 1º Ano — A')).toBe('turma-1-ano-a');
+  });
+
+  it('compõe nome de arquivo com prefixo e partes, ignorando vazios', () => {
+    expect(nomeArquivoCsv('boletim', 'Ana Souza', 'Ano Letivo')).toBe(
+      'boletim-ana-souza-ano-letivo',
+    );
+    expect(nomeArquivoCsv('alunos')).toBe('alunos');
+    expect(nomeArquivoCsv('turmas', '')).toBe('turmas');
+  });
+
+  it('formata número com casas fixas e vazio para nulo', () => {
+    expect(numeroParaCsv(8.5, 1)).toBe('8,5');
+    expect(numeroParaCsv(8, 2)).toBe('8,00');
+    expect(numeroParaCsv(null, 1)).toBe('');
+  });
+
+  it('formata percentual com até uma casa e vazio para nulo', () => {
+    expect(percentualParaCsv(100)).toBe('100');
+    expect(percentualParaCsv(66.67)).toBe('66,7');
+    expect(percentualParaCsv(null)).toBe('');
   });
 });
 

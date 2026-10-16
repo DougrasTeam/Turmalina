@@ -11,6 +11,9 @@
           <option [value]="periodo.id">{{ periodo.nome }}</option>
         }
       </select>
+      <button class="btn btn-light" type="button" [disabled]="!boletim()" (click)="exportarCsv()">
+        <span class="material-symbols-outlined" aria-hidden="true">download</span> Exportar CSV
+      </button>
       <button class="btn btn-primary" type="button" [disabled]="!boletim()" (click)="imprimir()">
         <span class="material-symbols-outlined" aria-hidden="true">print</span> Imprimir / PDF
       </button>

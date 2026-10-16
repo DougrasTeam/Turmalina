@@ -33,6 +33,10 @@
         <option [value]="turma.id">{{ turma.nome }}</option>
       }
     </select>
+    <span class="page-toolbar__spacer"></span>
+    <button class="btn btn-light" type="button" [disabled]="filtrados().length === 0" (click)="exportarCsv()">
+      <span class="material-symbols-outlined" aria-hidden="true">download</span> Exportar CSV
+    </button>
   </div>
 
   <div class="card mb-0">

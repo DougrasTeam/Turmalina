@@ -4,6 +4,8 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
 import { CredenciaisAcessoComponent } from '../../../shared/credenciais-acesso/credenciais-acesso.component';
 import { DadosService } from '../../../core/services/dados.service';
+import { AuditoriaService } from '../../../core/services/auditoria.service';
+import { ExportacaoService, nomeArquivoCsv } from '../../../core/services/exportacao.service';
 import { GestaoUsuariosService } from '../../../core/services/gestao-usuarios.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -28,6 +30,8 @@ export class ProfessoresComponent {
   private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
   private readonly gestao = inject(GestaoUsuariosService);
+  private readonly exportacao = inject(ExportacaoService);
+  private readonly auditoria = inject(AuditoriaService);
 
   protected readonly sugestoes = DISCIPLINAS_SUGERIDAS;
   protected readonly busca = signal('');
@@ -58,6 +62,26 @@ export class ProfessoresComponent {
 
   protected valor(evento: Event): string {
     return (evento.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;
+  }
+
+  protected exportarCsv(): void {
+    const professores = this.filtrados();
+    if (professores.length === 0) return;
+    const cabecalhos = ['Nome', 'E-mail', 'Telefone', 'Disciplinas', 'Status'];
+    const linhas = professores.map((professor) => [
+      professor.nome,
+      professor.email,
+      professor.telefone,
+      professor.disciplinas.join(', '),
+      professor.ativo ? 'Ativo' : 'Inativo',
+    ]);
+    this.exportacao.exportarCsv(nomeArquivoCsv('professores'), cabecalhos, linhas);
+    this.auditoria.registrar(
+      'professor.exportado',
+      'Professor',
+      null,
+      `${professores.length} professor(es)`,
+    );
   }
 
   protected marcado(evento: Event): boolean {

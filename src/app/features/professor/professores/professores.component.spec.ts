@@ -2,6 +2,8 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DadosService } from '../../../core/services/dados.service';
+import { AuditoriaService } from '../../../core/services/auditoria.service';
+import { ExportacaoService } from '../../../core/services/exportacao.service';
 import { GestaoUsuariosService } from '../../../core/services/gestao-usuarios.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -21,6 +23,10 @@ const dados = {
   confirmacao: () => ({ titulo: 't', mensagem: 'm', detalhes: [], rotuloConfirmar: 'c' }),
   excluir: jasmine.createSpy('excluir'),
 };
+
+const exportacao = { exportarCsv: jasmine.createSpy('exportarCsv') };
+
+const auditoria = { registrar: jasmine.createSpy('registrar') };
 
 function botaoPorTexto(
   fixture: ComponentFixture<ProfessoresComponent>,
@@ -44,6 +50,8 @@ describe('ProfessoresComponent', () => {
       senha: 'nova-senha',
     });
     toast.mostrar.calls.reset();
+    exportacao.exportarCsv.calls.reset();
+    auditoria.registrar.calls.reset();
 
     await TestBed.configureTestingModule({
       imports: [ProfessoresComponent],
@@ -52,6 +60,8 @@ describe('ProfessoresComponent', () => {
         { provide: GestaoUsuariosService, useValue: gestao },
         { provide: ToastService, useValue: toast },
         { provide: DadosService, useValue: dados },
+        { provide: ExportacaoService, useValue: exportacao },
+        { provide: AuditoriaService, useValue: auditoria },
       ],
     }).compileComponents();
 
@@ -95,6 +105,39 @@ describe('ProfessoresComponent', () => {
     expect(toast.mostrar).toHaveBeenCalledWith(
       'Este professor ainda não tem uma conta de acesso.',
       'warning',
+    );
+  });
+
+  it('exporta os professores filtrados em CSV e registra auditoria', async () => {
+    await professores.create({
+      nome: 'Ana Professora',
+      email: 'ana@escola.com',
+      telefone: '11999999999',
+      disciplinas: ['Matemática'],
+      ativo: true,
+    });
+    const fixture = TestBed.createComponent(ProfessoresComponent);
+    fixture.detectChanges();
+
+    botaoPorTexto(fixture, 'Exportar CSV')!.click();
+    await fixture.whenStable();
+
+    expect(exportacao.exportarCsv).toHaveBeenCalled();
+    const [nomeArquivo, cabecalhos, linhas] = exportacao.exportarCsv.calls.mostRecent().args;
+    expect(nomeArquivo).toBe('professores');
+    expect(cabecalhos).toContain('Nome');
+    expect(linhas[0]).toEqual([
+      'Ana Professora',
+      'ana@escola.com',
+      '11999999999',
+      'Matemática',
+      'Ativo',
+    ]);
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      'professor.exportado',
+      'Professor',
+      null,
+      '1 professor(es)',
     );
   });
 });

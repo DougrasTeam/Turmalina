@@ -75,3 +75,22 @@
     margin: 0.75rem 0 0;
   }
 }
+
+@media print {
+  .relatorios {
+    & .card {
+      border: 0;
+      box-shadow: none;
+    }
+
+    & .kpi-card {
+      border: 1px solid var(--tl-border);
+    }
+
+    & .table {
+      tr {
+        page-break-inside: avoid;
+      }
+    }
+  }
+}

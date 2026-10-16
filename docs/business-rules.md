@@ -75,6 +75,15 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   valores "sem registros"/"não lançado" tratados como tais. A **exportação CSV**
   usa delimitador `;`, BOM UTF-8 e neutraliza fórmulas perigosas (`=`, `+`, `-`,
   `@`) para reduzir risco de CSV injection.
+- **RF-025 (exportação e impressão):** a central `ExportacaoService` concentra a
+  serialização e o download de CSV (delimitador `;`, BOM UTF-8, escaping e
+  neutralização de fórmulas). A exportação existe no boletim e nas listas de
+  alunos, turmas e professores, sempre **respeitando o escopo de acesso e os
+  filtros da tela**; boletim e relatórios também podem ser **impressos/gerados em
+  PDF** (layout A4, ocultando navegação e controles). Toda exportação de dados
+  sensíveis registra evento de auditoria (`relatorio.exportado`,
+  `boletim.exportado`, `aluno.exportado`, `turma.exportado`,
+  `professor.exportado`).
 - **RF-008 (painel do professor):** a rota `/dashboard` é sensível ao papel —
   administradores veem a visão geral do sistema e professores veem o **painel
   docente** da própria turma (turmas vêm de `Turma.professorIds` e dos vínculos

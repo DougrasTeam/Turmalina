@@ -2,8 +2,15 @@ import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { AlunosService } from '../../../core/services/alunos.service';
+import { AuditoriaService } from '../../../core/services/auditoria.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { BoletimService } from '../../../core/services/boletim.service';
+import {
+  ExportacaoService,
+  nomeArquivoCsv,
+  numeroParaCsv,
+  percentualParaCsv,
+} from '../../../core/services/exportacao.service';
 import { InstituicaoService } from '../../../core/services/instituicao.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { formatarNota } from '../../../core/models/avaliacao.model';
@@ -22,6 +29,8 @@ export class BoletimComponent {
   protected readonly boletimService = inject(BoletimService);
   protected readonly periodos = inject(PeriodosLetivosService);
   protected readonly instituicao = inject(InstituicaoService);
+  private readonly exportacao = inject(ExportacaoService);
+  private readonly auditoria = inject(AuditoriaService);
 
   private readonly alunoIdParam = this.route.snapshot.paramMap.get('alunoId');
 
@@ -49,6 +58,35 @@ export class BoletimComponent {
 
   protected imprimir(): void {
     window.print();
+  }
+
+  protected exportarCsv(): void {
+    const boletim = this.boletim();
+    if (!boletim) return;
+
+    const casas = this.instituicao.casasDecimaisNota();
+    const cabecalhos = ['Disciplina', 'Média', 'Frequência (%)', 'Situação', 'Observação'];
+    const linhas = boletim.disciplinas.map((disciplina) => [
+      disciplina.disciplinaNome,
+      numeroParaCsv(disciplina.media, casas),
+      percentualParaCsv(disciplina.frequencia),
+      this.situacaoLabel(disciplina.situacao),
+      disciplina.motivo || '',
+    ]);
+    linhas.push([
+      'Geral',
+      numeroParaCsv(boletim.mediaGeral, casas),
+      percentualParaCsv(boletim.frequenciaGeral),
+      this.situacaoLabel(boletim.situacao),
+      boletim.motivo || '',
+    ]);
+
+    this.exportacao.exportarCsv(
+      nomeArquivoCsv('boletim', boletim.alunoNome, boletim.periodoNome),
+      cabecalhos,
+      linhas,
+    );
+    this.auditoria.registrar('boletim.exportado', 'Boletim', boletim.alunoId, boletim.alunoNome);
   }
 
   protected nota(valor: number | null): string {

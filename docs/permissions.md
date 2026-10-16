@@ -50,8 +50,11 @@ Regras aplicadas:
 - O boletim é gerado a partir das notas e frequências já registradas: a equipe
   acessa por aluno (`/boletim/:alunoId`) e o aluno acessa **apenas o próprio**
   (`/aluno/boletim`, resolvido pelo e-mail da sessão).
-- Relatórios agregados (`/relatorios`) são restritos ao **administrador**;
-  exportação CSV é permitida apenas nessa tela.
+- Relatórios agregados (`/relatorios`) são restritos ao **administrador**.
+- Exportação CSV respeita o mesmo escopo de acesso da tela: boletim (equipe e o
+  próprio aluno) e listas de alunos/turmas/professores e relatórios (equipe/admin,
+  conforme a tela). Toda exportação de dados sensíveis registra evento de
+  auditoria.
 
 ### Isolamento por instituição (tenant)
 

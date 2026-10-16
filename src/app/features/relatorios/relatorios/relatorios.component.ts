@@ -1,6 +1,12 @@
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 
-import { ExportacaoService } from '../../../core/services/exportacao.service';
+import {
+  ExportacaoService,
+  nomeArquivoCsv,
+  numeroParaCsv,
+  percentualParaCsv,
+} from '../../../core/services/exportacao.service';
+import { AuditoriaService } from '../../../core/services/auditoria.service';
 import { InstituicaoService } from '../../../core/services/instituicao.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { RelatoriosService } from '../../../core/services/relatorios.service';
@@ -29,6 +35,7 @@ export class RelatoriosComponent {
   private readonly relatorios = inject(RelatoriosService);
   private readonly exportacao = inject(ExportacaoService);
   private readonly instituicao = inject(InstituicaoService);
+  private readonly auditoria = inject(AuditoriaService);
 
   protected readonly tipos = TIPOS_RELATORIO;
   protected readonly tipoRelatorio = signal<TipoRelatorio>('frequencia');
@@ -91,6 +98,11 @@ export class RelatoriosComponent {
     this.tipoRelatorio.set(tipo);
   }
 
+  protected imprimir(): void {
+    if (!this.podeExportar()) return;
+    window.print();
+  }
+
   protected nota(valor: number | null): string {
     return formatarNota(valor, this.instituicao.casasDecimaisNota());
   }
@@ -150,14 +162,15 @@ export class RelatoriosComponent {
       linha.presentes,
       linha.faltas,
       linha.justificadas,
-      this.percentualParaCsv(linha.percentual),
+      percentualParaCsv(linha.percentual),
       linha.abaixoDoLimite ? 'Abaixo do limite' : 'Regular',
     ]);
     this.exportacao.exportarCsv(
-      this.nomeArquivo('frequencia', relatorio.turmaNome),
+      nomeArquivoCsv('relatorio-frequencia', relatorio.turmaNome),
       cabecalhos,
       linhas,
     );
+    this.auditoria.registrar('relatorio.exportado', 'Relatorio', 'frequencia', relatorio.turmaNome);
   }
 
   private exportarDesempenho(): void {
@@ -174,16 +187,17 @@ export class RelatoriosComponent {
     const linhas = relatorio.linhas.map((linha) => [
       linha.alunoNome,
       linha.alunoMatricula,
-      ...linha.mediasPorDisciplina.map((media) => this.notaParaCsv(media, relatorio.casasDecimais)),
-      this.notaParaCsv(linha.mediaGeral, relatorio.casasDecimais),
+      ...linha.mediasPorDisciplina.map((media) => numeroParaCsv(media, relatorio.casasDecimais)),
+      numeroParaCsv(linha.mediaGeral, relatorio.casasDecimais),
       linha.notasLancadas,
       linha.abaixoDaMedia ? 'Abaixo da média' : 'Regular',
     ]);
     this.exportacao.exportarCsv(
-      this.nomeArquivo('desempenho', relatorio.turmaNome),
+      nomeArquivoCsv('relatorio-desempenho', relatorio.turmaNome),
       cabecalhos,
       linhas,
     );
+    this.auditoria.registrar('relatorio.exportado', 'Relatorio', 'desempenho', relatorio.turmaNome);
   }
 
   private exportarPendentes(): void {
@@ -208,34 +222,15 @@ export class RelatoriosComponent {
       linha.total,
     ]);
     this.exportacao.exportarCsv(
-      this.nomeArquivo('avaliacoes-pendentes', relatorio.turmaNome),
+      nomeArquivoCsv('relatorio-avaliacoes-pendentes', relatorio.turmaNome),
       cabecalhos,
       linhas,
     );
-  }
-
-  private notaParaCsv(valor: number | null, casas: number): string {
-    if (valor === null) return '';
-    return valor.toLocaleString('pt-BR', {
-      minimumFractionDigits: casas,
-      maximumFractionDigits: casas,
-    });
-  }
-
-  private percentualParaCsv(valor: number | null): string {
-    return valor === null ? '' : valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
-  }
-
-  private nomeArquivo(tipo: TipoRelatorio, turmaNome: string): string {
-    return `relatorio-${tipo}-${this.slug(turmaNome)}`;
-  }
-
-  private slug(texto: string): string {
-    return texto
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .toLowerCase();
+    this.auditoria.registrar(
+      'relatorio.exportado',
+      'Relatorio',
+      'avaliacoes-pendentes',
+      relatorio.turmaNome,
+    );
   }
 }
