@@ -64,6 +64,18 @@ export class ResetDadosComponent {
       icone: 'grading',
       descricao: 'Exclui todas as avaliações e as notas lançadas.',
     },
+    {
+      chave: 'comunicacao',
+      rotulo: 'Mural e comunicados',
+      icone: 'campaign',
+      descricao: 'Exclui as publicações do mural, os recados e as observações privadas.',
+    },
+    {
+      chave: 'agenda',
+      rotulo: 'Agenda',
+      icone: 'event',
+      descricao: 'Exclui todos os eventos da agenda (aulas, avaliações, entregas e avisos).',
+    },
   ];
 
   protected readonly alvo = signal<AlvoLimpeza | null>(null);

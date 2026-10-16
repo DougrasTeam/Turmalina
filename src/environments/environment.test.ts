@@ -5,7 +5,7 @@
  */
 export const environment = {
   producao: false,
-  supabaseUrl: 'https://yrxztrhpdianpljdbkdm.supabase.co',
-  supabaseAnonKey: 'sb_publishable_LuHlCkeY83YPxE9CpGkURA_w67MgSiY',
+  SUPABASE_URL: 'https://yrxztrhpdianpljdbkdm.supabase.co',
+  SUPABASE_KEY: 'sb_publishable_LuHlCkeY83YPxE9CpGkURA_w67MgSiY',
   usarSupabaseDados: false,
 };

@@ -1,0 +1,113 @@
+<app-modal
+  [open]="open()"
+  [title]="publicacao() ? 'Editar publicação' : 'Nova publicação'"
+  (close)="fechar()"
+>
+  <form (submit)="salvar($event)">
+    <div class="form-grid">
+      <div class="span-2">
+        <label class="form-label" for="publicacao-titulo">Título *</label>
+        <input
+          id="publicacao-titulo"
+          class="form-control"
+          type="text"
+          [attr.maxlength]="tituloMax"
+          placeholder="Ex.: Feira de ciências"
+          [value]="form().titulo"
+          (input)="patch('titulo', valor($event))"
+        />
+      </div>
+
+      @if (turmaFixa()) {
+        <div class="span-2">
+          <label class="form-label" for="publicacao-turma-fixa">Destino</label>
+          <input
+            id="publicacao-turma-fixa"
+            class="form-control"
+            type="text"
+            [value]="nomeTurmaFixa()"
+            disabled
+          />
+          <p class="form-text">Esta publicação será enviada para esta turma.</p>
+        </div>
+      } @else {
+        <div class="span-2">
+          <label class="form-label" for="publicacao-turma">Destino</label>
+          <select
+            id="publicacao-turma"
+            class="form-select"
+            [value]="form().turmaId"
+            (change)="patch('turmaId', valor($event))"
+          >
+            @if (permitirInstitucional()) {
+              <option value="">Toda a instituição</option>
+            }
+            @for (turma of turmas(); track turma.id) {
+              <option [value]="turma.id">{{ turma.nome }}</option>
+            }
+          </select>
+          <p class="form-text">
+            @if (permitirInstitucional()) {
+              Escolha uma turma específica ou publique para todos os alunos da instituição.
+            } @else {
+              Escolha uma das suas turmas para publicar.
+            }
+          </p>
+        </div>
+      }
+
+      <div class="span-2">
+        <label class="form-label" for="publicacao-conteudo">Conteúdo *</label>
+        <textarea
+          id="publicacao-conteudo"
+          class="form-control"
+          rows="6"
+          [attr.maxlength]="conteudoMax"
+          placeholder="Escreva a mensagem do mural"
+          [value]="form().conteudo"
+          (input)="patch('conteudo', valor($event))"
+        ></textarea>
+      </div>
+
+      <div class="span-2">
+        <label class="form-label" for="publicacao-imagem">Foto</label>
+        <input
+          id="publicacao-imagem"
+          class="form-control"
+          type="file"
+          accept="image/*"
+          (change)="selecionarImagem($event)"
+        />
+        <p class="form-text">Opcional. JPG, PNG, WEBP ou GIF, até 5 MB.</p>
+
+        @if (imagemExibida(); as imagem) {
+          <div class="publicacao-imagem">
+            <img class="publicacao-imagem__preview" [src]="imagem" alt="Pré-visualização da foto" />
+            <button class="btn btn-light btn-sm" type="button" (click)="removerImagemSelecionada()">
+              Remover foto
+            </button>
+          </div>
+        }
+      </div>
+
+      <div>
+        <label class="form-label" for="publicacao-expira">Expira em</label>
+        <input
+          id="publicacao-expira"
+          class="form-control"
+          type="date"
+          [value]="form().expiraEm"
+          (input)="patch('expiraEm', valor($event))"
+        />
+        <p class="form-text">Opcional. Após esta data o aluno deixa de ver a publicação.</p>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="submit" [disabled]="salvando()">
+        {{ salvando() ? 'Salvando…' : publicacao() ? 'Salvar alterações' : 'Publicar' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

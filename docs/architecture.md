@@ -43,6 +43,15 @@ src/app/
     disciplina/disciplina-form/         Formulário de disciplina (modal)
     boletim/boletim/                    Boletim (equipe e aluno)
     relatorios/relatorios/              Relatórios institucionais (admin)
+    mural/mural/                        Mural e recados (equipe)
+    mural/feed-publicacoes/             Feed de publicações reutilizável (cartões)
+    mural/publicacao-form/              Formulário de publicação (modal)
+    mural/comunicado-form/              Formulário de recado/observação (modal)
+    aluno/mural/                        Feed/recados do aluno
+    agenda/agenda/                      Agenda escolar (equipe)
+    agenda/lista-eventos/               Lista de eventos reutilizável
+    agenda/evento-form/                 Formulário de evento (modal)
+    aluno/agenda/                       Agenda do aluno
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -208,6 +217,83 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   nas listas de alunos, turmas e professores; cada exportação registra evento via
   `AuditoriaService`. O boletim e os relatórios usam `window.print()` sobre um
   layout A4 definido em `src/styles.scss`.
+
+## Mural e recados (RF-022)
+
+- `Publicacao` (`core/models/publicacao.model.ts`): título, conteúdo,
+  `imagemUrl` (foto opcional), `turmaId` (`null` = toda a instituição),
+  `publicadaEm` (timestamp ISO), `expiraEm` (`yyyy-mm-dd` opcional), `status`
+  (`publicada|arquivada`) e autoria (`autorId`/`autorNome`). Helpers
+  `validarPublicacao`, `alcancePublicacao` (destino alcança uma turma?) e
+  `publicacaoVigente` (publicada e não expirada). Para as fotos: `validarImagemPublicacao`
+  (tipo/tamanho) e `imagemPublicacaoValida` (data URL ou http).
+- `Comunicado` (`core/models/comunicado.model.ts`): mensagem **individual**
+  (`alunoId`) com `tipo` `recado` (visível ao próprio aluno) ou `observacao`
+  (privada, só a equipe), mais autoria.
+- `sanitizarConteudo` (`core/models/conteudo.model.ts`) normaliza o texto (CRLF,
+  caracteres de controle, excesso de quebras) e o conteúdo é exibido apenas por
+  interpolação Angular — **nunca** via `innerHTML` —, impedindo HTML/script
+  (RN). O texto preserva quebras com `white-space: pre-wrap`.
+- `PublicacoesService` (`turmalina.publicacoes`) expõe `ordenadas`,
+  `vigentesParaTurma` e operações `criar/atualizar/arquivar/restaurar/remover`
+  (todas auditadas). `ComunicadosService` (`turmalina.comunicados`) expõe
+  `porAluno`, `recadosDoAluno` e `criar/remover` (auditados).
+- **Feed reutilizável** `features/mural/feed-publicacoes/`
+  (`FeedPublicacoesComponent`): recebe a lista já autorizada e mostra os cartões
+  (autor, destino, conteúdo, validade) com ações conforme a autoria
+  (`gerenciarTudo` ou `autorIdAtual`); emite `editar/arquivar/restaurar/excluir`.
+  É usado na equipe, no aluno e no detalhe da turma.
+- `aplicarFiltroPublicacoes` (`core/models/filtro-publicacoes.model.ts`) filtra o
+  feed por escopo (`tudo|escola|turma`), turma e autoria ("meus posts").
+- **Fotos do mural:** `MidiaService` (`core/services/midia.service.ts`) compacta a
+  imagem no navegador (redimensiona para no máximo 1280 px e converte em JPEG ~0,8)
+  e envia ao bucket público `mural-publicacoes` do **Supabase Storage**
+  (`cliente.storage`), devolvendo a URL pública guardada em `Publicacao.imagemUrl`.
+  No modo local a imagem compactada vira data URL. Remover/recolocar a foto (ou
+  excluir a publicação) apaga o objeto do Storage (best effort). `repository.factory.ts`
+  trata `imagem_url` como coluna nulável.
+- Página `features/mural/mural/` (`/mural`, admin/professor) com abas **Feed** e
+  **Recados**: o feed tem filtro por escopo (tudo / escola toda / turma) e "meus
+  posts", e o formulário de publicação (`permitirInstitucional` libera o destino
+  "toda a instituição", só para admin); admin vê tudo, professor vê as
+  publicações institucionais e das suas turmas, e os alunos das suas turmas. O
+  detalhe da turma (`features/turma/turma-detalhe/`) embute o **mural da turma**
+  com feed e publicação já destinada à turma (`turmaFixa`). A visão do aluno
+  (`features/aluno/mural/`, `/aluno/mural`) usa o mesmo feed filtrando entre
+  "Minha turma" e "Escola toda", e mostra os próprios recados. Sem chat em tempo
+  real e sem mensagem aluno→aluno.
+- No Supabase, as leituras são restritas por RLS
+  (`supabase/migrations/0004_mural_comunicados.sql`): equipe lê tudo; aluno lê
+  publicações publicadas do seu escopo (turma ou instituição) e não expiradas, e
+  apenas os recados endereçados a ele. A migração
+  `supabase/migrations/0005_mural_imagens.sql` adiciona a coluna `imagem_url` e o
+  bucket `mural-publicacoes` (público para leitura; escrita apenas para a equipe
+  via `public.eh_equipe()`).
+
+## Agenda (RF-023)
+
+- Modelo `Evento` (`core/models/evento.model.ts`) com `titulo`, `descricao`,
+  `tipo` (`aula|avaliacao|entrega|atividade|aviso`), `inicioEm` (ISO),
+  `turmaId` (opcional; `null` = escola toda), `autorId` e `autorNome`. Helpers de
+  domínio: `validarEvento`, `eventoDuplicado`, `ordenarEventosPorInicio`,
+  `eventoPassado`, `alcanceEvento` e formatação de data-hora no fuso local
+  (`formatarInicioEvento`, `paraValorInputDataHora`/`deValorInputDataHora`).
+- `EventosService` (`turmalina.eventos`) expõe `ordenados`, `proximos`,
+  `eventosParaTurma`, `encontrarDuplicado` e `criar`/`atualizar`/`remover`/
+  `removerTodas`/`removerVinculadasATurmas` (todas auditadas). Valida os campos e
+  bloqueia eventos duplicados (mesmo título/tipo/data).
+- **Lista reutilizável** `features/agenda/lista-eventos/` e **formulário modal**
+  `features/agenda/evento-form/`. Página `features/agenda/agenda/` (`/agenda`,
+  admin/professor) com filtros por escopo (tudo / escola toda / turma) e por
+  período (próximos / semana / mês / todos) via `aplicarFiltroEventos`
+  (`core/models/filtro-eventos.model.ts`); eventos passados ficam disponíveis no
+  histórico. `features/aluno/agenda/` (`/aluno/agenda`) mostra ao aluno os eventos
+  da própria turma e os da escola.
+- No Supabase, a tabela `eventos` (`supabase/migrations/0006_agenda.sql`) usa RLS:
+  equipe lê/escreve tudo; aluno lê eventos da sua turma e os da escola
+  (`public.auth_turma_id()` / `public.eh_equipe()`). A exclusão em massa
+  (`DadosService`, grupo `agenda`) e a cascata de exclusão de turmas também
+  removem os eventos relacionados.
 
 ## Painel do professor (RF-008)
 

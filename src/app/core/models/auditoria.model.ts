@@ -64,6 +64,13 @@ export const ACOES_AUDITORIA: readonly AcaoAuditoria[] = [
   { codigo: 'vinculo.removido', rotulo: 'Vínculo docente removido', icone: 'link_off', classe: 'badge-danger' },
   { codigo: 'vinculo.removidos-todos', rotulo: 'Vínculos docentes removidos', icone: 'link_off', classe: 'badge-danger' },
 
+  // Agenda
+  { codigo: 'evento.criado', rotulo: 'Evento criado', icone: 'event', classe: 'badge-success' },
+  { codigo: 'evento.atualizado', rotulo: 'Evento atualizado', icone: 'edit', classe: 'badge-info' },
+  { codigo: 'evento.removido', rotulo: 'Evento excluído', icone: 'delete', classe: 'badge-danger' },
+  { codigo: 'evento.removidos-todos', rotulo: 'Eventos excluídos', icone: 'delete_sweep', classe: 'badge-danger' },
+  { codigo: 'evento.removidos-por-turma', rotulo: 'Eventos de turmas excluídos', icone: 'delete_sweep', classe: 'badge-danger' },
+
   // Instituição
   { codigo: 'instituicao.salva', rotulo: 'Instituição salva', icone: 'account_balance', classe: 'badge-info' },
 ];
@@ -71,6 +78,7 @@ export const ACOES_AUDITORIA: readonly AcaoAuditoria[] = [
 const ROTULOS_ENTIDADE: Record<string, string> = {
   Avaliacao: 'Avaliação',
   Disciplina: 'Disciplina',
+  Evento: 'Evento',
   Frequencia: 'Frequência',
   Instituicao: 'Instituição',
   Matricula: 'Matrícula',

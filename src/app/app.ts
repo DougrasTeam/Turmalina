@@ -7,7 +7,10 @@ import { AuthService } from './core/services/auth.service';
 import { Papel, rotuloPapel } from './core/models/papel.model';
 import { AlunosService } from './core/services/alunos.service';
 import { AvaliacoesService } from './core/services/avaliacoes.service';
+import { ComunicadosService } from './core/services/comunicados.service';
+import { PublicacoesService } from './core/services/publicacoes.service';
 import { DisciplinasService } from './core/services/disciplinas.service';
+import { EventosService } from './core/services/eventos.service';
 import { FrequenciasService } from './core/services/frequencias.service';
 import { MatriculasService } from './core/services/matriculas.service';
 import { ProfessoresService } from './core/services/professores.service';
@@ -33,6 +36,8 @@ const NAV_EQUIPE_CADASTROS: ItemNav[] = [
   { path: '/alunos', label: 'Alunos', icon: 'groups' },
   { path: '/frequencia', label: 'Frequência', icon: 'fact_check' },
   { path: '/avaliacoes', label: 'Avaliações', icon: 'grading' },
+  { path: '/mural', label: 'Mural e recados', icon: 'campaign' },
+  { path: '/agenda', label: 'Agenda', icon: 'event' },
 ];
 
 const NAV_EQUIPE_MOBILE: ItemNav[] = [
@@ -53,6 +58,8 @@ const NAV_ADMIN: ItemNav[] = [
 const NAV_ALUNO: ItemNav[] = [
   { path: '/aluno/inicio', label: 'Início', icon: 'home' },
   { path: '/aluno/boletim', label: 'Boletim', icon: 'description' },
+  { path: '/aluno/mural', label: 'Mural', icon: 'campaign' },
+  { path: '/aluno/agenda', label: 'Agenda', icon: 'event' },
 ];
 
 @Component({
@@ -74,6 +81,9 @@ export class App {
   private readonly matriculas = inject(MatriculasService);
   private readonly frequencias = inject(FrequenciasService);
   private readonly avaliacoes = inject(AvaliacoesService);
+  private readonly publicacoes = inject(PublicacoesService);
+  private readonly comunicados = inject(ComunicadosService);
+  private readonly eventos = inject(EventosService);
   private readonly instituicao = inject(InstituicaoService);
   private readonly dadosDemo = inject(DadosDemoService);
   private readonly auditoria = inject(AuditoriaService);
@@ -106,6 +116,8 @@ export class App {
     { prefixo: '/alunos', titulo: 'Alunos' },
     { prefixo: '/frequencia', titulo: 'Frequência' },
     { prefixo: '/avaliacoes', titulo: 'Avaliações e notas' },
+    { prefixo: '/mural', titulo: 'Mural e recados' },
+    { prefixo: '/agenda', titulo: 'Agenda' },
     { prefixo: '/instituicao', titulo: 'Instituição' },
     { prefixo: '/periodos-letivos', titulo: 'Períodos letivos' },
     { prefixo: '/disciplinas', titulo: 'Disciplinas' },
@@ -114,6 +126,8 @@ export class App {
     { prefixo: '/reset-dados', titulo: 'Zona de perigo' },
     { prefixo: '/boletim', titulo: 'Boletim' },
     { prefixo: '/aluno/boletim', titulo: 'Meu boletim' },
+    { prefixo: '/aluno/mural', titulo: 'Meu mural' },
+    { prefixo: '/aluno/agenda', titulo: 'Minha agenda' },
     { prefixo: '/aluno', titulo: 'Minha área' },
   ];
 
@@ -154,6 +168,9 @@ export class App {
       this.matriculas.load(),
       this.frequencias.load(),
       this.avaliacoes.load(),
+      this.publicacoes.load(),
+      this.comunicados.load(),
+      this.eventos.load(),
       this.auditoria.carregar(),
     ]);
     await this.dadosDemo.garantir();

@@ -1,0 +1,69 @@
+<section class="page agenda">
+  <header class="page-header">
+    <div>
+      <h1>Minha agenda</h1>
+      <p class="tl-text-muted">
+        Aulas, avaliações, entregas, atividades e avisos da sua turma e da escola.
+      </p>
+    </div>
+  </header>
+
+  @if (!alunoProprio()) {
+    <div class="alert alert-warning" role="alert">
+      Não encontramos seu cadastro de aluno. Procure a secretaria da escola.
+    </div>
+  } @else {
+    <div class="page-toolbar agenda__toolbar">
+      <div class="agenda__filtros" role="group" aria-label="Filtrar eventos">
+        <button
+          class="chip"
+          type="button"
+          [class.active]="escopo() === 'tudo'"
+          [attr.aria-pressed]="escopo() === 'tudo'"
+          (click)="definirEscopo('tudo')"
+        >
+          Tudo
+        </button>
+        <button
+          class="chip"
+          type="button"
+          [class.active]="escopo() === 'turma'"
+          [attr.aria-pressed]="escopo() === 'turma'"
+          (click)="definirEscopo('turma')"
+        >
+          Minha turma
+        </button>
+        <button
+          class="chip"
+          type="button"
+          [class.active]="escopo() === 'escola'"
+          [attr.aria-pressed]="escopo() === 'escola'"
+          (click)="definirEscopo('escola')"
+        >
+          Escola toda
+        </button>
+      </div>
+
+      <span class="page-toolbar__spacer"></span>
+
+      <label class="form-label mb-0" for="agenda-aluno-periodo">Período</label>
+      <select
+        id="agenda-aluno-periodo"
+        class="form-select"
+        [value]="periodo()"
+        (change)="definirPeriodo($event)"
+      >
+        @for (opcao of periodos; track opcao.value) {
+          <option [value]="opcao.value">{{ opcao.label }}</option>
+        }
+      </select>
+    </div>
+
+    <app-lista-eventos
+      [eventos]="eventosVisiveis()"
+      [nomesTurmas]="nomesTurmas()"
+      vazioTitulo="Sem eventos por aqui"
+      vazioTexto="Quando houver novidades na agenda da sua turma, elas aparecerão neste espaço."
+    />
+  }
+</section>

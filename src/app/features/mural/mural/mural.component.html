@@ -1,0 +1,224 @@
+<section class="page mural">
+  <header class="page-header">
+    <div>
+      <h1>Mural</h1>
+      <p class="tl-text-muted">
+        Compartilhe novidades com as suas turmas ou com toda a escola e envie recados individuais.
+      </p>
+    </div>
+  </header>
+
+  <div class="mural__abas" role="tablist" aria-label="Seções de comunicação">
+    <button
+      class="mural__aba"
+      type="button"
+      role="tab"
+      [class.mural__aba--ativa]="aba() === 'feed'"
+      [attr.aria-selected]="aba() === 'feed'"
+      (click)="trocarAba('feed')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">campaign</span> Feed
+    </button>
+    <button
+      class="mural__aba"
+      type="button"
+      role="tab"
+      [class.mural__aba--ativa]="aba() === 'recados'"
+      [attr.aria-selected]="aba() === 'recados'"
+      (click)="trocarAba('recados')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">mark_email_unread</span>
+      Recados e observações
+    </button>
+  </div>
+
+  @if (aba() === 'feed') {
+    <div class="page-toolbar mural__toolbar">
+      <div class="mural__filtros">
+        <label class="form-label mb-0" for="mural-filtro">Ver publicações de</label>
+        <select
+          id="mural-filtro"
+          class="form-select"
+          [value]="valorFiltro()"
+          (change)="alterarEscopo($event)"
+        >
+          <option value="">Tudo que posso ver</option>
+          <option value="escola">Escola toda</option>
+          @for (turma of turmasDisponiveis(); track turma.id) {
+            <option [value]="turma.id">{{ turma.nome }}</option>
+          }
+        </select>
+        @if (turmasDisponiveis().length > 0) {
+          <label class="checkbox-chip">
+            <input
+              type="checkbox"
+              [checked]="filtro().apenasMeus"
+              (change)="alternarApenasMeus()"
+            />
+            Meus posts
+          </label>
+        }
+      </div>
+      <span class="page-toolbar__spacer"></span>
+      <button class="btn btn-primary" type="button" (click)="abrirNovaPublicacao()">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova publicação
+      </button>
+    </div>
+
+    <app-feed-publicacoes
+      [publicacoes]="publicacoesFiltradas()"
+      [nomesTurmas]="nomesTurmas()"
+      [autorIdAtual]="autorIdAtual()"
+      [gerenciarTudo]="gerenciarTudo()"
+      vazioTitulo="Nenhuma publicação ainda"
+      vazioTexto='Clique em "Nova publicação" para compartilhar um aviso com a turma ou com a escola.'
+      (editar)="abrirEdicaoPublicacao($event)"
+      (arquivar)="arquivarPublicacao($event)"
+      (restaurar)="restaurarPublicacao($event)"
+      (excluir)="pedirExclusaoPublicacao($event)"
+    />
+  } @else {
+    <div class="card">
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="span-2">
+            <label class="form-label" for="mural-aluno">Aluno</label>
+            @if (alunosDisponiveis().length === 0) {
+              <p class="tl-text-muted tl-small mb-0">
+                Nenhum aluno disponível. Cadastre alunos e vincule-os às suas turmas.
+              </p>
+            } @else {
+              <select
+                id="mural-aluno"
+                class="form-select"
+                [value]="alunoSelecionadoId()"
+                (change)="selecionarAluno($event)"
+              >
+                <option value="">Selecione um aluno</option>
+                @for (aluno of alunosDisponiveis(); track aluno.id) {
+                  <option [value]="aluno.id">{{ aluno.nome }}</option>
+                }
+              </select>
+            }
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-2">
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="!alunoSelecionado()"
+            (click)="abrirNovoComunicado()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">send</span> Novo comunicado
+          </button>
+        </div>
+      </div>
+    </div>
+
+    @if (alunoSelecionado(); as aluno) {
+      <h2 class="mural__secao-titulo">Comunicados de {{ aluno.nome }}</h2>
+
+      @if (comunicadosDoAluno().length === 0) {
+        <div class="card mb-0">
+          <div class="empty-state">
+            <div class="empty-state__icon" aria-hidden="true">
+              <span class="material-symbols-outlined">forum</span>
+            </div>
+            <h3>Nenhum comunicado</h3>
+            <p>Envie um recado visível ao aluno ou registre uma observação privada.</p>
+          </div>
+        </div>
+      } @else {
+        <div class="mural__feed">
+          @for (comunicado of comunicadosDoAluno(); track comunicado.id) {
+            <article class="card mural__item">
+              <div class="card-body">
+                <div class="mural__item-topo">
+                  <div>
+                    <h3 class="mural__titulo">{{ comunicado.titulo }}</h3>
+                    <p class="tl-small tl-text-muted mural__meta">
+                      {{ comunicado.autorNome }} · {{ formatarDataHora(comunicado.criadoEm) }}
+                    </p>
+                  </div>
+                  <span [class]="'badge ' + classeComunicado(comunicado)">
+                    {{ tipoComunicado(comunicado) }}
+                  </span>
+                </div>
+
+                <p class="mural__conteudo">{{ comunicado.conteudo }}</p>
+
+                <div class="table-actions mt-2">
+                  <button
+                    class="btn btn-sm btn-danger"
+                    type="button"
+                    aria-label="Excluir comunicado"
+                    (click)="pedirExclusaoComunicado(comunicado)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span> Excluir
+                  </button>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    }
+  }
+</section>
+
+<app-publicacao-form
+  [open]="formPublicacaoAberto()"
+  [publicacao]="publicacaoEditando()"
+  [turmas]="turmasDisponiveis()"
+  [permitirInstitucional]="gerenciarTudo()"
+  (salvo)="onPublicacaoSalva()"
+  (fechado)="fecharFormPublicacao()"
+/>
+
+<app-comunicado-form
+  [open]="formComunicadoAberto()"
+  [aluno]="alunoSelecionado()"
+  (salvo)="onComunicadoSalvo()"
+  (fechado)="fecharFormComunicado()"
+/>
+
+<app-modal
+  [open]="!!publicacaoExcluindo()"
+  title="Excluir publicação"
+  (close)="cancelarExclusaoPublicacao()"
+>
+  <p>
+    Deseja realmente excluir a publicação
+    <strong>{{ publicacaoExcluindo()?.titulo }}</strong
+    >? Esta ação não pode ser desfeita.
+  </p>
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusaoPublicacao()">
+      Cancelar
+    </button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusaoPublicacao()">
+      Excluir
+    </button>
+  </div>
+</app-modal>
+
+<app-modal
+  [open]="!!comunicadoExcluindo()"
+  title="Excluir comunicado"
+  (close)="cancelarExclusaoComunicado()"
+>
+  <p>
+    Deseja realmente excluir o comunicado
+    <strong>{{ comunicadoExcluindo()?.titulo }}</strong
+    >? Esta ação não pode ser desfeita.
+  </p>
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusaoComunicado()">
+      Cancelar
+    </button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusaoComunicado()">
+      Excluir
+    </button>
+  </div>
+</app-modal>

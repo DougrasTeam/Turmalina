@@ -1,0 +1,81 @@
+<section class="page mural">
+  <header class="page-header">
+    <div>
+      <h1>Meu mural</h1>
+      <p class="tl-text-muted">
+        Avisos da sua turma e da escola, além dos recados enviados pelos professores.
+      </p>
+    </div>
+  </header>
+
+  @if (!alunoProprio()) {
+    <div class="alert alert-warning" role="alert">
+      Não encontramos seu cadastro de aluno. Procure a secretaria da escola.
+    </div>
+  } @else {
+    <div class="mural__filtros" role="group" aria-label="Filtrar publicações">
+      <button
+        class="chip"
+        type="button"
+        [class.active]="escopo() === 'tudo'"
+        [attr.aria-pressed]="escopo() === 'tudo'"
+        (click)="definirEscopo('tudo')"
+      >
+        Tudo
+      </button>
+      <button
+        class="chip"
+        type="button"
+        [class.active]="escopo() === 'turma'"
+        [attr.aria-pressed]="escopo() === 'turma'"
+        (click)="definirEscopo('turma')"
+      >
+        Minha turma
+      </button>
+      <button
+        class="chip"
+        type="button"
+        [class.active]="escopo() === 'escola'"
+        [attr.aria-pressed]="escopo() === 'escola'"
+        (click)="definirEscopo('escola')"
+      >
+        Escola toda
+      </button>
+    </div>
+
+    <app-feed-publicacoes
+      [publicacoes]="publicacoesVisiveis()"
+      [nomesTurmas]="nomesTurmas()"
+      vazioTitulo="Sem avisos por aqui"
+      vazioTexto="Quando houver novidades para a sua turma, elas aparecerão neste espaço."
+    />
+
+    <h2 class="mural__secao-titulo">Meus recados</h2>
+
+    @if (meusRecados().length === 0) {
+      <div class="card mb-0">
+        <div class="empty-state">
+          <div class="empty-state__icon" aria-hidden="true">
+            <span class="material-symbols-outlined">mark_email_read</span>
+          </div>
+          <h3>Nenhum recado</h3>
+          <p>Você ainda não recebeu recados individuais.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="mural__feed">
+        @for (recado of meusRecados(); track recado.id) {
+          <article class="card mural__item">
+            <div class="card-body">
+              <h3 class="mural__titulo">{{ recado.titulo }}</h3>
+              <p class="tl-small tl-text-muted mural__meta">
+                {{ recado.autorNome }} · {{ formatarDataHora(recado.criadoEm) }}
+              </p>
+              <p class="mural__conteudo">{{ recado.conteudo }}</p>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+</section>

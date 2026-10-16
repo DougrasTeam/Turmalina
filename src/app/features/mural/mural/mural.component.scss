@@ -1,0 +1,93 @@
+.mural__abas {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--tl-border, #e5e7eb);
+}
+
+.mural__aba {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.9rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--tl-ink-muted, #6b7280);
+  font-weight: 600;
+  cursor: pointer;
+
+  &.mural__aba--ativa {
+    color: var(--tl-primary, #2563eb);
+    border-bottom-color: var(--tl-primary, #2563eb);
+  }
+
+  .material-symbols-outlined {
+    font-size: 1.15rem;
+  }
+}
+
+.mural__toolbar {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.mural__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.checkbox-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--tl-primary, #2563eb);
+  }
+}
+
+.mural__feed {
+  display: grid;
+  gap: 1rem;
+}
+
+.mural__item {
+  margin-bottom: 0;
+}
+
+.mural__item-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mural__titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.mural__meta {
+  margin: 0.25rem 0 0;
+}
+
+.mural__conteudo {
+  margin: 0.75rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mural__secao-titulo {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}

@@ -1,0 +1,76 @@
+<section class="page agenda">
+  <header class="page-header">
+    <div>
+      <h1>Agenda</h1>
+      <p class="tl-text-muted">
+        Organize aulas, avaliações, entregas, atividades e avisos da sua turma ou de toda a escola.
+      </p>
+    </div>
+  </header>
+
+  <div class="page-toolbar agenda__toolbar">
+    <div class="agenda__filtros">
+      <label class="form-label mb-0" for="agenda-escopo">Ver eventos de</label>
+      <select
+        id="agenda-escopo"
+        class="form-select"
+        [value]="valorFiltro()"
+        (change)="alterarEscopo($event)"
+      >
+        <option value="">Tudo que posso ver</option>
+        <option value="escola">Escola toda</option>
+        @for (turma of turmasDisponiveis(); track turma.id) {
+          <option [value]="turma.id">{{ turma.nome }}</option>
+        }
+      </select>
+
+      <label class="form-label mb-0" for="agenda-periodo">Período</label>
+      <select
+        id="agenda-periodo"
+        class="form-select"
+        [value]="filtro().periodo"
+        (change)="alterarPeriodo($event)"
+      >
+        @for (periodo of periodos; track periodo.value) {
+          <option [value]="periodo.value">{{ periodo.label }}</option>
+        }
+      </select>
+    </div>
+
+    <span class="page-toolbar__spacer"></span>
+    <button class="btn btn-primary" type="button" (click)="abrirNovoEvento()">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span> Novo evento
+    </button>
+  </div>
+
+  <app-lista-eventos
+    [eventos]="eventosFiltrados()"
+    [nomesTurmas]="nomesTurmas()"
+    [gerenciar]="true"
+    vazioTitulo="Nenhum evento no período"
+    vazioTexto='Clique em "Novo evento" para agendar uma aula, avaliação, entrega ou aviso.'
+    (editar)="abrirEdicao($event)"
+    (excluir)="pedirExclusao($event)"
+  />
+</section>
+
+<app-evento-form
+  [open]="formAberto()"
+  [evento]="eventoEditando()"
+  [turmas]="turmasDisponiveis()"
+  [permitirInstitucional]="auth.papel() === 'administrador'"
+  (salvo)="onEventoSalvo()"
+  (fechado)="fecharForm()"
+/>
+
+<app-modal [open]="!!eventoExcluindo()" title="Excluir evento" (close)="cancelarExclusao()">
+  <p>
+    Deseja realmente excluir o evento
+    <strong>{{ eventoExcluindo()?.titulo }}</strong
+    >? Esta ação não pode ser desfeita.
+  </p>
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-light" type="button" (click)="cancelarExclusao()">Cancelar</button>
+    <button class="btn btn-danger" type="button" (click)="confirmarExclusao()">Excluir</button>
+  </div>
+</app-modal>

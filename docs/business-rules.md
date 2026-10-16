@@ -91,6 +91,35 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   média e média de desempenho do período, alunos em atenção) e **nunca exibem
   números artificiais**: sem dados, mostram estado vazio. Cada indicador traz a
   definição do cálculo e atalhos para chamada, notas e alunos.
+- **RF-022 (mural e recados):** o **mural** é apresentado como um **feed** de
+  publicações coletivas de uma turma ou de toda a instituição (`turmaId` nulo =
+  institucional), com título, texto, **foto opcional** (JPG/PNG/WEBP/GIF até 5 MB,
+  compactada no navegador antes do envio), data de publicação e expiração
+  opcional; a
+  publicação pode ser editada, **arquivada** (some do aluno) ou restaurada,
+  sempre com autoria. O feed é reutilizado no detalhe da turma e na visão do
+  aluno. **Somente o administrador publica para toda a instituição**; o professor
+  publica para as suas turmas. O feed permite filtrar por escopo (tudo / escola
+  toda / turma) e pelas próprias publicações. O aluno vê apenas as publicações
+  **vigentes** (publicadas e não expiradas) da sua turma mais as institucionais,
+  podendo alternar o filtro entre elas. Os **comunicados** são individuais e
+  privados:
+  **recado** é visível ao próprio aluno; **observação** é privada e só a equipe
+  vê — observações privadas nunca aparecem para o aluno, no boletim ou em
+  exportações. O conteúdo é **sanitizado** e exibido apenas como texto (sem
+  HTML/script, sem `innerHTML`). Não há chat em tempo real nem mensagem
+  aluno→aluno. Criar/editar/arquivar publicações e enviar/remover comunicados
+  geram eventos de auditoria.
+- **RF-023 (agenda):** a agenda reúne **eventos escolares** de tipos `aula`,
+  `avaliacao`, `entrega`, `atividade` e `aviso`, cada um com título, descrição,
+  data-hora e turma-alvo opcional (`turmaId` nulo = toda a escola). Os eventos são
+  listados em **ordem cronológica** e podem ser filtrados por **escopo** (tudo /
+  escola toda / turma) e por **período** (próximos / semana / mês / todos);
+  eventos passados permanecem no **histórico** (consultáveis). O sistema **bloqueia
+  eventos duplicados** (mesmo título, tipo e data-hora). A data-hora é exibida no
+  **fuso local** do usuário, sem deslocamento inesperado. O aluno vê apenas os
+  eventos da sua turma e os da escola. Criar/editar/remover eventos — inclusive em
+  cascata ao excluir turmas — geram eventos de auditoria.
 - **Exclusão em massa (demonstração):** as telas de cadastro e a **Zona de
   perigo** (admin) permitem excluir todos os registros de um tipo ou todos os
   dados, exigindo digitar `EXCLUIR` (e `EXCLUIR TUDO` para o apagamento total).
