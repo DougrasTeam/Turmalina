@@ -1,0 +1,85 @@
+﻿<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Minhas moedas</h1>
+      <p class="tl-text-muted">
+        As moedas são um saldo interno de gamificação, nunca dinheiro real. O saldo é sempre a soma
+        do seu histórico de movimentações.
+      </p>
+    </div>
+  </header>
+
+  @if (alunoProprio(); as aluno) {
+    <article class="card moedas-aluno__destaque">
+      <div class="moedas-aluno__avatar" aria-hidden="true">{{ iniciais(aluno.nome) }}</div>
+
+      <div class="moedas-aluno__info">
+        <h2 class="moedas-aluno__nome">{{ aluno.nome }}</h2>
+        <p class="moedas-aluno__saldo">
+          <span class="material-symbols-outlined" aria-hidden="true">monetization_on</span>
+          <strong>{{ saldo() }}</strong> moedas
+        </p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-body">
+        <h2 class="moedas-aluno__titulo">Extrato</h2>
+      </div>
+
+      @if (extrato().length === 0) {
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">payments</span>
+          <h3>Nenhuma movimentação</h3>
+          <p>Suas movimentações de moedas aparecerão aqui.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Origem</th>
+                <th>Descrição</th>
+                <th class="text-end">Moedas</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (movimentacao of extrato(); track movimentacao.id) {
+                <tr>
+                  <td class="moedas-aluno__data">{{ formatarDataHora(movimentacao.criadoEm) }}</td>
+                  <td>{{ rotuloOrigem(movimentacao.origem) }}</td>
+                  <td>
+                    {{ movimentacao.descricao }}
+                    @if (movimentacao.estornoDe) {
+                      <span class="badge badge-info">Estorno</span>
+                    } @else if (estornadas().has(movimentacao.id)) {
+                      <span class="badge badge-neutral">Estornado</span>
+                    }
+                  </td>
+                  <td class="text-end">
+                    <span
+                      [class]="
+                        'badge ' + (movimentacao.delta > 0 ? 'badge-success' : 'badge-warning')
+                      "
+                    >
+                      {{ formatarDelta(movimentacao.delta) }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  } @else {
+    <div class="card">
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">person</span>
+        <h3>Conta de aluno não localizada</h3>
+        <p>Peça à secretaria para conferir o e-mail vinculado ao seu cadastro.</p>
+      </div>
+    </div>
+  }
+</section>

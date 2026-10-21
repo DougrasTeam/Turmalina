@@ -24,6 +24,10 @@ export class SupabaseService {
   /**
    * Devolve o cliente Supabase, criando-o na primeira chamada.
    * Só pode ser usado no navegador; no servidor lança um erro claro.
+   *
+   * A sessão persistida é hidratada antes de devolver o cliente. Sem isso, uma
+   * consulta disparada logo após o login poderia partir sem o token do usuário
+   * e o RLS responderia como visitante (listas vazias intermitentes).
    */
   async obterCliente(): Promise<SupabaseClient> {
     if (!this.disponivel) {
@@ -35,7 +39,31 @@ export class SupabaseService {
       this.clienteCriado = await this.criacaoEmAndamento;
     }
 
+    await this.garantirSessaoCarregada(this.clienteCriado);
     return this.clienteCriado;
+  }
+
+  private sessaoCarregada = false;
+  private hidratacaoEmAndamento: Promise<void> | null = null;
+
+  /**
+   * Hidrata a sessão persistida uma única vez. A promessa é compartilhada para
+   * que chamadas concorrentes aguardem a mesma hidratação em vez de dispararem
+   * `getSession()` em paralelo (o que reintroduziria a corrida).
+   */
+  private garantirSessaoCarregada(cliente: SupabaseClient): Promise<void> {
+    if (this.sessaoCarregada) return Promise.resolve();
+
+    this.hidratacaoEmAndamento ??= cliente.auth
+      .getSession()
+      .then(() => {
+        this.sessaoCarregada = true;
+      })
+      .catch(() => {
+        // Sem sessão restaurável, segue como visitante; o RLS decide o acesso.
+      });
+
+    return this.hidratacaoEmAndamento;
   }
 
   private async criarCliente(): Promise<SupabaseClient> {

@@ -40,6 +40,8 @@ export interface Aluno extends BaseEntity {
   ativo: boolean;
   xp: number;
   moedas: number;
+  /** Id da conta de acesso vinculada no Supabase Auth; ausente quando ainda não há conta. */
+  userId?: string | null;
 }
 
 export interface TurnoOpcao {
@@ -87,16 +89,20 @@ export * from './auditoria.model';
 export * from './avaliacao.model';
 export * from './boletim.model';
 export * from './comunicado.model';
+export * from './conquistas.model';
 export * from './conta-usuario.model';
 export * from './conteudo.model';
 export * from './disciplina.model';
+export * from './equipes.model';
 export * from './etapa-avaliacao.model';
 export * from './evento.model';
 export * from './filtro-eventos.model';
 export * from './filtro-publicacoes.model';
 export * from './frequencia.model';
+export * from './gamificacao.model';
 export * from './instituicao.model';
 export * from './matricula.model';
+export * from './moedas.model';
 export * from './papel.model';
 export * from './perfil.model';
 export * from './periodo-letivo.model';

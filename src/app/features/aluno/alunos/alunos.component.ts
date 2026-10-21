@@ -7,6 +7,7 @@ import { AlunoFormComponent } from '../aluno-form/aluno-form.component';
 import { AlunoImportComponent, ResumoImport } from '../aluno-import/aluno-import.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuditoriaService } from '../../../core/services/auditoria.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { DadosService } from '../../../core/services/dados.service';
 import { ExportacaoService, nomeArquivoCsv } from '../../../core/services/exportacao.service';
 import { MatriculasService } from '../../../core/services/matriculas.service';
@@ -24,10 +25,14 @@ export class AlunosComponent {
   protected readonly alunos = inject(AlunosService);
   protected readonly turmas = inject(TurmasService);
   protected readonly matriculas = inject(MatriculasService);
+  protected readonly auth = inject(AuthService);
   private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
   private readonly exportacao = inject(ExportacaoService);
   private readonly auditoria = inject(AuditoriaService);
+
+  /** O professor apenas consulta; criar, editar e excluir são do administrador. */
+  protected readonly somenteLeitura = computed(() => !this.auth.temPapel('administrador'));
 
   protected readonly busca = signal('');
   protected readonly turmaFiltro = signal('');

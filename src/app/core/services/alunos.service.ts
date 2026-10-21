@@ -34,6 +34,36 @@ export class AlunosService {
     this.carregado = true;
   }
 
+  /**
+   * Relê a lista ignorando o cache de carga. Usado quando a sessão muda ou uma
+   * leitura anterior aconteceu antes de o token do usuário estar disponível.
+   */
+  async recarregar(): Promise<void> {
+    this.carregado = false;
+    await this.load();
+  }
+
+  /**
+   * Localiza o cadastro de aluno de um usuário autenticado.
+   *
+   * Prioriza o vínculo pela conta (`userId`), que é o elo confiável com o
+   * Supabase Auth. Se o vínculo ainda não estiver presente, compara pelo e-mail
+   * normalizado como alternativa.
+   */
+  encontrarPorUsuario(usuarioId: string | null | undefined, email: string | null | undefined): Aluno | null {
+    if (usuarioId) {
+      const porConta = this._alunos().find((aluno) => aluno.userId === usuarioId);
+      if (porConta) return porConta;
+    }
+
+    const emailNormalizado = email?.trim().toLowerCase();
+    if (!emailNormalizado) return null;
+
+    return (
+      this._alunos().find((aluno) => aluno.email.trim().toLowerCase() === emailNormalizado) ?? null
+    );
+  }
+
   porTurma(turmaId: string): Aluno[] {
     return this._alunos().filter((a) => a.turmaId === turmaId);
   }

@@ -12,6 +12,9 @@ import { PublicacoesService } from './core/services/publicacoes.service';
 import { DisciplinasService } from './core/services/disciplinas.service';
 import { EventosService } from './core/services/eventos.service';
 import { FrequenciasService } from './core/services/frequencias.service';
+import { ConquistasService } from './core/services/conquistas.service';
+import { EquipesService } from './core/services/equipes.service';
+import { GamificacaoService } from './core/services/gamificacao.service';
 import { MatriculasService } from './core/services/matriculas.service';
 import { ProfessoresService } from './core/services/professores.service';
 import { ToastService } from './core/services/toast.service';
@@ -28,28 +31,43 @@ interface ItemNav {
   icon: string;
 }
 
-const NAV_EQUIPE_PRINCIPAL: ItemNav[] = [{ path: '/dashboard', label: 'Painel', icon: 'dashboard' }];
+interface SecaoNav {
+  titulo: string;
+  itens: ItemNav[];
+}
 
-const NAV_EQUIPE_CADASTROS: ItemNav[] = [
+const NAV_EQUIPE_PRINCIPAL: ItemNav[] = [
+  { path: '/dashboard', label: 'Painel', icon: 'dashboard' },
   { path: '/turmas', label: 'Turmas', icon: 'school' },
-  { path: '/professores', label: 'Professores', icon: 'co_present' },
-  { path: '/alunos', label: 'Alunos', icon: 'groups' },
-  { path: '/frequencia', label: 'Frequência', icon: 'fact_check' },
-  { path: '/avaliacoes', label: 'Avaliações', icon: 'grading' },
   { path: '/mural', label: 'Mural e recados', icon: 'campaign' },
-  { path: '/agenda', label: 'Agenda', icon: 'event' },
+];
+
+const NAV_GAMIFICACAO: ItemNav[] = [
+  { path: '/gamificacao/pontuar', label: 'Pontuar', icon: 'stars' },
+  { path: '/gamificacao/equipes', label: 'Equipes', icon: 'diversity_3' },
+  { path: '/gamificacao/acoes', label: 'Ações de XP', icon: 'military_tech' },
+  { path: '/gamificacao/conquistas', label: 'Conquistas', icon: 'workspace_premium' },
+  { path: '/gamificacao/moedas', label: 'Loja de moedas', icon: 'monetization_on' },
+];
+
+const NAV_CONSULTA: ItemNav[] = [
+  { path: '/alunos', label: 'Alunos', icon: 'groups' },
+  { path: '/professores', label: 'Professores', icon: 'co_present' },
 ];
 
 const NAV_EQUIPE_MOBILE: ItemNav[] = [
   { path: '/dashboard', label: 'Painel', icon: 'dashboard' },
   { path: '/turmas', label: 'Turmas', icon: 'school' },
-  { path: '/alunos', label: 'Alunos', icon: 'groups' },
+  { path: '/gamificacao/pontuar', label: 'Pontuar', icon: 'stars' },
 ];
 
 const NAV_ADMIN: ItemNav[] = [
   { path: '/instituicao', label: 'Instituição', icon: 'account_balance' },
   { path: '/periodos-letivos', label: 'Períodos letivos', icon: 'calendar_month' },
   { path: '/disciplinas', label: 'Disciplinas', icon: 'menu_book' },
+  { path: '/frequencia', label: 'Frequência', icon: 'fact_check' },
+  { path: '/avaliacoes', label: 'Avaliações', icon: 'grading' },
+  { path: '/agenda', label: 'Agenda', icon: 'event' },
   { path: '/relatorios', label: 'Relatórios', icon: 'insights' },
   { path: '/auditoria', label: 'Auditoria', icon: 'history' },
   { path: '/reset-dados', label: 'Zona de perigo', icon: 'delete_forever' },
@@ -60,6 +78,9 @@ const NAV_ALUNO: ItemNav[] = [
   { path: '/aluno/boletim', label: 'Boletim', icon: 'description' },
   { path: '/aluno/mural', label: 'Mural', icon: 'campaign' },
   { path: '/aluno/agenda', label: 'Agenda', icon: 'event' },
+  { path: '/aluno/gamificacao', label: 'Meu XP', icon: 'stars' },
+  { path: '/aluno/moedas', label: 'Moedas', icon: 'monetization_on' },
+  { path: '/aluno/conquistas', label: 'Álbum', icon: 'workspace_premium' },
 ];
 
 @Component({
@@ -84,6 +105,9 @@ export class App {
   private readonly publicacoes = inject(PublicacoesService);
   private readonly comunicados = inject(ComunicadosService);
   private readonly eventos = inject(EventosService);
+  private readonly gamificacao = inject(GamificacaoService);
+  private readonly conquistas = inject(ConquistasService);
+  private readonly equipes = inject(EquipesService);
   private readonly instituicao = inject(InstituicaoService);
   private readonly dadosDemo = inject(DadosDemoService);
   private readonly auditoria = inject(AuditoriaService);
@@ -95,13 +119,24 @@ export class App {
     this.auth.papel() === 'aluno' ? NAV_ALUNO : NAV_EQUIPE_PRINCIPAL,
   );
 
-  readonly registerNav = computed<ItemNav[]>(() =>
-    this.auth.temPapel('administrador', 'professor') ? NAV_EQUIPE_CADASTROS : [],
-  );
+  /** Seções do menu lateral para a equipe (administrador e professor). */
+  readonly secoesNav = computed<SecaoNav[]>(() => {
+    if (this.auth.papel() === 'aluno') {
+      return [];
+    }
 
-  readonly adminNav = computed<ItemNav[]>(() =>
-    this.auth.temPapel('administrador') ? NAV_ADMIN : [],
-  );
+    const secoes: SecaoNav[] = [
+      { titulo: 'Principal', itens: NAV_EQUIPE_PRINCIPAL },
+      { titulo: 'Gerenciar gamificação', itens: NAV_GAMIFICACAO },
+      { titulo: 'Consulta', itens: NAV_CONSULTA },
+    ];
+
+    if (this.auth.temPapel('administrador')) {
+      secoes.push({ titulo: 'Administração', itens: NAV_ADMIN });
+    }
+
+    return secoes;
+  });
 
   readonly mobileNav = computed<ItemNav[]>(() =>
     this.auth.papel() === 'aluno' ? NAV_ALUNO : NAV_EQUIPE_MOBILE,
@@ -118,16 +153,24 @@ export class App {
     { prefixo: '/avaliacoes', titulo: 'Avaliações e notas' },
     { prefixo: '/mural', titulo: 'Mural e recados' },
     { prefixo: '/agenda', titulo: 'Agenda' },
+    { prefixo: '/pontuar', titulo: 'Pontuar' },
     { prefixo: '/instituicao', titulo: 'Instituição' },
     { prefixo: '/periodos-letivos', titulo: 'Períodos letivos' },
     { prefixo: '/disciplinas', titulo: 'Disciplinas' },
     { prefixo: '/relatorios', titulo: 'Relatórios' },
+    { prefixo: '/gamificacao/acoes', titulo: 'Ações de XP' },
+    { prefixo: '/gamificacao/conquistas', titulo: 'Conquistas' },
+    { prefixo: '/gamificacao/equipes', titulo: 'Equipes' },
+    { prefixo: '/gamificacao/moedas', titulo: 'Moedas virtuais' },
     { prefixo: '/auditoria', titulo: 'Auditoria' },
     { prefixo: '/reset-dados', titulo: 'Zona de perigo' },
     { prefixo: '/boletim', titulo: 'Boletim' },
     { prefixo: '/aluno/boletim', titulo: 'Meu boletim' },
     { prefixo: '/aluno/mural', titulo: 'Meu mural' },
     { prefixo: '/aluno/agenda', titulo: 'Minha agenda' },
+    { prefixo: '/aluno/gamificacao', titulo: 'Meu XP' },
+    { prefixo: '/aluno/moedas', titulo: 'Minhas moedas' },
+    { prefixo: '/aluno/conquistas', titulo: 'Meu álbum' },
     { prefixo: '/aluno', titulo: 'Minha área' },
   ];
 
@@ -135,6 +178,8 @@ export class App {
     const url = this.urlAtual();
     return this.titulos.find((titulo) => url.startsWith(titulo.prefixo))?.titulo ?? 'Turmalina';
   });
+
+  private usuarioCarregadoId: string | null = null;
 
   constructor() {
     void this.auth.garantirSessaoCarregada();
@@ -152,9 +197,10 @@ export class App {
     }
 
     effect(() => {
-      if (this.auth.autenticado()) {
-        void this.carregarDados();
-      }
+      const usuario = this.auth.usuario();
+      if (!usuario) return;
+      if (this.usuarioCarregadoId === usuario.id) return;
+      void this.carregarDados(usuario.id);
     });
 
     this.router.events
@@ -168,11 +214,17 @@ export class App {
       });
   }
 
-  private async carregarDados(): Promise<void> {
+  private async carregarDados(usuarioId: string): Promise<void> {
+    // Aguarda a sessão do AuthRepository para que a sessão (token) já esteja
+    // disponível ao cliente de dados; sem isso, o RLS poderia responder como
+    // visitante e as listas chegariam vazias.
+    await this.auth.garantirSessaoCarregada();
+    this.usuarioCarregadoId = usuarioId;
+
     await Promise.all([
       this.turmas.load(),
       this.professores.load(),
-      this.alunos.load(),
+      this.alunos.recarregar(),
       this.instituicao.load(),
       this.periodos.load(),
       this.disciplinas.load(),
@@ -183,9 +235,27 @@ export class App {
       this.publicacoes.load(),
       this.comunicados.load(),
       this.eventos.load(),
+      this.gamificacao.load(),
+      this.conquistas.load(),
+      this.equipes.load(),
       this.auditoria.carregar(),
     ]);
     await this.dadosDemo.garantir();
+    await this.garantirAlunoVinculado(usuarioId);
+  }
+
+  /**
+   * Se o usuário logado é aluno e a lista carregada não contém o seu cadastro,
+   * faz uma releitura única. Cobre o caso de a primeira leitura ter acontecido
+   * antes de a sessão estar disponível ao cliente de dados (RLS como visitante).
+   */
+  private async garantirAlunoVinculado(usuarioId: string): Promise<void> {
+    if (this.auth.papel() !== 'aluno') return;
+    const usuario = this.auth.usuario();
+    if (!usuario) return;
+    if (this.alunos.encontrarPorUsuario(usuario.id, usuario.email)) return;
+
+    await this.alunos.recarregar();
   }
 
   iniciais(nome: string): string {

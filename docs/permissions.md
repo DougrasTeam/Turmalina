@@ -25,13 +25,16 @@
 | `/boletim/:alunoId`| sim           | sim       | não |
 | `/mural`           | sim           | sim       | não |
 | `/agenda`          | sim           | sim       | não |
+| `/pontuar`         | sim           | sim       | não |
 | `/aluno/inicio`    | não           | não       | sim |
 | `/aluno/boletim`   | não           | não       | sim |
 | `/aluno/mural`     | não           | não       | sim |
 | `/aluno/agenda`    | não           | não       | sim |
+| `/aluno/gamificacao`| não          | não       | sim |
 | `/instituicao`     | sim           | não       | não |
 | `/periodos-letivos`| sim           | não       | não |
 | `/disciplinas`     | sim           | não       | não |
+| `/gamificacao/acoes`| sim          | não       | não |
 | `/relatorios`      | sim           | não       | não |
 | `/reset-dados`     | sim           | não       | não |
 
@@ -74,6 +77,15 @@ Regras aplicadas:
   instituição** (`turmaId` nulo). O aluno acessa `/aluno/agenda` e vê apenas os
   eventos da sua turma e os da escola. No Supabase, o escopo é reforçado por RLS
   (migração `0006`).
+- Gamificação/RF-015: o **administrador** define as ações de gamificação em
+  `/gamificacao/acoes` (criar/editar/ativar/desativar/excluir, auditado); o
+  **administrador/professor** usa `/pontuar` para conceder XP a um ou mais alunos
+  e para **estornar** lançamentos (correção auditada, sem exclusão silenciosa); o
+  **aluno** acessa `/aluno/gamificacao` e vê apenas o próprio XP, nível, progresso
+  e histórico (resolvido pelo e-mail da sessão). No Supabase, o escopo é reforçado
+  por RLS (migração `0007`): leitura pela equipe ou pelo próprio aluno, escrita de
+  XP apenas pela equipe e exclusão apenas pelo admin; a equipe só pode atualizar
+  `xp`/`moedas` no aluno (política + trigger `proteger_alunos_exceto_xp`).
 - Exportação CSV respeita o mesmo escopo de acesso da tela: boletim (equipe e o
   próprio aluno) e listas de alunos/turmas/professores e relatórios (equipe/admin,
   conforme a tela). Toda exportação de dados sensíveis registra evento de

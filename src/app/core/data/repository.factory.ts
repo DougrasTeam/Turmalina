@@ -37,6 +37,33 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
   },
   'turmalina.comunicados': { tabela: 'comunicados', ordenacao: 'criado_em' },
   'turmalina.eventos': { tabela: 'eventos', ordenacao: 'inicio_em', nulaveis: ['turma_id'] },
+  'turmalina.acoes-gamificacao': { tabela: 'acoes_gamificacao', ordenacao: 'nome' },
+  'turmalina.eventos-xp': {
+    tabela: 'eventos_xp',
+    ordenacao: 'criado_em',
+    nulaveis: ['turma_id', 'acao_id', 'estorno_de'],
+  },
+  'turmalina.moedas': {
+    tabela: 'movimentacoes_moedas',
+    ordenacao: 'criado_em',
+    nulaveis: ['turma_id', 'autor_id', 'estorno_de', 'referencia_id'],
+  },
+  'turmalina.conquistas': { tabela: 'conquistas', ordenacao: 'nome' },
+  'turmalina.conquistas-aluno': {
+    tabela: 'conquistas_aluno',
+    ordenacao: 'criado_em',
+    nulaveis: ['autor_id', 'estorno_de'],
+  },
+  'turmalina.equipes': {
+    tabela: 'equipes',
+    ordenacao: 'nome',
+    nulaveis: ['periodo_letivo_id'],
+  },
+  'turmalina.equipe-membros': {
+    tabela: 'equipe_membros',
+    ordenacao: 'criado_em',
+    nulaveis: ['periodo_letivo_id', 'fim_em', 'autor_id'],
+  },
   'turmalina.auditoria': { tabela: 'eventos_auditoria', ordenacao: 'criado_em' },
 };
 

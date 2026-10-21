@@ -12,7 +12,8 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
 - **Rota inicial por papel:** administrador/professor → `/dashboard`; aluno →
   `/aluno/inicio`.
 - **Importação de alunos:** mapeamento de colunas, com criação automática de
-  turmas conforme implementado em `alunos/`.
+  turmas conforme implementado em `alunos/`; cada importação registra evento de
+  auditoria (`aluno.importado`) com a quantidade de alunos e turmas criados.
 - **Instituição e período letivo (RF-002):** dados básicos da instituição e fuso
   horário; períodos com nome, datas e status. Um **único período ativo**
   (ativar outro encerra o anterior). Datas inválidas e **sobreposição** entre
@@ -120,6 +121,22 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   **fuso local** do usuário, sem deslocamento inesperado. O aluno vê apenas os
   eventos da sua turma e os da escola. Criar/editar/remover eventos — inclusive em
   cascata ao excluir turmas — geram eventos de auditoria.
+- **RF-015 (ações e XP):** o administrador (ou perfil autorizado) define **ações
+  de gamificação** com nome, ícone, **valor de XP**, indicador associado e status;
+  o professor seleciona **um ou mais alunos** e registra a ação. O valor de XP é
+  limitado pelo máximo configurável (e, quando negativo, pelo limite negativo),
+  e ações inativas não pontuam. Antes de confirmar, o sistema mostra o **preview**
+  dos alunos afetados e do total de XP. O **nível** do aluno deriva de fórmula
+  documentada e configurável (`nivelPorXp`), e o XP do aluno **nunca** fica
+  negativo. O registro é **idempotente**: duplo clique, reenvio ou rede instável
+  **não** concedem XP duplicado (chave de idempotência por aluno/lote). Correções
+  são feitas por **estorno auditado** (`origem: estorno`), nunca por exclusão
+  silenciosa; estorno duplo e estorno-de-estorno são bloqueados. Cada concessão
+  (`xp.concedido`) e estorno (`xp.estornado`) gera evento de auditoria. **XP não
+  é nota:** a gamificação **nunca** cria ou altera nota, frequência ou aprovação
+  (ver Transversais 1 e 7). O aluno acompanha XP, nível, progresso e histórico em
+  `/aluno/gamificacao`. A gamificação pode ser desativada por instituição/turma
+  em fase futura.
 - **Exclusão em massa (demonstração):** as telas de cadastro e a **Zona de
   perigo** (admin) permitem excluir todos os registros de um tipo ou todos os
   dados, exigindo digitar `EXCLUIR` (e `EXCLUIR TUDO` para o apagamento total).

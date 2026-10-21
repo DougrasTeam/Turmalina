@@ -52,6 +52,9 @@ src/app/
     agenda/lista-eventos/               Lista de eventos reutilizável
     agenda/evento-form/                 Formulário de evento (modal)
     aluno/agenda/                       Agenda do aluno
+    gamificacao/acoes-gamificacao/      Catálogo de ações de XP (admin)
+    gamificacao/pontuar/                Pontuar alunos (equipe)
+    aluno/gamificacao/                  XP/nível/histórico do aluno
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -295,6 +298,116 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   (`DadosService`, grupo `agenda`) e a cascata de exclusão de turmas também
   removem os eventos relacionados.
 
+## Ações e XP (RF-015)
+
+- Modelo `core/models/gamificacao.model.ts`: `AcaoGamificacao` (nome, ícone,
+  valor de XP, indicador, status) e `EventoXp` (aluno, turma, ação, delta,
+  origem, autor, `idempotencyKey` e data). Constantes `XP_POR_NIVEL`,
+  `VALOR_XP_MAXIMO`, `VALOR_XP_NEGATIVO_MAXIMO`, `ICONES_ACAO` e
+  `ACOES_GAMIFICACAO_PADRAO` (sementes). Helpers puros: `validarAcaoGamificacao`,
+  `nivelPorXp`, `xpNoNivelAtual`, `xpParaProximoNivel`, `progressoNivel`,
+  `formatarDeltaXp` e `criarChaveIdempotencia` (crypto com fallback).
+- `GamificacaoService` (`turmalina.acoes-gamificacao` / `turmalina.eventos-xp`)
+  expõe signals/computeds e as operações: CRUD de ações (auditado:
+  `acao.criada/atualizada/ativada/desativada/excluida`), `registrarPontuacao`
+  (idempotente por `${chaveLote}:${alunoId}`, rejeita ação inativa, soma XP no
+  aluno com piso 0, auditoria `xp.concedido`), `estornar` que cria um evento
+  negado (`origem: estorno`, chave `estorno:<id>`, `estornoDe`) com guarda de
+  estorno duplo e de estorno-de-estorno, consultas `eventosDoAluno`/
+  `eventosDaTurma`/`estaEstornado` e utilitários de reset/recálculo
+  (`recalcularXpDosAlunos`, `removerEventosDeTurmas`, `removerTodosEventos`,
+  `removerTodasAcoes`, `removerTudo`).
+- Telas: `features/gamificacao/acoes-gamificacao/` (`/gamificacao/acoes`, admin)
+  com tabela/CRUD e erros de validação; `features/gamificacao/pontuar/`
+  (`/pontuar`, equipe) com seleção de turma/ação, multi-seleção de alunos,
+  preview de quantidade/total de XP, registro idempotente e histórico com estorno;
+  `features/aluno/gamificacao/` (`/aluno/gamificacao`) mostra XP, nível, barra de
+  progresso e histórico do próprio aluno (resolvido pelo e-mail da sessão).
+- No Supabase, `supabase/migrations/0007_gamificacao.sql` cria
+  `acoes_gamificacao` e `eventos_xp` (chaves únicas, checks, índices e trigger de
+  `atualizado_em`) com RLS: ações lidas pela equipe e escritas pelo admin; eventos
+  de XP lidos pela equipe ou pelo próprio aluno, inseridos pela equipe e
+  removidos apenas pelo admin (**append-only**). Uma política e o trigger
+  `proteger_alunos_exceto_xp` permitem à equipe atualizar **somente** `xp`/`moedas`
+  no aluno. A gamificação participa do reset (`DadosService`, grupo
+  `gamificacao`) e das cascatas de exclusão (alunos, turmas, tudo).
+
+## Moedas virtuais (RF-016)
+
+- Modelo `core/models/moedas.model.ts`: `MovimentacaoMoeda` (aluno, turma, delta,
+  origem, descrição, autor, `idempotencyKey`, `estornoDe`, `referenciaId`) e
+  `DadosMovimentacaoMoeda`; constante `MOEDAS_POR_NIVEL`, `ORIGENS_MOEDA` com
+  `ROTULOS_ORIGEM_MOEDA`. Helpers puros: `saldoDeMovimentacoes` (soma com piso
+  0), `formatarDeltaMoedas`, `rotuloOrigemMoeda` e `validarMovimentacaoMoeda`.
+- `MoedasService` (`turmalina.moedas`) expõe `movimentacoes`/`total` (signals) e
+  as operações: `ajustar` (valida, cria movimentação e materializa o saldo no
+  aluno, auditoria `moedas.movimentadas`), `estornar` (cria a movimentação
+  inversa com `origem: estorno`, guarda de estorno duplo/de-estorno, auditoria
+  `moedas.estornadas`), `concederPorNivel` (idempotente por
+  `nivel:${alunoId}:${nivel}`), `saldoDoAluno`/`movimentacoesDoAluno`/
+  `estaEstornada`, `reconstruirSaldos`/`recalcularSaldosDosAlunos` e utilitários
+  de reset (`removerDeTurmas`, `removerTodas`, `limparMovimentacoes`).
+- Telas: `features/gamificacao/moedas/` (`/gamificacao/moedas`, admin) com
+  filtro por origem, formulário de ajuste e extrato com estorno;
+  `features/aluno/moedas/` (`/aluno/moedas`) mostra saldo e extrato do próprio
+  aluno (resolvido pelo e-mail da sessão).
+- No Supabase, `supabase/migrations/0008_moedas_conquistas.sql` cria
+  `movimentacoes_moedas` (**append-only**, chave única e checks) com RLS análoga
+  à da gamificação; o saldo do aluno é materializado a partir do ledger.
+
+## Conquistas e álbum (RF-020)
+
+- Modelo `core/models/conquistas.model.ts`: `Conquista` (nome, emoji, descrição,
+  bônus de XP, status) e `ConquistaAluno` (registro de desbloqueio com
+  `idempotencyKey` e `estornoDe`); constantes `EMOJIS_CONQUISTA`,
+  `BONUS_XP_CONQUISTA_MAXIMO` e `CONQUISTAS_PADRAO` (sementes). Helpers puros:
+  `validarConquista` e `percentualAlbum`.
+- `ConquistasService` (`turmalina.conquistas` / `turmalina.conquistas-aluno`)
+  expõe `conquistas`/`desbloqueios` (signals) e as operações: CRUD de conquistas
+  (auditado: `conquista.criada/atualizada/ativada/desativada/excluida`),
+  `desbloquear` (idempotente por `${chaveLote}:${alunoId}`, rejeita conquista
+  desativada, concede bônus de XP pelo histórico, auditoria
+  `conquista.desbloqueada`), `reverter` (remove o desbloqueio e estorna o XP,
+  preservando a história), `alunoTemConquista`/`desbloqueiosDoAluno`/
+  `quantidadeDeAlunos` e utilitários de reset (`removerTodasConquistas`,
+  `removerTudo`). Ao remover uma conquista, o XP dos alunos afetados é
+  recalculado.
+- Telas: `features/gamificacao/conquistas/` (`/gamificacao/conquistas`,
+  admin/professor) com tabela/CRUD, modal de desbloqueio por aluno e reversão;
+  `features/aluno/conquistas/` (`/aluno/conquistas`) mostra o **álbum** pessoal
+  com emoji, status ganho/não-ganho e percentual de completude.
+- No Supabase, `conquistas`/`conquistas_aluno` (`0008_moedas_conquistas.sql`)
+  seguem o mesmo padrão de RLS e cascatas da gamificação.
+
+## Equipes (RF-017)
+
+- Modelo `core/models/equipes.model.ts`: `Equipe` (nome, emoji, cor, status,
+  `turmaId`, `periodoLetivoId`), `EquipeMembro` (vínculo do aluno com
+  `equipeId`/`equipeNome`, vigência `inicioEm`/`fimEm`/`ativa` e
+  `autorId`/`autorNome`) e `LinhaPlacarEquipe`. Constantes `CORES_EQUIPE`,
+  `EMOJIS_EQUIPE`, `NOME_EQUIPE_MAXIMO`, `MAXIMO_EQUIPES_POR_TURMA` e
+  `CRITERIOS_PLACAR` (`xp_acumulado` | `xp_periodo`) com `ROTULOS_CRITERIO_PLACAR`.
+  Helpers puros: `validarEquipe`, `vinculoVigenteNaData`, `membrosParaPlacar` e
+  `pontuarEquipe`.
+- `EquipesService` (`turmalina.equipes` / `turmalina.equipe-membros`) expõe
+  `equipes`/`membros`/`criterioPlacar` (signals) e as operações: CRUD de equipes
+  (auditado: `equipe.criada/atualizada/ativada/desativada/excluida`),
+  `associarAluno` (valida turma e status, **transfere** encerrando o vínculo
+  anterior com auditoria `equipe.associado`/`equipe.transferido`),
+  `desassociarAluno`, `placar(turmaId, periodo)` (ordena por XP total, desempate
+  por nome), `equipesDaTurma`/`membrosDaEquipe`/`equipeAtivaDoAluno`/
+  `historicoDoAluno`, `definirCriterioPlacar` e utilitários de reset
+  (`removerDeTurmas`, `removerTodos`, `removerTodosMembros`). No critério
+  `xp_periodo`, o XP é somado a partir dos eventos de XP dentro do período.
+- Tela `features/gamificacao/equipes/` (`/gamificacao/equipes`, admin/professor)
+  com toolbar de turma/período/critério, placar em tabela (posição/medalha),
+  modal de CRUD da equipe e modal de membros com associar/desassociar; exclusão
+  individual ou em massa por confirmação digitada. A equipe **não** altera a
+  matrícula do aluno e o XP conquistado é preservado ao encerrar vínculos.
+- No Supabase, `equipes`/`equipe_membros` (`0009_equipes.sql`) usam FKs em
+  cascata/set-null, índice parcial de vínculo ativo único por (instituição,
+  turma, período, aluno) e o mesmo padrão de RLS da gamificação.
+
 ## Painel do professor (RF-008)
 
 - A rota `/dashboard` (`DashboardComponent`) escolhe o conteúdo pelo papel: o
@@ -348,6 +461,7 @@ npm test -- --watch=false --browsers=ChromeHeadless
 - UI Kit ainda **não** é uma biblioteca separada (ver ADR 0004).
 - `Repository<T>` é genérico e síncrono por natureza do mock; operações
   atômicas/transacionais (moedas, resgates) não existem ainda.
-- Módulos acadêmicos e de gamificação em grande parte **pendentes** (ver
+- Módulos acadêmicos concluídos; gamificação em andamento (RF-015, RF-016,
+  RF-017 e RF-020 prontas; RF-018, RF-019, RF-021 e RF-009 pendentes — ver
   `docs/backlog.md`).
 

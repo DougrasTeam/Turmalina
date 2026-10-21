@@ -5,6 +5,7 @@ import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirm
 import { CredenciaisAcessoComponent } from '../../../shared/credenciais-acesso/credenciais-acesso.component';
 import { DadosService } from '../../../core/services/dados.service';
 import { AuditoriaService } from '../../../core/services/auditoria.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { ExportacaoService, nomeArquivoCsv } from '../../../core/services/exportacao.service';
 import { GestaoUsuariosService } from '../../../core/services/gestao-usuarios.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
@@ -27,11 +28,15 @@ interface ProfessorForm {
 })
 export class ProfessoresComponent {
   protected readonly professores = inject(ProfessoresService);
+  protected readonly auth = inject(AuthService);
   private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
   private readonly gestao = inject(GestaoUsuariosService);
   private readonly exportacao = inject(ExportacaoService);
   private readonly auditoria = inject(AuditoriaService);
+
+  /** O professor apenas consulta; criar, editar e excluir são do administrador. */
+  protected readonly somenteLeitura = computed(() => !this.auth.temPapel('administrador'));
 
   protected readonly sugestoes = DISCIPLINAS_SUGERIDAS;
   protected readonly busca = signal('');

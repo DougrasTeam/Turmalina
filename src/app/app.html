@@ -17,24 +17,9 @@
       </div>
 
       <nav class="tl-nav" aria-label="Navegação principal">
-        <span class="tl-nav__label">Principal</span>
-        @for (item of primaryNav(); track item.path) {
-          <a
-            class="tl-nav__link"
-            [routerLink]="item.path"
-            routerLinkActive="is-active"
-            (click)="closeSidebar()"
-          >
-            <span class="tl-nav__icon" aria-hidden="true">
-              <span class="material-symbols-outlined">{{ item.icon }}</span>
-            </span>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-
-        @if (registerNav().length) {
-          <span class="tl-nav__label">Cadastros</span>
-          @for (item of registerNav(); track item.path) {
+        @if (auth.papel() === 'aluno') {
+          <span class="tl-nav__label">Principal</span>
+          @for (item of primaryNav(); track item.path) {
             <a
               class="tl-nav__link"
               [routerLink]="item.path"
@@ -47,22 +32,24 @@
               <span>{{ item.label }}</span>
             </a>
           }
-        }
-
-        @if (adminNav().length) {
-          <span class="tl-nav__label">Administração</span>
-          @for (item of adminNav(); track item.path) {
-            <a
-              class="tl-nav__link"
-              [routerLink]="item.path"
-              routerLinkActive="is-active"
-              (click)="closeSidebar()"
-            >
-              <span class="tl-nav__icon" aria-hidden="true">
-                <span class="material-symbols-outlined">{{ item.icon }}</span>
-              </span>
-              <span>{{ item.label }}</span>
-            </a>
+        } @else {
+          @for (secao of secoesNav(); track secao.titulo) {
+            @if (secao.itens.length) {
+              <span class="tl-nav__label">{{ secao.titulo }}</span>
+              @for (item of secao.itens; track item.path) {
+                <a
+                  class="tl-nav__link"
+                  [routerLink]="item.path"
+                  routerLinkActive="is-active"
+                  (click)="closeSidebar()"
+                >
+                  <span class="tl-nav__icon" aria-hidden="true">
+                    <span class="material-symbols-outlined">{{ item.icon }}</span>
+                  </span>
+                  <span>{{ item.label }}</span>
+                </a>
+              }
+            }
           }
         }
       </nav>

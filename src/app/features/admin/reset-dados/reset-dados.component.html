@@ -15,7 +15,8 @@
     {{ dados.resumo().professores }} professor(es), {{ dados.resumo().disciplinas }} disciplina(s),
     {{ dados.resumo().periodos }} período(s), {{ dados.resumo().matriculas }} matrícula(s),
     {{ dados.resumo().frequencias }} chamada(s), {{ dados.resumo().avaliacoes }} avaliação(ões) e
-    {{ dados.resumo().vinculos }} vínculo(s).
+    {{ dados.resumo().vinculos }} vínculo(s), {{ dados.resumo().acoesGamificacao }} ação(ões) e
+    {{ dados.resumo().eventosXp }} lançamento(s) de XP.
   </div>
 
   <div class="grupos">
@@ -48,7 +49,7 @@
       <h2 class="grupo__titulo">Excluir tudo</h2>
       <p class="tl-small tl-text-muted mb-0">
         Remove turmas, alunos, professores, disciplinas, períodos, matrículas, vínculos, frequência,
-        avaliações, mural, comunicados e a trilha de auditoria. A instituição é mantida.
+        avaliações, mural, comunicados, gamificação e a trilha de auditoria. A instituição é mantida.
       </p>
     </div>
     <button class="btn btn-danger" type="button" (click)="abrir('tudo')">

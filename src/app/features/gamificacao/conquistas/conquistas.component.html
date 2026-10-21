@@ -1,0 +1,280 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Conquistas</h1>
+      <p class="tl-text-muted">
+        Configure as conquistas que reconhecem atitudes dos alunos. O desbloqueio concede um bônus
+        de XP ao histórico e pode ser revertido por auditoria.
+      </p>
+    </div>
+  </header>
+
+  <div class="page-toolbar">
+    <span class="tl-small tl-text-muted">
+      {{ conquistas.totalConquistas() }} conquista(s) · {{ conquistas.totalDesbloqueios() }}
+      desbloqueio(s)
+    </span>
+    <span class="page-toolbar__spacer"></span>
+    <button class="btn btn-light" type="button" (click)="usarPadroes()">
+      <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+      Usar padrões
+    </button>
+    <button
+      class="btn btn-light"
+      type="button"
+      [disabled]="conquistas.totalConquistas() === 0"
+      (click)="abrirExclusaoTodas()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
+      Excluir todas
+    </button>
+    <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      Nova conquista
+    </button>
+  </div>
+
+  <div class="card">
+    @if (conquistas.conquistas().length === 0) {
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">military_tech</span>
+        <h3>Nenhuma conquista cadastrada</h3>
+        <p>Crie a primeira conquista ou use as conquistas padrão para começar.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Conquista</th>
+              <th>Descrição</th>
+              <th>Bônus</th>
+              <th>Desbloqueios</th>
+              <th>Status</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (conquista of conquistas.conquistas(); track conquista.id) {
+              <tr>
+                <td>
+                  <span class="conquistas__emoji" aria-hidden="true">{{ conquista.emoji }}</span>
+                  <strong>{{ conquista.nome }}</strong>
+                </td>
+                <td class="conquistas__descricao">{{ conquista.descricao || '—' }}</td>
+                <td>
+                  <span class="badge badge-info">{{ formatarBonus(conquista.bonusXp) }}</span>
+                </td>
+                <td>{{ conquistas.quantidadeDeAlunos(conquista.id) }}</td>
+                <td>
+                  <span [class]="'badge ' + (conquista.ativa ? 'badge-success' : 'badge-neutral')">
+                    {{ conquista.ativa ? 'Ativa' : 'Inativa' }}
+                  </span>
+                </td>
+                <td class="text-end conquistas__botoes">
+                  <button
+                    class="btn btn-light btn-sm"
+                    type="button"
+                    title="Desbloquear para alunos"
+                    [disabled]="!conquista.ativa"
+                    (click)="abrirDesbloqueio(conquista)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span>
+                  </button>
+                  <button
+                    class="btn btn-light btn-sm"
+                    type="button"
+                    title="Editar"
+                    (click)="editar(conquista)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                  </button>
+                  <button
+                    class="btn btn-light btn-sm"
+                    type="button"
+                    [title]="conquista.ativa ? 'Desativar' : 'Ativar'"
+                    (click)="alternar(conquista)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">
+                      {{ conquista.ativa ? 'toggle_on' : 'toggle_off' }}
+                    </span>
+                  </button>
+                  <button
+                    class="btn btn-danger btn-sm"
+                    type="button"
+                    title="Excluir"
+                    (click)="pedirExclusao(conquista)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <app-modal [open]="modalAberto()" [title]="editando() ? 'Editar conquista' : 'Nova conquista'" (close)="fechar()">
+    @if (erros().length) {
+      <div class="alert alert-danger" role="alert">
+        @for (erro of erros(); track erro) {
+          <p class="mb-0">{{ erro }}</p>
+        }
+      </div>
+    }
+
+    <div class="conquistas__campos">
+      <label class="form-label" for="conquista-nome">
+        Nome
+        <input
+          id="conquista-nome"
+          class="form-control"
+          type="text"
+          maxlength="60"
+          placeholder="Ex.: Ajudante"
+          [value]="formulario().nome"
+          (input)="alterarNome($event)"
+        />
+      </label>
+
+      <label class="form-label" for="conquista-emoji">
+        Emoji
+        <select
+          id="conquista-emoji"
+          class="form-select"
+          [value]="formulario().emoji"
+          (change)="alterarEmoji($event)"
+        >
+          @for (emoji of emojis; track emoji) {
+            <option [value]="emoji">{{ emoji }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="form-label conquistas__campo-largo" for="conquista-descricao">
+        Descrição
+        <textarea
+          id="conquista-descricao"
+          class="form-control"
+          rows="2"
+          maxlength="160"
+          placeholder="O que o aluno fez para merecer esta conquista?"
+          [value]="formulario().descricao"
+          (input)="alterarDescricao($event)"
+        ></textarea>
+      </label>
+
+      <label class="form-label" for="conquista-bonus">
+        Bônus de XP
+        <input
+          id="conquista-bonus"
+          class="form-control"
+          type="number"
+          step="1"
+          min="0"
+          max="100"
+          [value]="formulario().bonusXp"
+          (input)="alterarBonusXp($event)"
+        />
+      </label>
+    </div>
+
+    <label class="conquistas__ativa">
+      <input type="checkbox" [checked]="formulario().ativa" (change)="alterarAtiva($event)" />
+      Conquista ativa para desbloqueio
+    </label>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="button" (click)="salvar()">
+        <span class="material-symbols-outlined" aria-hidden="true">save</span>
+        Salvar
+      </button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    [open]="conquistaParaDesbloquear() !== null"
+    [title]="'Desbloquear: ' + (conquistaParaDesbloquear()?.nome ?? '')"
+    (close)="fecharDesbloqueio()"
+  >
+    @if (conquistaParaDesbloquear(); as conquista) {
+      <p class="tl-text-muted">
+        {{ conquista.emoji }} {{ conquista.descricao || 'Sem descrição.' }}
+        <span class="badge badge-info">{{ formatarBonus(conquista.bonusXp) }}</span>
+      </p>
+
+      <div class="conquistas__desbloqueio">
+        <label class="form-label" for="desbloqueio-aluno">
+          Aluno
+          <select
+            id="desbloqueio-aluno"
+            class="form-select"
+            [value]="alunoSelecionado()"
+            (change)="selecionarAluno($event)"
+          >
+            <option value="">Selecione um aluno</option>
+            @for (aluno of alunosAtivos(); track aluno.id) {
+              <option [value]="aluno.id">{{ aluno.nome }}</option>
+            }
+          </select>
+        </label>
+
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="!alunoSelecionado() || desbloqueando()"
+          (click)="desbloquear()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span>
+          {{ desbloqueando() ? 'Desbloqueando...' : 'Desbloquear' }}
+        </button>
+      </div>
+
+      <h3 class="conquistas__subtitulo">Alunos que já têm esta conquista</h3>
+
+      @if (desbloqueadosDaConquista().length === 0) {
+        <p class="tl-small tl-text-muted mb-0">Nenhum aluno desbloqueou esta conquista ainda.</p>
+      } @else {
+        <ul class="conquistas__lista">
+          @for (desbloqueio of desbloqueadosDaConquista(); track desbloqueio.id) {
+            <li class="conquistas__item">
+              <span>{{ desbloqueio.conquistaNome }}</span>
+              <span class="tl-small tl-text-muted">
+                {{ formatarDataHora(desbloqueio.criadoEm) }} · {{ desbloqueio.autorNome || 'Sistema' }}
+              </span>
+              <button
+                class="btn btn-light btn-sm"
+                type="button"
+                title="Reverter desbloqueio"
+                (click)="reverter(desbloqueio)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">undo</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </app-modal>
+
+  <app-confirmar-texto
+    [open]="exclusaoAberta()"
+    titulo="Excluir conquista"
+    [mensagem]="'Excluir a conquista \'' + (conquistaEmExclusao()?.nome ?? '') + '\'?'"
+    [detalhes]="['Os desbloqueios vinculados serão removidos e o XP dos alunos será recalculado.']"
+    (confirmado)="confirmarExclusao()"
+    (fechado)="cancelarExclusao()"
+  />
+
+  <app-confirmar-texto
+    [open]="excluirTudoAberto()"
+    titulo="Excluir todas as conquistas"
+    mensagem="Excluir todas as conquistas cadastradas?"
+    [detalhes]="['Todos os desbloqueios serão removidos e o XP dos alunos será recalculado.']"
+    (confirmado)="excluirTodas()"
+    (fechado)="fecharExclusaoTodas()"
+  />
+</section>

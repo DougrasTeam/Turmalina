@@ -76,6 +76,18 @@ export class ResetDadosComponent {
       icone: 'event',
       descricao: 'Exclui todos os eventos da agenda (aulas, avaliações, entregas e avisos).',
     },
+    {
+      chave: 'equipes',
+      rotulo: 'Equipes',
+      icone: 'diversity_3',
+      descricao: 'Exclui as equipes e os vínculos de alunos; o XP conquistado é preservado.',
+    },
+    {
+      chave: 'gamificacao',
+      rotulo: 'Gamificação (XP)',
+      icone: 'stars',
+      descricao: 'Exclui as ações e os lançamentos de XP; o XP dos alunos é recalculado.',
+    },
   ];
 
   protected readonly alvo = signal<AlvoLimpeza | null>(null);
