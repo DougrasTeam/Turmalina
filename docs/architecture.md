@@ -6,8 +6,9 @@ está planejado. Para requisitos completos, ver
 
 ## Visão geral
 
-- **Stack:** Angular 20 (standalone), TypeScript `strict`, SSR habilitado com
-  renderização **no cliente** para todas as rotas (`src/app/app.routes.server.ts`).
+- **Stack:** Angular 20 (standalone), TypeScript `strict`, SPA com renderização
+  **no cliente**. O build gera apenas o bundle estático
+  (`dist/turmalina/browser`); não há SSR.
 - **Reatividade:** Signals (`signal`, `computed`, `effect`) e `inject()`.
 - **Formulários:** formulários reativos para casos com validação (ex.: login);
   template-driven/signals nos formulários simples existentes.

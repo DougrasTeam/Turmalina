@@ -8,7 +8,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:turmalina": "node dist/turmalina/server/server.mjs"
+    "preview": "npx http-server dist/turmalina/browser -p 4000 -c-1"
   },
   "prettier": {
     "printWidth": 100,
