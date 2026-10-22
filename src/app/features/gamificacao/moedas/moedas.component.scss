@@ -1,0 +1,19 @@
+.moedas__filtro {
+  max-width: 16rem;
+}
+
+.moedas__titulo {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.moedas__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+
+.moedas__data {
+  white-space: nowrap;
+}

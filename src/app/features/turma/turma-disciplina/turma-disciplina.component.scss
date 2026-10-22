@@ -1,0 +1,30 @@
+.disciplina__abas {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--tl-border, #d9d6f2);
+  overflow-x: auto;
+}
+
+.disciplina__aba {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.9rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--tl-ink-muted, #5f5b86);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &.disciplina__aba--ativa {
+    color: var(--tl-primary, #5b3df5);
+    border-bottom-color: var(--tl-primary, #5b3df5);
+  }
+
+  .material-symbols-outlined {
+    font-size: 1.15rem;
+  }
+}

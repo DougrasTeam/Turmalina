@@ -52,6 +52,9 @@ src/app/
     agenda/lista-eventos/               Lista de eventos reutilizável
     agenda/evento-form/                 Formulário de evento (modal)
     aluno/agenda/                       Agenda do aluno
+    gamificacao/acoes-gamificacao/      Catálogo de ações de XP (admin)
+    gamificacao/pontuar/                Pontuar alunos (equipe)
+    aluno/gamificacao/                  XP/nível/histórico do aluno
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -295,6 +298,140 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   (`DadosService`, grupo `agenda`) e a cascata de exclusão de turmas também
   removem os eventos relacionados.
 
+## Ações e XP (RF-015)
+
+- Modelo `core/models/gamificacao.model.ts`: `AcaoGamificacao` (nome, ícone,
+  valor de XP, indicador, status) e `EventoXp` (aluno, turma, ação, delta,
+  origem, autor, `idempotencyKey` e data). Constantes `XP_POR_NIVEL`,
+  `VALOR_XP_MAXIMO`, `VALOR_XP_NEGATIVO_MAXIMO`, `ICONES_ACAO` e
+  `ACOES_GAMIFICACAO_PADRAO` (sementes). Helpers puros: `validarAcaoGamificacao`,
+  `nivelPorXp`, `xpNoNivelAtual`, `xpParaProximoNivel`, `progressoNivel`,
+  `formatarDeltaXp` e `criarChaveIdempotencia` (crypto com fallback).
+- `GamificacaoService` (`turmalina.acoes-gamificacao` / `turmalina.eventos-xp`)
+  expõe signals/computeds e as operações: CRUD de ações (auditado:
+  `acao.criada/atualizada/ativada/desativada/excluida`), `registrarPontuacao`
+  (idempotente por `${chaveLote}:${alunoId}`, rejeita ação inativa, soma XP no
+  aluno com piso 0, auditoria `xp.concedido`), `estornar` que cria um evento
+  negado (`origem: estorno`, chave `estorno:<id>`, `estornoDe`) com guarda de
+  estorno duplo e de estorno-de-estorno, consultas `eventosDoAluno`/
+  `eventosDaTurma`/`estaEstornado` e utilitários de reset/recálculo
+  (`recalcularXpDosAlunos`, `removerEventosDeTurmas`, `removerTodosEventos`,
+  `removerTodasAcoes`, `removerTudo`).
+- Telas: `features/gamificacao/acoes-gamificacao/` (`/gamificacao/acoes`, admin)
+  com tabela/CRUD e erros de validação; `features/gamificacao/pontuar/`
+  (`/pontuar`, equipe) com seleção de turma/ação, multi-seleção de alunos,
+  preview de quantidade/total de XP, registro idempotente e histórico com estorno;
+  `features/aluno/gamificacao/` (`/aluno/gamificacao`) mostra XP, nível, barra de
+  progresso e histórico do próprio aluno (resolvido pelo e-mail da sessão).
+- No Supabase, `supabase/migrations/0007_gamificacao.sql` cria
+  `acoes_gamificacao` e `eventos_xp` (chaves únicas, checks, índices e trigger de
+  `atualizado_em`) com RLS: ações lidas pela equipe e escritas pelo admin; eventos
+  de XP lidos pela equipe ou pelo próprio aluno, inseridos pela equipe e
+  removidos apenas pelo admin (**append-only**). Uma política e o trigger
+  `proteger_alunos_exceto_xp` permitem à equipe atualizar **somente** `xp`/`moedas`
+  no aluno. A gamificação participa do reset (`DadosService`, grupo
+  `gamificacao`) e das cascatas de exclusão (alunos, turmas, tudo).
+
+## Moedas virtuais (RF-016)
+
+- Modelo `core/models/moedas.model.ts`: `MovimentacaoMoeda` (aluno, turma, delta,
+  origem, descrição, autor, `idempotencyKey`, `estornoDe`, `referenciaId`) e
+  `DadosMovimentacaoMoeda`; constante `MOEDAS_POR_NIVEL`, `ORIGENS_MOEDA` com
+  `ROTULOS_ORIGEM_MOEDA`. Helpers puros: `saldoDeMovimentacoes` (soma com piso
+  0), `formatarDeltaMoedas`, `rotuloOrigemMoeda` e `validarMovimentacaoMoeda`.
+- `MoedasService` (`turmalina.moedas`) expõe `movimentacoes`/`total` (signals) e
+  as operações: `ajustar` (valida, cria movimentação e materializa o saldo no
+  aluno, auditoria `moedas.movimentadas`), `estornar` (cria a movimentação
+  inversa com `origem: estorno`, guarda de estorno duplo/de-estorno, auditoria
+  `moedas.estornadas`), `concederPorNivel` (idempotente por
+  `nivel:${alunoId}:${nivel}`), `saldoDoAluno`/`movimentacoesDoAluno`/
+  `estaEstornada`, `reconstruirSaldos`/`recalcularSaldosDosAlunos` e utilitários
+  de reset (`removerDeTurmas`, `removerTodas`, `limparMovimentacoes`).
+- Telas: `features/gamificacao/moedas/` (`/gamificacao/moedas`, admin) com
+  filtro por origem, formulário de ajuste e extrato com estorno;
+  `features/aluno/moedas/` (`/aluno/moedas`) mostra saldo e extrato do próprio
+  aluno (resolvido pelo e-mail da sessão).
+- No Supabase, `supabase/migrations/0008_moedas_conquistas.sql` cria
+  `movimentacoes_moedas` (**append-only**, chave única e checks) com RLS análoga
+  à da gamificação; o saldo do aluno é materializado a partir do ledger.
+
+## Conquistas e álbum (RF-020)
+
+- Modelo `core/models/conquistas.model.ts`: `Conquista` (nome, emoji, descrição,
+  bônus de XP, status) e `ConquistaAluno` (registro de desbloqueio com
+  `idempotencyKey` e `estornoDe`); constantes `EMOJIS_CONQUISTA`,
+  `BONUS_XP_CONQUISTA_MAXIMO` e `CONQUISTAS_PADRAO` (sementes). Helpers puros:
+  `validarConquista` e `percentualAlbum`.
+- `ConquistasService` (`turmalina.conquistas` / `turmalina.conquistas-aluno`)
+  expõe `conquistas`/`desbloqueios` (signals) e as operações: CRUD de conquistas
+  (auditado: `conquista.criada/atualizada/ativada/desativada/excluida`),
+  `desbloquear` (idempotente por `${chaveLote}:${alunoId}`, rejeita conquista
+  desativada, concede bônus de XP pelo histórico, auditoria
+  `conquista.desbloqueada`), `reverter` (remove o desbloqueio e estorna o XP,
+  preservando a história), `alunoTemConquista`/`desbloqueiosDoAluno`/
+  `quantidadeDeAlunos` e utilitários de reset (`removerTodasConquistas`,
+  `removerTudo`). Ao remover uma conquista, o XP dos alunos afetados é
+  recalculado.
+- Telas: `features/gamificacao/conquistas/` (`/gamificacao/conquistas`,
+  admin/professor) com tabela/CRUD, modal de desbloqueio por aluno e reversão;
+  `features/aluno/conquistas/` (`/aluno/conquistas`) mostra o **álbum** pessoal
+  com emoji, status ganho/não-ganho e percentual de completude.
+- No Supabase, `conquistas`/`conquistas_aluno` (`0008_moedas_conquistas.sql`)
+  seguem o mesmo padrão de RLS e cascatas da gamificação.
+
+## Equipes (RF-017)
+
+- Modelo `core/models/equipes.model.ts`: `Equipe` (nome, emoji, cor, status,
+  `turmaId`, `periodoLetivoId`), `EquipeMembro` (vínculo do aluno com
+  `equipeId`/`equipeNome`, vigência `inicioEm`/`fimEm`/`ativa` e
+  `autorId`/`autorNome`) e `LinhaPlacarEquipe`. Constantes `CORES_EQUIPE`,
+  `EMOJIS_EQUIPE`, `NOME_EQUIPE_MAXIMO`, `MAXIMO_EQUIPES_POR_TURMA`,
+  `MAXIMO_NOMES_INTEGRANTES` e `CRITERIOS_PLACAR` (`xp_acumulado` |
+  `xp_periodo`) com `ROTULOS_CRITERIO_PLACAR`. Helpers puros: `validarEquipe`,
+  `vinculoVigenteNaData`, `membrosParaPlacar`, `pontuarEquipe`,
+  `resumirNomesMembros` (resumo curto dos nomes exibido na lista de equipes) e
+  `sortearAlunosNasEquipes` (distribuição aleatória equilibrada, com fonte de
+  aleatoriedade injetável para testes).
+- `EquipesService` (`turmalina.equipes` / `turmalina.equipe-membros`) expõe
+  `equipes`/`membros`/`criterioPlacar` (signals) e as operações: CRUD de equipes
+  (auditado: `equipe.criada/atualizada/ativada/desativada/excluida`),
+  `associarAluno` (valida turma e status, **transfere** encerrando o vínculo
+  anterior com auditoria `equipe.associado`/`equipe.transferido`),
+  `desassociarAluno`, `sortearAlunos` (sorteia apenas alunos sem equipe entre as
+  equipes ativas, equilibrando tamanhos, e grava todos os vínculos em um único
+  lote, com auditoria `equipe.sorteio`),
+  `placar(turmaId, periodo)` (ordena por XP total, desempate
+  por nome), `equipesDaTurma`/`membrosDaEquipe`/`equipeAtivaDoAluno`/
+  `historicoDoAluno`, `definirCriterioPlacar` e utilitários de reset
+  (`removerDeTurmas`, `removerTodos`, `removerTodosMembros`, usando exclusão em
+  lote). No critério
+  `xp_periodo`, o XP é somado a partir dos eventos de XP dentro do período.
+- Tela `features/gamificacao/equipes/` (`/gamificacao/equipes` e
+  `/turmas/:id/disciplina/:disciplinaId/equipes`, admin/professor) com toolbar
+  de critério do placar. No contexto da turma, o seletor de turma fica
+  desabilitado (fixo pela rota); no acesso pelo menu, a turma é escolhida. O
+  seletor de período letivo permanece apenas informativo (sempre o ativo e
+  desabilitado). Placar em tabela (posição/medalha) e coluna **Integrantes** mostrando a quantidade e os
+  nomes de quem está atualmente em cada equipe (`integrantesAtivosPorEquipe`,
+  em ordem alfabética, resumidos por `resumirNomesMembros`). O modal de
+  integrantes permite associar e desassociar alunos, listando no seletor apenas
+  alunos ativos da turma; a remoção é imediata (com toast e `aria-label` no
+  botão), e a exclusão de equipes é individual ou em massa por confirmação
+  digitada. A cor da equipe é escolhida no seletor nativo
+  (  `<input type="color">`), com a paleta `CORES_EQUIPE` disponível como
+  atalhos. O botão **Sortear alunos** abre uma confirmação e distribui
+  aleatoriamente os alunos ativos sem equipe entre as equipes ativas, mantendo
+  os tamanhos equilibrados e sem alterar quem já está vinculado. A equipe
+  **não** altera a matrícula do aluno e o XP conquistado é
+  preservado ao encerrar vínculos.
+- No Supabase, `equipes`/`equipe_membros` (`0009_equipes.sql`) usam FKs em
+  cascata/set-null, índice parcial de vínculo ativo único por (instituição,
+  turma, período, aluno) e o mesmo padrão de RLS da gamificação. A escrita em
+  `equipes` e em `equipe_membros` é liberada à equipe docente
+  (administrador/professor) — `0011_equipes_permitir_professor.sql` e
+  `0013_equipes_membros_permitir_professor.sql` — para que o professor
+  associe, transfira e desassocie alunos das equipes que administra.
+
 ## Painel do professor (RF-008)
 
 - A rota `/dashboard` (`DashboardComponent`) escolhe o conteúdo pelo papel: o
@@ -320,6 +457,24 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   (sem `institutionId`) são migrados na primeira leitura.
 - A UI e os serviços de domínio **não conhecem** o tenant: ativar multi-tenant
   (RLS no Supabase) não altera componentes (ADR 0005).
+
+## Ciclo de vida da conta de acesso
+
+- Excluir um cadastro (professor/aluno) **encerra a conta de acesso**. O
+  `ProfessoresService.remove` resolve a conta pelo `userId` do cadastro e chama
+  `GestaoUsuariosService.excluirConta`, que invoca a Edge Function
+  `admin-usuarios` (`acao: 'excluir-conta'`) — isso remove o usuário do Supabase
+  Auth e o perfil (`public.perfis`).
+- A restauração/entrada de sessão valida o perfil: se o perfil não existir ou
+  estiver inativo, a sessão é encerrada (`SupabaseAuthRepository.restaurarSessao`)
+  ou o login é recusado com `usuario-inativo` (`autenticar`).
+- No banco, as funções de autorização (`auth_papel`, `auth_institution`,
+  `auth_aluno_id`, `auth_turma_id` —
+  `supabase/migrations/0014_perfil_ativo_autorizacao.sql`) exigem perfil
+  **ativo**, de modo que um token de acesso ainda válido não concede acesso após
+  a exclusão do perfil.
+- `Repository<T>` oferece `createMany`/`removeMany` para escritas em lote; no
+  Supabase elas viram um único `insert`/`delete ... in (...)`.
 
 ## Ponto de troca de backend
 
@@ -348,6 +503,55 @@ npm test -- --watch=false --browsers=ChromeHeadless
 - UI Kit ainda **não** é uma biblioteca separada (ver ADR 0004).
 - `Repository<T>` é genérico e síncrono por natureza do mock; operações
   atômicas/transacionais (moedas, resgates) não existem ainda.
-- Módulos acadêmicos e de gamificação em grande parte **pendentes** (ver
+- Módulos acadêmicos concluídos; gamificação em andamento (RF-015, RF-016,
+  RF-017 e RF-020 prontas; RF-018, RF-019, RF-021 e RF-009 pendentes — ver
   `docs/backlog.md`).
 
+
+
+---
+
+## ADENDO ARQUITETURAL — Contexto de turma e disciplina do professor
+
+Este adendo registra a decisão de UX: o professor abre a turma primeiro em **Visão geral** e depois entra em uma disciplina. Ele complementa as seções existentes de RF-007/RF-008.
+
+### Separação de conceitos
+- `Turma`: grupo de alunos no período letivo.
+- `Matricula`: vínculo do aluno com turma/período.
+- `Disciplina`: catálogo de matéria.
+- Oferta de disciplina na turma: associação que indica quais matérias aquela turma possui.
+- `VinculoDocente`: associação explícita entre `professorId`, `turmaId` e `disciplinaId`, com status/vigência quando suportados. Deve ser a fonte para descobrir as turmas e disciplinas do professor.
+
+Não duplicar `professorIds` ou listas de disciplinas como fonte paralela de autorização se o repositório já possui entidade de vínculo. Inspecionar o modelo atual e definir uma fonte de verdade.
+
+### Composição de telas
+- **Painel do professor:** turmas vinculadas, disciplina(s) de cada turma e pendências calculadas a partir de dados reais.
+- **Detalhe da turma:** inicia na visão geral, com informações coletivas permitidas, equipe docente, alunos, disciplinas ofertadas e indicadores agregados permitidos.
+- **Lista de disciplinas da turma:** apresenta as disciplinas ofertadas e sinaliza quais possuem vínculo ativo com o professor atual.
+- **Área da disciplina:** recebe contexto de turma + disciplina e concentra operações acadêmicas da combinação autorizada.
+
+A tela pode usar rotas já existentes ou estado de navegação consistente; não criar rotas duplicadas sem necessidade. Seguir o padrão do repositório real. Não introduzir microfrontends, uma nova biblioteca de estado ou uma refatoração global só para implementar esta UX.
+
+### Contratos de autorização
+Toda operação sensível deve validar no serviço/backend/banco:
+`usuário autenticado + instituição ativa + papel + vínculo docente ativo + turma + disciplina + período letivo + permissão da operação`.
+
+A interface pode ocultar/desabilitar ações, mas isso é apenas UX. RLS/políticas devem impedir leitura ou escrita fora do escopo. Indicadores agregados não podem permitir recuperar notas individuais de outras disciplinas por detalhes, consultas auxiliares ou exportações.
+
+### Estado do contexto
+Ao mudar turma, disciplina ou período:
+- atualizar cabeçalho/breadcrumb;
+- recarregar os dados dependentes;
+- invalidar estado/cache incompatível;
+- cancelar ou ignorar respostas assíncronas antigas quando necessário;
+- validar novamente a autorização antes de gravar.
+
+Não presumir que `BehaviorSubject`, parâmetro de rota, localStorage ou estado do frontend protegem dados. Podem apoiar a navegação, nunca substituir autorização no servidor.
+
+### Frequência e mural
+- A frequência segue a política da instituição: geral por aula ou vinculada à disciplina. Não criar chamadas duplicadas.
+- Distinguir publicações gerais da turma de publicações disciplinares; aplicar permissões separadas.
+- Não alterar esquema/migrações antes de verificar tabelas, vínculos e RLS existentes. Preferir alterações incrementais e compatíveis.
+
+### Testes técnicos mínimos
+Cobrir professor autorizado e não autorizado para turma-disciplina; isolamento entre duas disciplinas da mesma turma; troca rápida de contexto; tentativa de escrita adulterando IDs no cliente; ausência de dados; e política de frequência/mural conforme configuração.

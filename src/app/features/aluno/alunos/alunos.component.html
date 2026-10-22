@@ -2,20 +2,26 @@
   <header class="page-header">
     <div>
       <h1>Alunos</h1>
-      <p class="tl-text-muted">Matricule alunos individualmente ou importe uma lista via CSV.</p>
+      @if (somenteLeitura()) {
+        <p class="tl-text-muted">Consulte os alunos e seus dados.</p>
+      } @else {
+        <p class="tl-text-muted">Matricule alunos individualmente ou importe uma lista via CSV.</p>
+      }
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      @if (alunos.total() > 0) {
-        <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodos()">
-          <span class="material-symbols-outlined">delete_sweep</span> Excluir todos
+      @if (!somenteLeitura()) {
+        @if (alunos.total() > 0) {
+          <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodos()">
+            <span class="material-symbols-outlined">delete_sweep</span> Excluir todos
+          </button>
+        }
+        <button class="btn btn-light" type="button" (click)="abrirImportacao()">
+          <span class="material-symbols-outlined">upload_file</span> Importar CSV
+        </button>
+        <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+          <span class="material-symbols-outlined">add</span> Novo aluno
         </button>
       }
-      <button class="btn btn-light" type="button" (click)="abrirImportacao()">
-        <span class="material-symbols-outlined">upload_file</span> Importar CSV
-      </button>
-      <button class="btn btn-primary" type="button" (click)="abrirNovo()">
-        <span class="material-symbols-outlined">add</span> Novo aluno
-      </button>
     </div>
   </header>
 
@@ -102,12 +108,14 @@
                     <button class="btn btn-sm btn-light" type="button" (click)="abrirHistorico(aluno)">
                       <span class="material-symbols-outlined">history</span> Histórico
                     </button>
-                    <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(aluno)">
-                      <span class="material-symbols-outlined">edit</span> Editar
-                    </button>
-                    <button class="btn btn-sm btn-danger" type="button" (click)="pedirExclusao(aluno)" aria-label="Excluir">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
+                    @if (!somenteLeitura()) {
+                      <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(aluno)">
+                        <span class="material-symbols-outlined">edit</span> Editar
+                      </button>
+                      <button class="btn btn-sm btn-danger" type="button" (click)="pedirExclusao(aluno)" aria-label="Excluir">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>

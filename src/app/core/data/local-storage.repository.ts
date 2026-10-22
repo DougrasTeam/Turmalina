@@ -34,6 +34,22 @@ export class LocalStorageRepository<T extends BaseEntity> implements Repository<
     return item;
   }
 
+  async createMany(inputs: Partial<T>[]): Promise<T[]> {
+    if (!inputs.length) return [];
+    const agora = new Date().toISOString();
+    const institutionId = this.institutionId();
+    const criados = inputs.map((input) => ({
+      ...this.defaults(),
+      ...input,
+      id: input.id ?? createId(),
+      institutionId,
+      criadoEm: agora,
+      atualizadoEm: agora,
+    })) as T[];
+    this.escrever([...this.ler(), ...criados]);
+    return criados;
+  }
+
   async update(id: string, patch: Partial<T>): Promise<T> {
     const atual = this.institutionId();
     const itens = this.ler();
@@ -54,6 +70,15 @@ export class LocalStorageRepository<T extends BaseEntity> implements Repository<
   async remove(id: string): Promise<void> {
     const atual = this.institutionId();
     this.escrever(this.ler().filter((item) => !(item.id === id && item.institutionId === atual)));
+  }
+
+  async removeMany(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    const alvo = new Set(ids);
+    const atual = this.institutionId();
+    this.escrever(
+      this.ler().filter((item) => !(item.institutionId === atual && alvo.has(item.id))),
+    );
   }
 
   async saveAll(items: T[]): Promise<void> {

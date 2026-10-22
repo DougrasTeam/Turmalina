@@ -1,0 +1,52 @@
+﻿.moedas-aluno__destaque {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+}
+
+.moedas-aluno__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--tl-on-primary, #ffffff);
+  background: var(--tl-primary, #4f46e5);
+}
+
+.moedas-aluno__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.moedas-aluno__nome {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.moedas-aluno__saldo {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  margin: 0;
+  font-size: 1.05rem;
+
+  .material-symbols-outlined {
+    font-size: 1.2rem;
+    color: var(--tl-warning, #f59e0b);
+  }
+}
+
+.moedas-aluno__titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.moedas-aluno__data {
+  white-space: nowrap;
+}

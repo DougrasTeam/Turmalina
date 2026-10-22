@@ -1,0 +1,27 @@
+.acoes__campos {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.acoes__form-titulo {
+  margin-bottom: 1rem;
+  font-size: 1.05rem;
+}
+
+.acoes__ativa {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.acoes__icone {
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.acoes__botoes {
+  white-space: nowrap;
+}

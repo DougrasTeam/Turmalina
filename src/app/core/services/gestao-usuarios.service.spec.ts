@@ -77,6 +77,19 @@ describe('GestaoUsuariosService', () => {
     expect(credenciais).toEqual({ userId: 'u1', email: 'p@x.com', senha: 'nova-senha' });
   });
 
+  it('exclui a conta de acesso pelo userId', async () => {
+    const invoke = jasmine
+      .createSpy('invoke')
+      .and.resolveTo({ data: { userId: 'u1', removido: true }, error: null });
+    const servico = configurar(invoke);
+
+    await servico.excluirConta('u1');
+
+    expect(invoke).toHaveBeenCalledWith('admin-usuarios', {
+      body: { acao: 'excluir-conta', userId: 'u1' },
+    });
+  });
+
   it('propaga a mensagem de erro retornada pela função', async () => {
     const contexto = new Response(
       JSON.stringify({ erro: 'Ação permitida apenas para administradores.' }),

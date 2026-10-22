@@ -37,9 +37,9 @@ export class BoletimComponent {
   protected readonly somenteLeitura = this.auth.papel() === 'aluno';
 
   private readonly alunoProprio = computed(() => {
-    const email = this.auth.usuario()?.email;
-    if (!email) return null;
-    return this.alunos.alunos().find((aluno) => aluno.email === email) ?? null;
+    const usuario = this.auth.usuario();
+    if (!usuario) return null;
+    return this.alunos.encontrarPorUsuario(usuario.id, usuario.email);
   });
 
   protected readonly alunoId = computed(() => this.alunoIdParam ?? this.alunoProprio()?.id ?? '');

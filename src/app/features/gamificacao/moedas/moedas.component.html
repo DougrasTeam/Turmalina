@@ -1,0 +1,151 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Moedas virtuais</h1>
+      <p class="tl-text-muted">
+        As moedas são um saldo interno de gamificação, nunca dinheiro real. O saldo é sempre a soma
+        de um histórico imutável: correções acontecem por estorno, nunca por exclusão.
+      </p>
+    </div>
+  </header>
+
+  <div class="page-toolbar">
+    <span class="tl-small tl-text-muted">{{ moedas.total() }} movimentação(ões) registrada(s)</span>
+    <span class="page-toolbar__spacer"></span>
+
+    <label class="form-label mb-0" for="moedas-origem">Origem</label>
+    <select
+      id="moedas-origem"
+      class="form-select moedas__filtro"
+      [value]="origemSelecionada()"
+      (change)="alterarOrigem($event)"
+    >
+      <option value="todas">Todas</option>
+      <option value="nivel">Subida de nível</option>
+      <option value="manual">Ajuste manual</option>
+      <option value="recompensa">Recompensa</option>
+      <option value="estorno">Estorno</option>
+    </select>
+
+    <button class="btn btn-primary" type="button" (click)="ajustando.set(!ajustando())">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      Ajustar moedas
+    </button>
+  </div>
+
+  @if (ajustando()) {
+    <article class="card moedas__form">
+      <h2 class="moedas__titulo">Ajuste manual de moedas</h2>
+
+      <label class="form-label" for="moedas-aluno">
+        Aluno
+        <select
+          id="moedas-aluno"
+          class="form-select"
+          [value]="formulario().alunoId"
+          (change)="alterarAluno($event)"
+        >
+          <option value="">Selecione um aluno</option>
+          @for (aluno of alunosAtivos(); track aluno.id) {
+            <option [value]="aluno.id">{{ aluno.nome }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="form-label" for="moedas-delta">
+        Valor em moedas
+        <input
+          id="moedas-delta"
+          class="form-control"
+          type="number"
+          step="1"
+          [value]="formulario().delta"
+          (input)="alterarDelta($event)"
+        />
+        <span class="tl-small tl-text-muted">Use valores negativos para descontar moedas.</span>
+      </label>
+
+      <label class="form-label" for="moedas-descricao">
+        Descrição
+        <input
+          id="moedas-descricao"
+          class="form-control"
+          type="text"
+          maxlength="120"
+          placeholder="Ex.: Troca por material extra"
+          [value]="formulario().descricao"
+          (input)="alterarDescricao($event)"
+        />
+      </label>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-light" type="button" (click)="ajustando.set(false)">Cancelar</button>
+        <button class="btn btn-primary" type="button" (click)="ajustar()">
+          <span class="material-symbols-outlined" aria-hidden="true">save</span>
+          Registrar
+        </button>
+      </div>
+    </article>
+  }
+
+  <div class="card">
+    @if (extrato().length === 0) {
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">payments</span>
+        <h3>Nenhuma movimentação</h3>
+        <p>As movimentações de moedas dos alunos aparecerão aqui.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Aluno</th>
+              <th>Origem</th>
+              <th>Descrição</th>
+              <th>Moedas</th>
+              <th class="text-end">Correção</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (linha of extrato(); track linha.movimentacao.id) {
+              <tr>
+                <td class="moedas__data">{{ formatarDataHora(linha.movimentacao.criadoEm) }}</td>
+                <td>{{ linha.alunoNome }}</td>
+                <td>{{ rotuloOrigem(linha.movimentacao.origem) }}</td>
+                <td>{{ linha.movimentacao.descricao }}</td>
+                <td>
+                  <span
+                    [class]="
+                      'badge ' +
+                      (linha.movimentacao.delta > 0 ? 'badge-success' : 'badge-warning')
+                    "
+                  >
+                    {{ formatarDelta(linha.movimentacao.delta) }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  @if (linha.movimentacao.estornoDe) {
+                    <span class="badge badge-info">Estorno</span>
+                  } @else if (linha.estornada) {
+                    <span class="badge badge-neutral">Estornado</span>
+                  } @else {
+                    <button
+                      class="btn btn-light btn-sm"
+                      type="button"
+                      (click)="estornar(linha)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">undo</span>
+                      Estornar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>

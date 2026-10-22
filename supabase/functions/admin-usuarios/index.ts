@@ -13,6 +13,9 @@
 //                     domínio (professor/aluno) via `referencia`.
 //   - redefinir-senha: { userId }
 //                     Gera uma nova senha para a conta informada.
+//   - excluir-conta:  { userId }
+//                     Remove a conta de acesso e o perfil, encerrando o acesso
+//                     imediatamente. Usado ao excluir o cadastro do usuário.
 //
 // Resposta (sucesso): { userId, email, senha }
 // Resposta (erro):    { erro } com status HTTP adequado.
@@ -209,6 +212,35 @@ async function redefinirSenha(admin: SupabaseClient, corpo: CorpoRequisicao): Pr
   return respostaJson({ userId, email: atualizado.user.email ?? '', senha });
 }
 
+/**
+ * Remove a conta de acesso e o perfil associado.
+ *
+ * É a garantia de que a exclusão do cadastro encerra o acesso: sem a conta de
+ * Auth o usuário não consegue mais autenticar, e a remoção do perfil o exclui
+ * das políticas de RLS. Idempotente: contas já removidas não geram erro.
+ */
+async function excluirConta(admin: SupabaseClient, corpo: CorpoRequisicao): Promise<Response> {
+  const userId = (corpo.userId ?? '').trim();
+  if (!userId) {
+    return respostaErro('Informe o usuário.');
+  }
+
+  await admin.from('perfis').delete().eq('user_id', userId);
+
+  const { error: erroRemocao } = await admin.auth.admin.deleteUser(userId);
+
+  if (erroRemocao && !ehUsuarioInexistente(erroRemocao.message)) {
+    return respostaErro(erroRemocao.message, 400);
+  }
+
+  return respostaJson({ userId, removido: true });
+}
+
+/** Detecta a mensagem do GoTrue quando a conta não existe mais. */
+function ehUsuarioInexistente(mensagem: string): boolean {
+  return mensagem.toLowerCase().includes('not found');
+}
+
 Deno.serve(async (requisicao) => {
   if (requisicao.method === 'OPTIONS') {
     return new Response('ok', { headers: CABECALHOS_CORS });
@@ -251,6 +283,8 @@ Deno.serve(async (requisicao) => {
       return criarConta(admin, corpo);
     case 'redefinir-senha':
       return redefinirSenha(admin, corpo);
+    case 'excluir-conta':
+      return excluirConta(admin, corpo);
     default:
       return respostaErro('Ação desconhecida.');
   }

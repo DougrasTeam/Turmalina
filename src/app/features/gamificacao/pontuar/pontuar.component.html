@@ -1,0 +1,187 @@
+<section class="page">
+  <!-- @if (turmaIdQuery() && disciplinaIdQuery()) {
+    <app-disciplina-contexto-bar [turmaId]="turmaIdQuery()" [disciplinaId]="disciplinaIdQuery()" />
+  } -->
+
+  <header class="page-header">
+    <div>
+      <h1>Pontuar alunos</h1>
+      <p class="tl-text-muted">
+        Registre ações de gamificação para um ou mais alunos. O XP é somado ao histórico e não
+        altera notas, frequência ou aprovação.
+      </p>
+    </div>
+  </header>
+
+  @if (turmasDisponiveis().length === 0) {
+    <div class="card">
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">school</span>
+        <h3>Nenhuma turma disponível</h3>
+        <p>É necessário ter uma turma vinculada para lançar XP.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="page-toolbar pontuar__toolbar">
+      <label class="form-label mb-0" for="pontuar-turma">Turma</label>
+      <select
+        id="pontuar-turma"
+        class="form-select"
+        [value]="turmaEfetiva()"
+        (change)="alterarTurma($event)"
+      >
+        @for (turma of turmasDisponiveis(); track turma.id) {
+          <option [value]="turma.id">{{ turma.nome }}</option>
+        }
+      </select>
+
+      <label class="form-label mb-0" for="pontuar-acao">Ação</label>
+      <select
+        id="pontuar-acao"
+        class="form-select"
+        [value]="acaoEfetivaId()"
+        (change)="alterarAcao($event)"
+      >
+        @for (acao of gamificacao.acoesAtivas(); track acao.id) {
+          <option [value]="acao.id">{{ acao.nome }} ({{ formatarDeltaXp(acao.valorXp) }} XP)</option>
+        }
+      </select>
+    </div>
+
+    <div class="pontuar__grade">
+      <article class="card pontuar__alunos">
+        <div class="pontuar__cabecalho">
+          <h2>Alunos da turma</h2>
+          <label class="pontuar__todos">
+            <input
+              type="checkbox"
+              [checked]="todosSelecionados()"
+              [disabled]="alunosDaTurma().length === 0"
+              (change)="selecionarTodos($event)"
+            />
+            Selecionar todos
+          </label>
+        </div>
+
+        @if (alunosDaTurma().length === 0) {
+          <p class="tl-text-muted mb-0">Esta turma ainda não tem alunos ativos.</p>
+        } @else {
+          <div class="pontuar__lista">
+            @for (aluno of alunosDaTurma(); track aluno.id) {
+              <label class="pontuar__aluno">
+                <input
+                  type="checkbox"
+                  [checked]="selecionados().has(aluno.id)"
+                  (change)="alternarAluno($event, aluno.id)"
+                />
+                <span class="pontuar__aluno-nome">{{ aluno.nome }}</span>
+                <span class="tl-small tl-text-muted">{{ aluno.xp }} XP</span>
+              </label>
+            }
+          </div>
+        }
+      </article>
+
+      <aside class="card pontuar__previa">
+        <h2>Prévia do lançamento</h2>
+
+        @if (acaoEfetiva(); as acao) {
+          <p class="mb-0">
+            <span class="tl-text-muted">Ação:</span>
+            <strong>{{ acao.nome }}</strong>
+          </p>
+        }
+
+        <p class="mb-0">
+          <span class="tl-text-muted">Alunos selecionados:</span>
+          <strong>{{ selecionadosValidos().length }}</strong>
+        </p>
+
+        <p class="mb-0">
+          <span class="tl-text-muted">Total de XP:</span>
+          <strong>{{ formatarDeltaXp(totalPrevisto()) }}</strong>
+        </p>
+
+        <p class="tl-small tl-text-muted">
+          Cada aluno recebe o valor da ação individualmente. O envio é protegido contra cliques
+          duplicados.
+        </p>
+
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="!acaoEfetiva() || selecionadosValidos().length === 0 || salvando()"
+          (click)="registrar()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">stars</span>
+          {{ salvando() ? 'Registrando...' : 'Registrar XP' }}
+        </button>
+      </aside>
+    </div>
+
+    <article class="card">
+      <div class="card-body">
+        <h2 class="pontuar__historico-titulo">Histórico de XP da turma</h2>
+      </div>
+
+      @if (historico().length === 0) {
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">history</span>
+          <h3>Nenhum lançamento ainda</h3>
+          <p>Os lançamentos de XP desta turma aparecerão aqui.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Aluno</th>
+                <th>Ação</th>
+                <th>XP</th>
+                <th>Autor</th>
+                <th class="text-end">Correção</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (linha of historico(); track linha.evento.id) {
+                <tr>
+                  <td class="pontuar__data">{{ formatarDataHora(linha.evento.criadoEm) }}</td>
+                  <td>{{ linha.alunoNome }}</td>
+                  <td>{{ linha.evento.acaoNome }}</td>
+                  <td>
+                    <span
+                      [class]="
+                        'badge ' +
+                        (linha.evento.deltaXp > 0 ? 'badge-success' : 'badge-warning')
+                      "
+                    >
+                      {{ formatarDeltaXp(linha.evento.deltaXp) }} XP
+                    </span>
+                  </td>
+                  <td>{{ linha.evento.autorNome || '—' }}</td>
+                  <td class="text-end">
+                    @if (linha.evento.estornoDe) {
+                      <span class="badge badge-info">Estorno</span>
+                    } @else if (linha.estornado) {
+                      <span class="badge badge-neutral">Estornado</span>
+                    } @else {
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        (click)="estornar(linha)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">undo</span>
+                        Estornar
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  }
+</section>

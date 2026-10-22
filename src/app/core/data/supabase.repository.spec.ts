@@ -113,6 +113,36 @@ describe('SupabaseRepository', () => {
     expect(servidor.chamada('itens', 'eq')?.argumentos).toEqual(['id', 'item-1']);
   });
 
+  it('cria vários registros em um único insert', async () => {
+    servidor.definirRespostas('itens', [
+      { data: [linhaTeste(), linhaTeste({ id: 'item-2' })], error: null },
+    ]);
+
+    const criados = await criar().createMany([{ nome: 'A' }, { nome: 'B' }]);
+
+    const linhas = servidor.chamada('itens', 'insert')?.argumentos[0] as Record<string, unknown>[];
+    expect(servidor.chamadasDe('itens', 'insert').length).toBe(1);
+    expect(linhas.length).toBe(2);
+    expect(linhas[0]['institution_id']).toBe('instituicao-padrao');
+    expect(criados.map((item) => item.id)).toEqual(['item-1', 'item-2']);
+  });
+
+  it('remover vários registros envia um único delete com a lista de ids', async () => {
+    servidor.definirRespostas('itens', [{ error: null }]);
+
+    await criar().removeMany(['item-1', 'item-2']);
+
+    expect(servidor.chamadasDe('itens', 'delete').length).toBe(1);
+    expect(servidor.chamada('itens', 'in')?.argumentos).toEqual(['id', ['item-1', 'item-2']]);
+  });
+
+  it('não chama o Supabase para lotes vazios', async () => {
+    await criar().createMany([]);
+    await criar().removeMany([]);
+
+    expect(servidor.chamadas.length).toBe(0);
+  });
+
   it('saveAll envia um upsert em snake_case com conflito por id', async () => {
     servidor.definirRespostas('itens', [{ error: null }]);
 

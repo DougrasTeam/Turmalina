@@ -1,0 +1,394 @@
+<section class="page">
+  @if (turmaIdQuery() && disciplinaIdQuery()) {
+    <app-disciplina-contexto-bar [turmaId]="turmaIdQuery()" [disciplinaId]="disciplinaIdQuery()" />
+  }
+
+  <header class="page-header">
+    <div>
+      <h1>Equipes</h1>
+      <p class="tl-text-muted">
+        Organize os alunos em equipes da turma e do período letivo ativo, acompanhe o placar e
+        transfira alunos preservando o histórico. O XP nunca altera notas, frequência ou aprovação.
+      </p>
+    </div>
+  </header>
+
+  <div class="page-toolbar">
+    <label class="form-label equipes__filtro" for="equipes-turma">
+      Turma
+      <select
+        id="equipes-turma"
+        class="form-select"
+        [disabled]="turmaFixa()"
+        (change)="alterarTurma($event)"
+      >
+        @for (turma of turmasDisponiveis(); track turma.id) {
+          <option [value]="turma.id" [selected]="turma.id === turmaEfetiva()">
+            {{ turma.codigo }} · {{ turma.nome }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="form-label equipes__filtro" for="equipes-periodo">
+      Período letivo
+      <select id="equipes-periodo" class="form-select" disabled>
+        @for (periodo of periodos.periodos(); track periodo.id) {
+          <option [value]="periodo.id" [selected]="periodo.id === periodoEfetivo()">
+            {{ periodo.nome }}{{ periodo.status === 'ativo' ? ' (ativo)' : '' }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="form-label equipes__filtro" for="equipes-criterio">
+      Critério do placar
+      <select
+        id="equipes-criterio"
+        class="form-select"
+        [value]="criterio()"
+        (change)="alterarCriterio($event)"
+      >
+        @for (opcao of opcoesCriterio; track opcao.valor) {
+          <option [value]="opcao.valor">{{ opcao.rotulo }}</option>
+        }
+      </select>
+    </label>
+
+    <span class="page-toolbar__spacer"></span>
+
+    <button
+      class="btn btn-light"
+      type="button"
+      [disabled]="!podeSortear() || sorteando()"
+      [title]="tituloSorteio()"
+      (click)="abrirSorteio()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">casino</span>
+      {{ sorteando() ? 'Sorteando...' : 'Sortear alunos' }}
+    </button>
+    <button
+      class="btn btn-light"
+      type="button"
+      [disabled]="equipes.totalEquipes() === 0"
+      (click)="abrirExclusaoTodas()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
+      Excluir todas
+    </button>
+    <button
+      class="btn btn-primary"
+      type="button"
+      [disabled]="!turmaEfetiva()"
+      (click)="abrirNovo()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      Nova equipe
+    </button>
+  </div>
+
+  @if (!turmaEfetiva()) {
+    <div class="empty-state">
+      <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">school</span>
+      <h3>Nenhuma turma disponível</h3>
+      <p>Cadastre uma turma para começar a criar equipes.</p>
+    </div>
+  }
+
+  <div class="card">
+    <div class="card-body">
+      <h2 class="equipes__titulo">
+        <span class="material-symbols-outlined" aria-hidden="true">leaderboard</span>
+        Placar das equipes
+      </h2>
+      <p class="tl-small tl-text-muted">
+        Critério: {{ rotuloCriterio(criterio()) }}. Empates são desempatados pelo nome da equipe.
+      </p>
+
+      @if (placar().length === 0) {
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">diversity_3</span>
+          <h3>Nenhuma equipe nesta turma/período</h3>
+          <p>Crie a primeira equipe para começar o placar.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Equipe</th>
+                <th>Integrantes</th>
+                <th>XP total</th>
+                <th>XP médio</th>
+                <th>Status</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (linha of placar(); track linha.equipe.id) {
+                <tr>
+                  <td class="equipes__posicao">{{ medalha(linha.posicao) }}</td>
+                  <td>
+                    <span class="equipes__emoji" aria-hidden="true">{{ linha.equipe.emoji }}</span>
+                    <span class="equipes__cor" [style.background-color]="linha.equipe.cor"></span>
+                    <strong>{{ linha.equipe.nome }}</strong>
+                  </td>
+                  <td class="equipes__integrantes">
+                    <span class="equipes__quantidade-integrantes">
+                      {{ integrantesDaEquipe(linha.equipe.id).length }}
+                    </span>
+                    <span class="tl-small tl-text-muted">
+                      {{ resumoDosIntegrantes(linha.equipe.id) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge badge-info">{{ linha.xpTotal }} XP</span>
+                  </td>
+                  <td>{{ linha.xpMedio }} XP</td>
+                  <td>
+                    <span [class]="'badge ' + (linha.equipe.ativa ? 'badge-success' : 'badge-neutral')">
+                      {{ linha.equipe.ativa ? 'Ativa' : 'Inativa' }}
+                    </span>
+                  </td>
+                  <td class="text-end equipes__botoes">
+                    <button
+                      class="btn btn-light btn-sm"
+                      type="button"
+                      title="Gerenciar membros"
+                      (click)="abrirMembros(linha.equipe)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">group_add</span>
+                    </button>
+                    <button
+                      class="btn btn-light btn-sm"
+                      type="button"
+                      title="Editar"
+                      (click)="editar(linha.equipe)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                    </button>
+                    <button
+                      class="btn btn-light btn-sm"
+                      type="button"
+                      [title]="linha.equipe.ativa ? 'Desativar' : 'Ativar'"
+                      (click)="alternar(linha.equipe)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">
+                        {{ linha.equipe.ativa ? 'toggle_on' : 'toggle_off' }}
+                      </span>
+                    </button>
+                    <button
+                      class="btn btn-danger btn-sm"
+                      type="button"
+                      title="Excluir"
+                      (click)="pedirExclusao(linha.equipe)"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <app-modal
+    [open]="modalAberto()"
+    [title]="editando() ? 'Editar equipe' : 'Nova equipe'"
+    (close)="fechar()"
+  >
+    @if (erros().length) {
+      <div class="alert alert-danger" role="alert">
+        @for (erro of erros(); track erro) {
+          <p class="mb-0">{{ erro }}</p>
+        }
+      </div>
+    }
+
+    <div class="equipes__campos">
+      <label class="form-label" for="equipe-nome">
+        Nome
+        <input
+          id="equipe-nome"
+          class="form-control"
+          type="text"
+          maxlength="40"
+          placeholder="Ex.: Leões"
+          [value]="formulario().nome"
+          (input)="alterarNome($event)"
+        />
+      </label>
+
+      <label class="form-label" for="equipe-emoji">
+        Emoji
+        <select
+          id="equipe-emoji"
+          class="form-select"
+          [value]="formulario().emoji"
+          (change)="alterarEmoji($event)"
+        >
+          @for (emoji of emojis(); track emoji) {
+            <option [value]="emoji" [selected]="emoji === formulario().emoji">{{ emoji }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="form-label" for="equipe-cor">
+        Cor
+        <input
+          id="equipe-cor"
+          class="equipes__seletor-cor"
+          type="color"
+          [value]="formulario().cor"
+          (input)="alterarCor($event)"
+        />
+      </label>
+
+      <div class="equipes__paleta" role="group" aria-label="Cores sugeridas para a equipe">
+        @for (cor of cores; track cor) {
+          <button
+            type="button"
+            class="equipes__amostra"
+            [class.equipes__amostra--ativa]="formulario().cor.toLowerCase() === cor.toLowerCase()"
+            [style.background-color]="cor"
+            [attr.aria-label]="'Usar a cor ' + cor"
+            [attr.aria-pressed]="formulario().cor.toLowerCase() === cor.toLowerCase()"
+            (click)="selecionarCor(cor)"
+          ></button>
+        }
+      </div>
+    </div>
+
+    <p class="tl-small tl-text-muted">
+      A cor é um apoio visual: o nome e o emoji sempre identificam a equipe.
+    </p>
+
+    <label class="equipes__ativa">
+      <input type="checkbox" [checked]="formulario().ativa" (change)="alterarAtiva($event)" />
+      Equipe ativa para receber alunos
+    </label>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
+      <button class="btn btn-primary" type="button" (click)="salvar()">
+        <span class="material-symbols-outlined" aria-hidden="true">save</span>
+        Salvar
+      </button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    [open]="equipeSelecionada() !== null"
+    [title]="'Integrantes: ' + (equipeSelecionada()?.nome ?? '')"
+    (close)="fecharMembros()"
+  >
+    @if (equipeSelecionada(); as equipe) {
+      <div class="equipes__associar">
+        <label class="form-label" for="equipe-aluno">
+          Adicionar aluno
+          <select
+            id="equipe-aluno"
+            class="form-select"
+            [value]="alunoSelecionado()"
+            (change)="selecionarAluno($event)"
+          >
+            <option value="">Selecione um aluno</option>
+            @for (aluno of alunosSemEquipe(); track aluno.id) {
+              <option [value]="aluno.id">{{ aluno.nome }}</option>
+            }
+          </select>
+        </label>
+
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="!alunoSelecionado() || associando()"
+          (click)="associar()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+          {{ associando() ? 'Adicionando...' : 'Adicionar' }}
+        </button>
+      </div>
+
+      @if (alunosSemEquipe().length === 0) {
+        <p class="tl-small tl-text-muted">
+          Todos os alunos ativos da turma já estão em uma equipe neste período.
+        </p>
+      }
+
+      <h3 class="equipes__subtitulo">
+        Integrantes atuais ({{ membrosDaEquipe().length }})
+      </h3>
+
+      @if (membrosDaEquipe().length === 0) {
+        <p class="tl-small tl-text-muted mb-0">Nenhum aluno nesta equipe ainda.</p>
+      } @else {
+        <ul class="equipes__lista">
+          @for (membro of membrosDaEquipe(); track membro.id) {
+            <li class="equipes__item">
+              <span>{{ membro.alunoNome }}</span>
+              <span class="tl-small tl-text-muted">desde {{ formatarDataHora(membro.inicioEm) }}</span>
+              <button
+                class="btn btn-light btn-sm"
+                type="button"
+                title="Remover da equipe"
+                [attr.aria-label]="'Remover ' + membro.alunoNome + ' da equipe'"
+                (click)="desassociar(membro)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">person_remove</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </app-modal>
+
+  <app-modal [open]="sorteioAberto()" title="Sortear alunos" (close)="fecharSorteio()">
+    <p class="mb-2">{{ mensagemSorteio() }}</p>
+
+    <ul class="tl-small tl-text-muted">
+      <li>Somente alunos ativos e sem equipe neste período participam.</li>
+      <li>Quem já está em uma equipe não é alterado.</li>
+      <li>
+        As equipes com mais integrantes recebem menos alunos, para manter os tamanhos
+        equilibrados.
+      </li>
+    </ul>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fecharSorteio()">Cancelar</button>
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="sorteando()"
+        (click)="realizarSorteio()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">casino</span>
+        {{ sorteando() ? 'Sorteando...' : 'Sortear' }}
+      </button>
+    </div>
+  </app-modal>
+
+  <app-confirmar-texto
+    [open]="exclusaoAberta()"
+    titulo="Excluir equipe"
+    [mensagem]="'Excluir a equipe \'' + (equipeEmExclusao()?.nome ?? '') + '\'?'"
+    [detalhes]="['Os vínculos de alunos com esta equipe serão removidos. O XP conquistado é preservado.']"
+    (confirmado)="confirmarExclusao()"
+    (fechado)="cancelarExclusao()"
+  />
+
+  <app-confirmar-texto
+    [open]="excluirTudoAberto()"
+    titulo="Excluir todas as equipes"
+    mensagem="Excluir todas as equipes e seus vínculos de alunos?"
+    [detalhes]="['O XP já conquistado pelos alunos é preservado.']"
+    (confirmado)="excluirTodas()"
+    (fechado)="fecharExclusaoTodas()"
+  />
+</section>

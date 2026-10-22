@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 
 import { AlunosService } from '../../../core/services/alunos.service';
+import { AuditoriaService } from '../../../core/services/auditoria.service';
 import { CsvService, ResultadoCsv } from '../../../core/services/csv.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
@@ -65,6 +66,7 @@ const ALIASES: Record<keyof Mapeamento, string[]> = {
 export class AlunoImportComponent {
   private readonly csv = inject(CsvService);
   private readonly toast = inject(ToastService);
+  private readonly auditoria = inject(AuditoriaService);
   protected readonly turmas = inject(TurmasService);
   private readonly alunos = inject(AlunosService);
 
@@ -187,6 +189,12 @@ export class AlunoImportComponent {
       }
 
       const criados = await this.alunos.createMuitos(entradas);
+      this.auditoria.registrar(
+        'aluno.importado',
+        'Aluno',
+        null,
+        `${criados.length} aluno(s), ${turmasCriadas.size} turma(s)`,
+      );
       this.importado.emit({ criados: criados.length, turmasCriadas: turmasCriadas.size });
     } finally {
       this.importando.set(false);

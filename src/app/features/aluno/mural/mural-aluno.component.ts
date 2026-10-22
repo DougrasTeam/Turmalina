@@ -33,9 +33,9 @@ export class MuralAlunoComponent {
   protected readonly escopo = signal<EscopoFiltroPublicacoes>('tudo');
 
   protected readonly alunoProprio = computed<Aluno | null>(() => {
-    const email = this.auth.usuario()?.email;
-    if (!email) return null;
-    return this.alunos.alunos().find((aluno) => aluno.email === email) ?? null;
+    const usuario = this.auth.usuario();
+    if (!usuario) return null;
+    return this.alunos.encontrarPorUsuario(usuario.id, usuario.email);
   });
 
   protected readonly publicacoesDaTurma = computed(() => {

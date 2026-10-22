@@ -21,6 +21,11 @@ describe('auditoria.model', () => {
       expect(descricao.rotulo).toBe('turma.zerada');
       expect(descricao.classe).toBe('badge-neutral');
     });
+
+    it('descreve ações de importação e do mural', () => {
+      expect(descreverAcaoAuditoria('aluno.importado').rotulo).toBe('Alunos importados');
+      expect(descreverAcaoAuditoria('publicacao.criada').rotulo).toBe('Publicação criada');
+    });
   });
 
   describe('rotuloEntidadeAuditoria', () => {

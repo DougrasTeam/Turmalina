@@ -15,15 +15,28 @@
           <span [class]="'badge ' + (t.ativa ? 'badge-success' : 'badge-neutral')">
             {{ t.ativa ? 'Ativa' : 'Inativa' }}
           </span>
+          @if (somenteLeitura()) {
+            <span class="badge badge-neutral">Visao geral</span>
+          }
         </div>
       </div>
-      <button class="btn btn-light ms-auto" type="button" (click)="turmaFormAberto.set(true)">
-        <span class="material-symbols-outlined">edit</span> Editar turma
-      </button>
+      @if (!somenteLeitura()) {
+        <button class="btn btn-light ms-auto" type="button" (click)="turmaFormAberto.set(true)">
+          <span class="material-symbols-outlined">edit</span> Editar turma
+        </button>
+      } @else {
+        <span class="ms-auto"></span>
+      }
     </div>
 
     @if (t.descricao) {
       <p class="tl-text-muted mb-0">{{ t.descricao }}</p>
+    }
+
+    @if (semVinculoNaTurma()) {
+      <div class="alert alert-warning">
+        Voce nao possui vinculo docente nesta turma. As disciplinas aparecem apenas para consulta.
+      </div>
     }
 
     <div class="kpi-grid">
@@ -45,7 +58,7 @@
         <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">key</span></span>
         <div>
           <div class="kpi-card__value" style="font-size: 1.4rem;">{{ t.codigo || '—' }}</div>
-          <div class="kpi-card__label">Código de acesso</div>
+          <div class="kpi-card__label">Codigo de acesso</div>
         </div>
       </article>
     </div>
@@ -53,14 +66,11 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><span class="material-symbols-outlined">co_present</span> Professores ({{ professoresDaTurma().length }})</span>
-        <button
-          class="btn btn-sm btn-primary"
-          type="button"
-          [disabled]="professoresDisponiveis().length === 0"
-          (click)="abrirPickerProfessores()"
-        >
-          <span class="material-symbols-outlined">add</span> Adicionar professor
-        </button>
+        @if (!somenteLeitura()) {
+          <button class="btn btn-sm btn-primary" type="button" [disabled]="professoresDisponiveis().length === 0" (click)="abrirPickerProfessores()">
+            <span class="material-symbols-outlined">add</span> Adicionar professor
+          </button>
+        }
       </div>
       <div class="card-body">
         @if (professoresDaTurma().length === 0) {
@@ -70,9 +80,11 @@
             @for (prof of professoresDaTurma(); track prof.id) {
               <span class="chip">
                 {{ prof.nome }}
-                <button class="chip-x" type="button" aria-label="Remover" (click)="removerProfessor(prof.id)">
-                  <span class="material-symbols-outlined">close</span>
-                </button>
+                @if (!somenteLeitura()) {
+                  <button class="chip-x" type="button" aria-label="Remover" (click)="removerProfessor(prof.id)">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                }
               </span>
             }
           </div>
@@ -83,20 +95,40 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><span class="material-symbols-outlined">menu_book</span> Disciplinas ({{ disciplinasDaTurma().length }})</span>
-        <button class="btn btn-sm btn-primary" type="button" (click)="abrirPickerDisciplinas()">
-          <span class="material-symbols-outlined">add</span> Selecionar disciplinas
-        </button>
+        @if (!somenteLeitura()) {
+          <button class="btn btn-sm btn-primary" type="button" (click)="abrirPickerDisciplinas()">
+            <span class="material-symbols-outlined">add</span> Selecionar disciplinas
+          </button>
+        }
       </div>
       <div class="card-body">
         @if (disciplinasDaTurma().length === 0) {
           <p class="tl-text-muted mb-0">Nenhuma disciplina ofertada nesta turma.</p>
         } @else {
-          <div class="chip-input">
+          <div class="d-flex flex-column gap-2">
             @for (disciplina of disciplinasDaTurma(); track disciplina.id) {
-              <span class="chip">
+              <div class="member-row">
                 <span class="color-dot" [style.background]="disciplina.cor" aria-hidden="true"></span>
-                {{ disciplina.nome }}
-              </span>
+                <div class="member-row__info">
+                  <strong>{{ disciplina.nome }}</strong>
+                  <div class="tl-small tl-text-muted">
+                    @if (gerenciarTudo()) {
+                      Administrador
+                    } @else if (disciplinasAcessiveis().includes(disciplina)) {
+                      Voce leciona nesta disciplina
+                    } @else {
+                      Sem vinculo ativo com esta disciplina
+                    }
+                  </div>
+                </div>
+                @if (disciplinasAcessiveis().includes(disciplina)) {
+                  <a class="btn btn-sm btn-primary" [routerLink]="['/turmas', t.id, 'disciplina', disciplina.id]">Abrir disciplina</a>
+                } @else if (gerenciarTudo()) {
+                  <a class="btn btn-sm btn-light" [routerLink]="['/turmas', t.id, 'disciplina', disciplina.id]">Abrir</a>
+                } @else {
+                  <span class="badge badge-neutral">Somente leitura</span>
+                }
+              </div>
             }
           </div>
         }
@@ -106,20 +138,15 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><span class="material-symbols-outlined">assignment_ind</span> Equipe docente ({{ vinculosDaTurma().length }})</span>
-        <button
-          class="btn btn-sm btn-primary"
-          type="button"
-          [disabled]="professores.professores().length === 0 || disciplinas.disciplinas().length === 0"
-          (click)="abrirVinculo()"
-        >
-          <span class="material-symbols-outlined">add</span> Adicionar vínculo
-        </button>
+        @if (!somenteLeitura()) {
+          <button class="btn btn-sm btn-primary" type="button" [disabled]="professores.professores().length === 0 || disciplinas.disciplinas().length === 0" (click)="abrirVinculo()">
+            <span class="material-symbols-outlined">add</span> Adicionar vinculo
+          </button>
+        }
       </div>
       <div class="card-body">
         @if (vinculosDaTurma().length === 0) {
-          <p class="tl-text-muted mb-0">
-            Nenhum vínculo de professor com disciplina. Vincule professores às disciplinas desta turma.
-          </p>
+          <p class="tl-text-muted mb-0">Nenhum vinculo de professor com disciplina. Vincule professores as disciplinas desta turma.</p>
         } @else {
           <div>
             @for (vinculo of vinculosDaTurma(); track vinculo.id) {
@@ -129,7 +156,9 @@
                   <strong>{{ nomeProfessor(vinculo.professorId) }}</strong>
                   <div class="tl-small tl-text-muted">{{ nomeDisciplina(vinculo.disciplinaId) }}</div>
                 </div>
-                <button class="btn btn-sm btn-danger" type="button" (click)="removerVinculo(vinculo.id)">Remover</button>
+                @if (!somenteLeitura()) {
+                  <button class="btn btn-sm btn-danger" type="button" (click)="removerVinculo(vinculo.id)">Remover</button>
+                }
               </div>
             }
           </div>
@@ -141,7 +170,7 @@
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><span class="material-symbols-outlined">campaign</span> Mural da turma</span>
         <button class="btn btn-sm btn-primary" type="button" (click)="abrirNovaPublicacao()">
-          <span class="material-symbols-outlined">add</span> Nova publicação
+          <span class="material-symbols-outlined">add</span> Nova publicacao
         </button>
       </div>
       <div class="card-body">
@@ -150,7 +179,7 @@
           [nomesTurmas]="nomesTurmas()"
           [autorIdAtual]="autorIdAtual()"
           [gerenciarTudo]="gerenciarTudo()"
-          vazioTitulo="Nenhuma publicação nesta turma"
+          vazioTitulo="Nenhuma publicacao nesta turma"
           vazioTexto="Compartilhe um aviso com os alunos desta turma."
           (editar)="abrirEdicaoPublicacao($event)"
           (arquivar)="arquivarPublicacao($event)"
@@ -163,33 +192,27 @@
     <div class="card mb-0">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><span class="material-symbols-outlined">groups</span> Alunos ({{ alunosDaTurma().length }})</span>
-        <div class="d-flex flex-wrap gap-2">
-          <button class="btn btn-sm btn-light" type="button" (click)="importAberto.set(true)">
-            <span class="material-symbols-outlined">upload_file</span> Importar CSV
-          </button>
-          <button class="btn btn-sm btn-light" type="button" (click)="abrirNovoAluno()">
-            <span class="material-symbols-outlined">add</span> Novo aluno
-          </button>
-          <button class="btn btn-sm btn-primary" type="button" (click)="abrirPickerAlunos()">
-            <span class="material-symbols-outlined">group_add</span> Adicionar existentes
-          </button>
-        </div>
+        @if (!somenteLeitura()) {
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-light" type="button" (click)="importAberto.set(true)">
+              <span class="material-symbols-outlined">upload_file</span> Importar CSV
+            </button>
+            <button class="btn btn-sm btn-light" type="button" (click)="abrirNovoAluno()">
+              <span class="material-symbols-outlined">add</span> Novo aluno
+            </button>
+            <button class="btn btn-sm btn-primary" type="button" (click)="abrirPickerAlunos()">
+              <span class="material-symbols-outlined">group_add</span> Adicionar existentes
+            </button>
+          </div>
+        }
       </div>
       <div class="card-body">
         @if (alunosDaTurma().length > 3) {
-          <input
-            class="form-control mb-2"
-            type="search"
-            placeholder="Buscar aluno na turma"
-            [value]="buscaAlunos()"
-            (input)="buscaAlunos.set(valor($event))"
-          />
+          <input class="form-control mb-2" type="search" placeholder="Buscar aluno na turma" [value]="buscaAlunos()" (input)="buscaAlunos.set(valor($event))" />
         }
 
         @if (alunosDaTurma().length === 0) {
-          <p class="tl-text-muted mb-0">
-            Nenhum aluno nesta turma. Adicione alunos existentes, cadastre um novo ou importe um CSV.
-          </p>
+          <p class="tl-text-muted mb-0">Nenhum aluno nesta turma.</p>
         } @else if (alunosFiltrados().length === 0) {
           <p class="tl-text-muted mb-0">Nenhum aluno encontrado para "{{ buscaAlunos() }}".</p>
         } @else {
@@ -200,21 +223,14 @@
                 <div class="member-row__info">
                   <strong>{{ aluno.nome }}</strong>
                   <div class="tl-small tl-text-muted">
-                    @if (aluno.matricula) {
-                      Matrícula {{ aluno.matricula }}
-                    }
-                    @if (aluno.matricula && aluno.email) {
-                      ·
-                    }
-                    @if (aluno.email) {
-                      {{ aluno.email }}
-                    }
-                    @if (!aluno.matricula && !aluno.email) {
-                      Sem dados complementares
-                    }
+                    @if (aluno.matricula) { Matricula {{ aluno.matricula }} }
+                    @if (aluno.matricula && aluno.email) { · }
+                    @if (aluno.email) { {{ aluno.email }} }
                   </div>
                 </div>
-                <button class="btn btn-sm btn-danger" type="button" (click)="removerAluno(aluno)">Remover</button>
+                @if (!somenteLeitura()) {
+                  <button class="btn btn-sm btn-danger" type="button" (click)="removerAluno(aluno)">Remover</button>
+                }
               </div>
             }
           </div>
@@ -223,47 +239,15 @@
     </div>
   </section>
 
-  <app-turma-form
-    [open]="turmaFormAberto()"
-    [turma]="t"
-    (salvo)="turmaFormAberto.set(false)"
-    (fechado)="turmaFormAberto.set(false)"
-  />
+  <app-turma-form [open]="turmaFormAberto()" [turma]="t" (salvo)="turmaFormAberto.set(false)" (fechado)="turmaFormAberto.set(false)" />
+  <app-aluno-form [open]="alunoFormAberto()" [turmaIdPadrao]="t.id" (salvo)="alunoFormAberto.set(false)" (fechado)="alunoFormAberto.set(false)" />
+  <app-publicacao-form [open]="publicacaoFormAberto()" [publicacao]="publicacaoEditando()" [turmas]="[t]" [turmaFixa]="t.id" [permitirInstitucional]="false" (salvo)="onPublicacaoSalva()" (fechado)="fecharFormPublicacao()" />
 
-  <app-aluno-form
-    [open]="alunoFormAberto()"
-    [turmaIdPadrao]="t.id"
-    (salvo)="alunoFormAberto.set(false)"
-    (fechado)="alunoFormAberto.set(false)"
-  />
-
-  <app-publicacao-form
-    [open]="publicacaoFormAberto()"
-    [publicacao]="publicacaoEditando()"
-    [turmas]="[t]"
-    [turmaFixa]="t.id"
-    [permitirInstitucional]="false"
-    (salvo)="onPublicacaoSalva()"
-    (fechado)="fecharFormPublicacao()"
-  />
-
-  <app-modal
-    [open]="!!publicacaoExcluindo()"
-    title="Excluir publicação"
-    (close)="cancelarExclusaoPublicacao()"
-  >
-    <p>
-      Deseja realmente excluir a publicação
-      <strong>{{ publicacaoExcluindo()?.titulo }}</strong
-      >? Esta ação não pode ser desfeita.
-    </p>
+  <app-modal [open]="!!publicacaoExcluindo()" title="Excluir publicacao" (close)="cancelarExclusaoPublicacao()">
+    <p>Deseja realmente excluir a publicacao <strong>{{ publicacaoExcluindo()?.titulo }}</strong>? Esta acao nao pode ser desfeita.</p>
     <div class="d-flex justify-content-end gap-2 mt-3">
-      <button class="btn btn-light" type="button" (click)="cancelarExclusaoPublicacao()">
-        Cancelar
-      </button>
-      <button class="btn btn-danger" type="button" (click)="confirmarExclusaoPublicacao()">
-        Excluir
-      </button>
+      <button class="btn btn-light" type="button" (click)="cancelarExclusaoPublicacao()">Cancelar</button>
+      <button class="btn btn-danger" type="button" (click)="confirmarExclusaoPublicacao()">Excluir</button>
     </div>
   </app-modal>
 
@@ -273,24 +257,16 @@
 
   <app-modal [open]="pickerProfessorAberto()" title="Adicionar professores" (close)="pickerProfessorAberto.set(false)">
     @if (professoresDisponiveis().length === 0) {
-      <p class="tl-text-muted mb-0">Todos os professores já estão vinculados a esta turma.</p>
+      <p class="tl-text-muted mb-0">Todos os professores ja estao vinculados a esta turma.</p>
     } @else {
       <label class="checkbox-chip checkbox-chip--all mb-1">
-        <input
-          type="checkbox"
-          [checked]="todosProfessoresSelecionados()"
-          (change)="alternarTodosProfessores($event)"
-        />
+        <input type="checkbox" [checked]="todosProfessoresSelecionados()" (change)="alternarTodosProfessores($event)" />
         Selecionar todos ({{ professoresDisponiveis().length }})
       </label>
       <div class="picker-list">
         @for (prof of professoresDisponiveis(); track prof.id) {
           <label class="checkbox-chip">
-            <input
-              type="checkbox"
-              [checked]="selecaoProfessores().includes(prof.id)"
-              (change)="toggleProfSelecao(prof.id)"
-            />
+            <input type="checkbox" [checked]="selecaoProfessores().includes(prof.id)" (change)="toggleProfSelecao(prof.id)" />
             {{ prof.nome }}
           </label>
         }
@@ -298,47 +274,26 @@
     }
     <div class="d-flex justify-content-end gap-2 mt-3">
       <button class="btn btn-light" type="button" (click)="pickerProfessorAberto.set(false)">Cancelar</button>
-      <button
-        class="btn btn-primary"
-        type="button"
-        [disabled]="selecaoProfessores().length === 0"
-        (click)="confirmarProfessores()"
-      >
-        Adicionar ({{ selecaoProfessores().length }})
-      </button>
+      <button class="btn btn-primary" type="button" [disabled]="selecaoProfessores().length === 0" (click)="confirmarProfessores()">Adicionar ({{ selecaoProfessores().length }})</button>
     </div>
   </app-modal>
 
   <app-modal [open]="pickerAlunoAberto()" title="Adicionar alunos existentes" (close)="pickerAlunoAberto.set(false)">
     @if (alunosDisponiveis().length === 0) {
-      <p class="tl-text-muted mb-0">Não há alunos disponíveis para adicionar.</p>
+      <p class="tl-text-muted mb-0">Nao ha alunos disponiveis para adicionar.</p>
     } @else {
-      <input
-        class="form-control mb-2"
-        type="search"
-        placeholder="Buscar aluno"
-        [value]="buscaPickerAlunos()"
-        (input)="buscaPickerAlunos.set(valor($event))"
-      />
+      <input class="form-control mb-2" type="search" placeholder="Buscar aluno" [value]="buscaPickerAlunos()" (input)="buscaPickerAlunos.set(valor($event))" />
       @if (alunosPickerFiltrados().length === 0) {
         <p class="tl-text-muted mb-0">Nenhum aluno encontrado.</p>
       } @else {
         <label class="checkbox-chip checkbox-chip--all mb-2">
-          <input
-            type="checkbox"
-            [checked]="todosAlunosSelecionados()"
-            (change)="alternarTodosAlunos($event)"
-          />
+          <input type="checkbox" [checked]="todosAlunosSelecionados()" (change)="alternarTodosAlunos($event)" />
           Selecionar todos ({{ alunosPickerFiltrados().length }})
         </label>
         <div class="picker-list">
           @for (aluno of alunosPickerFiltrados(); track aluno.id) {
             <label class="checkbox-chip">
-              <input
-                type="checkbox"
-                [checked]="selecaoAlunos().includes(aluno.id)"
-                (change)="toggleAlunoSelecao(aluno.id)"
-              />
+              <input type="checkbox" [checked]="selecaoAlunos().includes(aluno.id)" (change)="toggleAlunoSelecao(aluno.id)" />
               <span style="min-width: 0;">
                 <strong>{{ aluno.nome }}</strong>
                 @if (nomeTurmaDe(aluno); as turma) {
@@ -352,43 +307,22 @@
     }
     <div class="d-flex justify-content-end gap-2 mt-3">
       <button class="btn btn-light" type="button" (click)="pickerAlunoAberto.set(false)">Cancelar</button>
-      <button
-        class="btn btn-primary"
-        type="button"
-        [disabled]="selecaoAlunos().length === 0"
-        (click)="confirmarAlunos()"
-      >
-        Adicionar ({{ selecaoAlunos().length }})
-      </button>
+      <button class="btn btn-primary" type="button" [disabled]="selecaoAlunos().length === 0" (click)="confirmarAlunos()">Adicionar ({{ selecaoAlunos().length }})</button>
     </div>
   </app-modal>
 
-  <app-modal
-    [open]="pickerDisciplinasAberto()"
-    title="Disciplinas da turma"
-    (close)="pickerDisciplinasAberto.set(false)"
-  >
+  <app-modal [open]="pickerDisciplinasAberto()" title="Disciplinas da turma" (close)="pickerDisciplinasAberto.set(false)">
     @if (disciplinas.total() === 0) {
-      <p class="tl-text-muted mb-0">
-        Nenhuma disciplina cadastrada. Cadastre disciplinas na área de Administração.
-      </p>
+      <p class="tl-text-muted mb-0">Nenhuma disciplina cadastrada. Cadastre disciplinas na area de Administracao.</p>
     } @else {
       <label class="checkbox-chip checkbox-chip--all mb-1">
-        <input
-          type="checkbox"
-          [checked]="todasDisciplinasSelecionadas()"
-          (change)="alternarTodasDisciplinas($event)"
-        />
+        <input type="checkbox" [checked]="todasDisciplinasSelecionadas()" (change)="alternarTodasDisciplinas($event)" />
         Selecionar todas ({{ disciplinas.disciplinas().length }})
       </label>
       <div class="picker-list">
         @for (disciplina of disciplinas.disciplinas(); track disciplina.id) {
           <label class="checkbox-chip">
-            <input
-              type="checkbox"
-              [checked]="selecaoDisciplinas().includes(disciplina.id)"
-              (change)="toggleDisciplinaSelecao(disciplina.id)"
-            />
+            <input type="checkbox" [checked]="selecaoDisciplinas().includes(disciplina.id)" (change)="toggleDisciplinaSelecao(disciplina.id)" />
             <span class="d-flex align-items-center gap-2">
               <span class="color-dot" [style.background]="disciplina.cor" aria-hidden="true"></span>
               {{ disciplina.nome }}
@@ -403,15 +337,10 @@
     </div>
   </app-modal>
 
-  <app-modal [open]="vinculoAberto()" title="Adicionar vínculo docente" (close)="vinculoAberto.set(false)">
+  <app-modal [open]="vinculoAberto()" title="Adicionar vinculo docente" (close)="vinculoAberto.set(false)">
     <div class="form-group">
       <label class="form-label" for="vinculo-professor">Professor</label>
-      <select
-        id="vinculo-professor"
-        class="form-select"
-        [value]="novoVinculoProfessor()"
-        (change)="novoVinculoProfessor.set(valor($event))"
-      >
+      <select id="vinculo-professor" class="form-select" [value]="novoVinculoProfessor()" (change)="novoVinculoProfessor.set(valor($event))">
         <option value="">Selecione</option>
         @for (prof of professores.professores(); track prof.id) {
           <option [value]="prof.id">{{ prof.nome }}</option>
@@ -420,12 +349,7 @@
     </div>
     <div class="form-group">
       <label class="form-label" for="vinculo-disciplina">Disciplina</label>
-      <select
-        id="vinculo-disciplina"
-        class="form-select"
-        [value]="novoVinculoDisciplina()"
-        (change)="novoVinculoDisciplina.set(valor($event))"
-      >
+      <select id="vinculo-disciplina" class="form-select" [value]="novoVinculoDisciplina()" (change)="novoVinculoDisciplina.set(valor($event))">
         <option value="">Selecione</option>
         @for (disciplina of disciplinas.disciplinas(); track disciplina.id) {
           <option [value]="disciplina.id">{{ disciplina.nome }}</option>
@@ -434,22 +358,15 @@
     </div>
     <div class="d-flex justify-content-end gap-2 mt-3">
       <button class="btn btn-light" type="button" (click)="vinculoAberto.set(false)">Cancelar</button>
-      <button
-        class="btn btn-primary"
-        type="button"
-        [disabled]="!novoVinculoProfessor() || !novoVinculoDisciplina()"
-        (click)="confirmarVinculo()"
-      >
-        Adicionar
-      </button>
+      <button class="btn btn-primary" type="button" [disabled]="!novoVinculoProfessor() || !novoVinculoDisciplina()" (click)="confirmarVinculo()">Adicionar</button>
     </div>
   </app-modal>
 } @else {
   <section class="page">
     <div class="empty-state">
       <div class="empty-state__icon" aria-hidden="true"><span class="material-symbols-outlined">school</span></div>
-      <h3>Turma não encontrada</h3>
-      <p>A turma que você tentou acessar não existe ou foi removida.</p>
+      <h3>Turma nao encontrada</h3>
+      <p>A turma que voce tentou acessar nao existe ou foi removida.</p>
       <a class="btn btn-primary" routerLink="/turmas">Voltar para turmas</a>
     </div>
   </section>

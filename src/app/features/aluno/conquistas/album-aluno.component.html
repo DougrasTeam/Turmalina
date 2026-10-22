@@ -1,0 +1,81 @@
+﻿<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Meu álbum</h1>
+      <p class="tl-text-muted">
+        Acompanhe as conquistas que você já desbloqueou. O álbum mostra apenas o seu progresso
+        pessoal.
+      </p>
+    </div>
+  </header>
+
+  @if (alunoProprio(); as aluno) {
+    <article class="card album__destaque">
+      <div class="album__avatar" aria-hidden="true">{{ iniciais(aluno.nome) }}</div>
+
+      <div class="album__info">
+        <h2 class="album__nome">{{ aluno.nome }}</h2>
+
+        <p class="album__resumo">
+          <strong>{{ quantidadeGanha() }}</strong> de {{ total() }} conquista(s)
+        </p>
+
+        <div
+          class="progress"
+          role="progressbar"
+          [attr.aria-valuenow]="percentual()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div class="progress-bar progress-bar-success" [style.--progress]="percentual() + '%'"></div>
+        </div>
+
+        <p class="tl-small tl-text-muted mb-0">{{ percentual() }}% do álbum completo</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-body">
+        <h2 class="album__titulo">Conquistas</h2>
+      </div>
+
+      @if (conquistasAtivas().length === 0) {
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">
+            workspace_premium
+          </span>
+          <h3>Nenhuma conquista disponível</h3>
+          <p>Assim que a equipe configurar conquistas, elas aparecerão aqui.</p>
+        </div>
+      } @else {
+        <div class="album__grade">
+          @for (conquista of conquistasAtivas(); track conquista.id) {
+            <div
+              class="album__item"
+              [class.album__item--ganha]="conquistou(conquista.id)"
+              [class.album__item--bloqueada]="!conquistou(conquista.id)"
+            >
+              <span class="album__item-emoji" aria-hidden="true">{{ conquista.emoji }}</span>
+              <h3 class="album__item-nome">{{ conquista.nome }}</h3>
+              <p class="album__item-desc">{{ conquista.descricao || 'Sem descrição.' }}</p>
+
+              @if (conquistou(conquista.id)) {
+                <span class="badge badge-success">Conquistada</span>
+              } @else {
+                <span class="badge badge-neutral">Ainda não</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </article>
+  } @else {
+    <div class="card">
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">person</span>
+        <h3>Conta de aluno não localizada</h3>
+        <p>Peça à secretaria para conferir o e-mail vinculado ao seu cadastro.</p>
+      </div>
+    </div>
+  }
+</section>

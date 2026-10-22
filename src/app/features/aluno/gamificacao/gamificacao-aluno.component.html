@@ -1,0 +1,111 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Meu XP</h1>
+      <p class="tl-text-muted">
+        Acompanhe seu XP, seu nível e o histórico das ações de gamificação registradas pela equipe.
+      </p>
+    </div>
+  </header>
+
+  @if (alunoProprio(); as aluno) {
+    <article class="card aluno-xp__destaque">
+      <div class="aluno-xp__avatar" aria-hidden="true">{{ iniciais(aluno.nome) }}</div>
+
+      <div class="aluno-xp__info">
+        <h2 class="aluno-xp__nome">{{ aluno.nome }}</h2>
+        <span class="badge badge-info">Nível {{ nivel() }}</span>
+
+        <p class="aluno-xp__xp">
+          <strong>{{ xp() }}</strong> XP
+          <span class="tl-small tl-text-muted">
+            ({{ xpNoNivel() }} de {{ xpPorNivel }} neste nível)
+          </span>
+        </p>
+
+        <div
+          class="progress progress-lg"
+          role="progressbar"
+          [attr.aria-valuenow]="progresso()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div
+            class="progress-bar progress-bar-success"
+            [style.--progress]="progresso() + '%'"
+          ></div>
+        </div>
+
+        <p class="tl-small tl-text-muted mb-0">
+          {{ faltamParaProximoNivel() }} XP para o próximo nível.
+        </p>
+      </div>
+    </article>
+
+    <div class="alert alert-info" role="status">
+      O XP é uma pontuação de gamificação. Ele não substitui nem altera notas, frequência ou
+      aprovação.
+    </div>
+
+    <article class="card">
+      <div class="card-body">
+        <h2 class="aluno-xp__historico-titulo">Histórico de XP</h2>
+      </div>
+
+      @if (eventos().length === 0) {
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">stars</span>
+          <h3>Nenhum lançamento ainda</h3>
+          <p>Quando a equipe registrar uma ação, ela aparecerá aqui.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Ação</th>
+                <th>XP</th>
+                <th>Registrado por</th>
+                <th>Observação</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (evento of eventos(); track evento.id) {
+                <tr>
+                  <td class="aluno-xp__data">{{ formatarDataHora(evento.criadoEm) }}</td>
+                  <td>{{ evento.acaoNome }}</td>
+                  <td>
+                    <span
+                      [class]="'badge ' + (evento.deltaXp > 0 ? 'badge-success' : 'badge-warning')"
+                    >
+                      {{ formatarDeltaXp(evento.deltaXp) }} XP
+                    </span>
+                  </td>
+                  <td>{{ evento.autorNome || '—' }}</td>
+                  <td>
+                    @if (evento.estornoDe) {
+                      <span class="badge badge-info">Estorno de lançamento</span>
+                    } @else if (estornados().has(evento.id)) {
+                      <span class="badge badge-neutral">Estornado</span>
+                    } @else {
+                      <span class="tl-small tl-text-muted">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  } @else {
+    <div class="card">
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">person</span>
+        <h3>Conta de aluno não localizada</h3>
+        <p>Peça à secretaria para conferir o e-mail vinculado ao seu cadastro.</p>
+      </div>
+    </div>
+  }
+</section>

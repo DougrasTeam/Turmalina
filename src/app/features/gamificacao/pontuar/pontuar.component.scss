@@ -1,0 +1,86 @@
+.pontuar__toolbar .form-select {
+  max-width: 18rem;
+}
+
+.pontuar__grade {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  align-items: start;
+}
+
+.pontuar__alunos {
+  padding: 1rem;
+}
+
+.pontuar__cabecalho {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.pontuar__todos {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--tl-text-muted, #666666);
+}
+
+.pontuar__lista {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.pontuar__aluno {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.pontuar__aluno-nome {
+  flex: 1;
+}
+
+.pontuar__previa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+
+  h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+  }
+}
+
+.pontuar__historico-titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.pontuar__data {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .pontuar__grade {
+    grid-template-columns: 1fr;
+  }
+}

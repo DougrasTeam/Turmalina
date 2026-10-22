@@ -11,6 +11,7 @@ import { FeedPublicacoesComponent } from '../../mural/feed-publicacoes/feed-publ
 import { PublicacaoFormComponent } from '../../mural/publicacao-form/publicacao-form.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
 import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { MatriculasService } from '../../../core/services/matriculas.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
@@ -49,6 +50,7 @@ export class TurmaDetalheComponent {
   private readonly periodos = inject(PeriodosLetivosService);
   protected readonly publicacoes = inject(PublicacoesService);
   protected readonly auth = inject(AuthService);
+  protected readonly contexto = inject(ContextoProfessorService);
   private readonly toast = inject(ToastService);
 
   protected readonly turmaId = toSignal(
@@ -82,6 +84,22 @@ export class TurmaDetalheComponent {
 
   protected readonly autorIdAtual = computed(() => this.auth.usuario()?.id ?? null);
   protected readonly gerenciarTudo = computed(() => this.auth.papel() === 'administrador');
+  protected readonly somenteLeitura = computed(() => !this.auth.temPapel('administrador'));
+  protected readonly ehProfessor = computed(() => this.auth.papel() === 'professor');
+
+  /** Disciplinas em que o professor atual possui vínculo ativo nesta turma. */
+  protected readonly disciplinasAcessiveis = computed<Disciplina[]>(() => {
+    if (this.gerenciarTudo()) {
+      return [];
+    }
+    return this.contexto.disciplinasDoProfessorNaTurma(this.turmaId());
+  });
+
+  /** O professor sem nenhum vínculo na turma enxerga apenas a visão geral. */
+  protected readonly semVinculoNaTurma = computed(
+    () => this.ehProfessor() && !this.contexto.possuiAlgumVinculoNaTurma(this.turmaId()),
+  );
+
   protected readonly nomesTurmas = computed<Record<string, string>>(() => {
     const turma = this.turma();
     return turma ? { [turma.id]: turma.nome } : {};
@@ -109,7 +127,7 @@ export class TurmaDetalheComponent {
   protected readonly selecaoProfessores = signal<string[]>([]);
   readonly professoresDisponiveis = computed<Professor[]>(() => {
     const t = this.turma();
-    if (!t) return [];
+    if (!t || this.somenteLeitura()) return [];
     return this.professores.professores().filter((p) => !t.professorIds.includes(p.id));
   });
 
@@ -125,6 +143,7 @@ export class TurmaDetalheComponent {
   protected readonly buscaPickerAlunos = signal('');
   readonly alunosDisponiveis = computed<Aluno[]>(() => {
     const id = this.turmaId();
+    if (this.somenteLeitura()) return [];
     return this.alunos.alunos().filter((a) => a.turmaId !== id);
   });
   readonly alunosPickerFiltrados = computed(() => {

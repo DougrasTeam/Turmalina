@@ -4,10 +4,14 @@ import { AlunosService } from './alunos.service';
 import { AuditoriaService } from './auditoria.service';
 import { AvaliacoesService } from './avaliacoes.service';
 import { ComunicadosService } from './comunicados.service';
+import { ConquistasService } from './conquistas.service';
 import { DisciplinasService } from './disciplinas.service';
+import { EquipesService } from './equipes.service';
 import { EventosService } from './eventos.service';
 import { FrequenciasService } from './frequencias.service';
+import { GamificacaoService } from './gamificacao.service';
 import { MatriculasService } from './matriculas.service';
+import { MoedasService } from './moedas.service';
 import { PeriodosLetivosService } from './periodos-letivos.service';
 import { ProfessoresService } from './professores.service';
 import { PublicacoesService } from './publicacoes.service';
@@ -23,7 +27,9 @@ export type GrupoDados =
   | 'frequencias'
   | 'avaliacoes'
   | 'comunicacao'
-  | 'agenda';
+  | 'agenda'
+  | 'equipes'
+  | 'gamificacao';
 export type AlvoLimpeza = GrupoDados | 'tudo';
 
 export interface ResumoDados {
@@ -40,6 +46,14 @@ export interface ResumoDados {
   comunicados: number;
   comunicacao: number;
   agenda: number;
+  acoesGamificacao: number;
+  eventosXp: number;
+  movimentacoesMoedas: number;
+  conquistas: number;
+  desbloqueiosConquista: number;
+  equipes: number;
+  membrosEquipe: number;
+  gamificacao: number;
 }
 
 export interface ConfirmacaoLimpeza {
@@ -68,6 +82,10 @@ export class DadosService {
   private readonly publicacoes = inject(PublicacoesService);
   private readonly comunicados = inject(ComunicadosService);
   private readonly eventos = inject(EventosService);
+  private readonly gamificacao = inject(GamificacaoService);
+  private readonly moedas = inject(MoedasService);
+  private readonly conquistas = inject(ConquistasService);
+  private readonly equipes = inject(EquipesService);
   private readonly auditoria = inject(AuditoriaService);
 
   readonly resumo = computed<ResumoDados>(() => ({
@@ -84,6 +102,19 @@ export class DadosService {
     comunicados: this.comunicados.total(),
     comunicacao: this.publicacoes.total() + this.comunicados.total(),
     agenda: this.eventos.total(),
+    acoesGamificacao: this.gamificacao.totalAcoes(),
+    eventosXp: this.gamificacao.totalEventos(),
+    movimentacoesMoedas: this.moedas.totalMovimentacoes(),
+    conquistas: this.conquistas.totalConquistas(),
+    desbloqueiosConquista: this.conquistas.totalDesbloqueios(),
+    equipes: this.equipes.totalEquipes(),
+    membrosEquipe: this.equipes.totalMembros(),
+    gamificacao:
+      this.gamificacao.totalAcoes() +
+      this.gamificacao.totalEventos() +
+      this.moedas.totalMovimentacoes() +
+      this.conquistas.totalConquistas() +
+      this.conquistas.totalDesbloqueios(),
   }));
 
   confirmacao(alvo: AlvoLimpeza): ConfirmacaoLimpeza {
@@ -97,6 +128,8 @@ export class DadosService {
             `${resumo.alunos} aluno(s) serão excluídos.`,
             `${resumo.matriculas} matrícula(s) relacionadas serão removidas.`,
             `${resumo.frequencias} chamada(s) de frequência e ${resumo.avaliacoes} avaliação(ões) serão removidas.`,
+            `${resumo.eventosXp} lançamento(s) de XP e ${resumo.movimentacoesMoedas} movimentação(ões) de moedas serão removidos.`,
+            `${resumo.desbloqueiosConquista} conquista(s) desbloqueada(s) serão removidas.`,
           ],
           rotuloConfirmar: 'Excluir alunos',
         };
@@ -109,6 +142,8 @@ export class DadosService {
             `${resumo.vinculos} vínculo(s) docente(s) serão removidos.`,
             'As matrículas dessas turmas serão removidas.',
             `${resumo.frequencias} chamada(s) de frequência e ${resumo.avaliacoes} avaliação(ões) serão removidas.`,
+            `${resumo.eventosXp} lançamento(s) de XP vinculados às turmas serão removidos.`,
+            `${resumo.movimentacoesMoedas} movimentação(ões) de moedas vinculadas às turmas serão removidas.`,
             'Os alunos ficarão sem turma.',
           ],
           rotuloConfirmar: 'Excluir turmas',
@@ -178,6 +213,31 @@ export class DadosService {
           detalhes: [`${resumo.agenda} evento(s) da agenda serão excluídos.`],
           rotuloConfirmar: 'Excluir agenda',
         };
+      case 'equipes':
+        return {
+          titulo: 'Excluir equipes',
+          mensagem: 'Todas as equipes e seus vínculos de alunos serão excluídos permanentemente.',
+          detalhes: [
+            `${resumo.equipes} equipe(s) serão excluídas.`,
+            `${resumo.membrosEquipe} vínculo(s) de aluno(s) com equipes serão removidos.`,
+            'O XP já conquistado pelos alunos é preservado.',
+          ],
+          rotuloConfirmar: 'Excluir equipes',
+        };
+      case 'gamificacao':
+        return {
+          titulo: 'Excluir gamificação',
+          mensagem:
+            'Ações de XP, lançamentos de XP, moedas e conquistas serão excluídos permanentemente.',
+          detalhes: [
+            `${resumo.acoesGamificacao} ação(ões) de XP serão excluídas.`,
+            `${resumo.eventosXp} lançamento(s) de XP serão excluídos.`,
+            `${resumo.movimentacoesMoedas} movimentação(ões) de moedas serão excluídas.`,
+            `${resumo.conquistas} conquista(s) e ${resumo.desbloqueiosConquista} desbloqueio(s) serão excluídos.`,
+            'O XP e o saldo de moedas dos alunos serão recalculados a partir do histórico restante.',
+          ],
+          rotuloConfirmar: 'Excluir gamificação',
+        };
       case 'tudo':
         return {
           titulo: 'Excluir todos os dados',
@@ -189,6 +249,9 @@ export class DadosService {
             `${resumo.frequencias} chamada(s) de frequência e ${resumo.avaliacoes} avaliação(ões).`,
             `${resumo.publicacoes} publicação(ões) e ${resumo.comunicados} comunicado(s).`,
             `${resumo.agenda} evento(s) da agenda.`,
+            `${resumo.acoesGamificacao} ação(ões) e ${resumo.eventosXp} lançamento(s) de XP.`,
+            `${resumo.movimentacoesMoedas} movimentação(ões) de moedas e ${resumo.conquistas} conquista(s).`,
+            `${resumo.equipes} equipe(s) e ${resumo.membrosEquipe} vínculo(s) de aluno(s).`,
             'A trilha de auditoria também será apagada.',
           ],
           rotuloConfirmar: 'Excluir tudo',
@@ -203,6 +266,10 @@ export class DadosService {
         await this.frequencias.removerTodas();
         await this.matriculas.removerTodas();
         await this.comunicados.removerTodas();
+        await this.gamificacao.removerTodosEventos();
+        await this.moedas.limparMovimentacoes();
+        await this.conquistas.limparDesbloqueios();
+        await this.equipes.removerTodosMembros();
         await this.alunos.removeTodos();
         break;
       case 'turmas':
@@ -212,6 +279,9 @@ export class DadosService {
         await this.matriculas.removerTodas();
         await this.publicacoes.removerVinculadasATurmas();
         await this.eventos.removerVinculadasATurmas();
+        await this.gamificacao.removerEventosDeTurmas();
+        await this.moedas.removerDeTurmas();
+        await this.equipes.removerDeTurmas();
         await this.alunos.limparTurmas();
         await this.turmas.removeTodos();
         break;
@@ -245,6 +315,14 @@ export class DadosService {
       case 'agenda':
         await this.eventos.removerTodas();
         break;
+      case 'equipes':
+        await this.equipes.removerTodos();
+        break;
+      case 'gamificacao':
+        await this.gamificacao.removerTudo();
+        await this.moedas.removerTodas();
+        await this.conquistas.removerTudo();
+        break;
     }
   }
 
@@ -252,6 +330,10 @@ export class DadosService {
     await this.publicacoes.removerTodas();
     await this.comunicados.removerTodas();
     await this.eventos.removerTodas();
+    await this.gamificacao.removerTudo();
+    await this.moedas.removerTodas();
+    await this.conquistas.removerTudo();
+    await this.equipes.removerTodos();
     await this.vinculos.removerTodos();
     await this.avaliacoes.removerTodas();
     await this.frequencias.removerTodas();
