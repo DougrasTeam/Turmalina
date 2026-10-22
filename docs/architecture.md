@@ -398,11 +398,13 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   `associarAluno` (valida turma e status, **transfere** encerrando o vínculo
   anterior com auditoria `equipe.associado`/`equipe.transferido`),
   `desassociarAluno`, `sortearAlunos` (sorteia apenas alunos sem equipe entre as
-  equipes ativas, equilibrando tamanhos, com auditoria `equipe.sorteio`),
+  equipes ativas, equilibrando tamanhos, e grava todos os vínculos em um único
+  lote, com auditoria `equipe.sorteio`),
   `placar(turmaId, periodo)` (ordena por XP total, desempate
   por nome), `equipesDaTurma`/`membrosDaEquipe`/`equipeAtivaDoAluno`/
   `historicoDoAluno`, `definirCriterioPlacar` e utilitários de reset
-  (`removerDeTurmas`, `removerTodos`, `removerTodosMembros`). No critério
+  (`removerDeTurmas`, `removerTodos`, `removerTodosMembros`, usando exclusão em
+  lote). No critério
   `xp_periodo`, o XP é somado a partir dos eventos de XP dentro do período.
 - Tela `features/gamificacao/equipes/` (`/gamificacao/equipes` e
   `/turmas/:id/disciplina/:disciplinaId/equipes`, admin/professor) com toolbar
@@ -455,6 +457,8 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   (sem `institutionId`) são migrados na primeira leitura.
 - A UI e os serviços de domínio **não conhecem** o tenant: ativar multi-tenant
   (RLS no Supabase) não altera componentes (ADR 0005).
+- `Repository<T>` oferece `createMany`/`removeMany` para escritas em lote; no
+  Supabase elas viram um único `insert`/`delete ... in (...)`.
 
 ## Ponto de troca de backend
 

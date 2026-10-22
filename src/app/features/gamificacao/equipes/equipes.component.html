@@ -231,8 +231,8 @@
           [value]="formulario().emoji"
           (change)="alterarEmoji($event)"
         >
-          @for (emoji of emojis; track emoji) {
-            <option [value]="emoji">{{ emoji }}</option>
+          @for (emoji of emojis(); track emoji) {
+            <option [value]="emoji" [selected]="emoji === formulario().emoji">{{ emoji }}</option>
           }
         </select>
       </label>

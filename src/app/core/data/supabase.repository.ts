@@ -99,6 +99,33 @@ export class SupabaseRepository<T extends BaseEntity> implements Repository<T> {
     return item ?? criado;
   }
 
+  async createMany(inputs: Partial<T>[]): Promise<T[]> {
+    if (!inputs.length) return [];
+    const agora = new Date().toISOString();
+    const institutionId = this.tenant.atual();
+    const modelos = inputs.map((input) => ({
+      ...this.defaults(),
+      ...input,
+      id: input.id ?? createId(),
+      institutionId,
+      criadoEm: agora,
+      atualizadoEm: agora,
+    })) as T[];
+
+    const cliente = await this.cliente();
+    const { data, error } = await cliente
+      .from(this.tabela)
+      .insert(modelos.map((modelo) => this.paraLinha(modelo)))
+      .select('*');
+    if (error) throw new Error(error.message);
+
+    const criados = paraCamelCaseLista<T>(data);
+    for (const [indice, criado] of criados.entries()) {
+      await this.salvarRelacionamentos({ ...modelos[indice], ...criado });
+    }
+    return this.carregarRelacionamentos(criados);
+  }
+
   async update(id: string, patch: Partial<T>): Promise<T> {
     const linha = this.paraLinha({ ...patch, atualizadoEm: new Date().toISOString() } as T);
     delete linha['id'];
@@ -123,6 +150,13 @@ export class SupabaseRepository<T extends BaseEntity> implements Repository<T> {
   async remove(id: string): Promise<void> {
     const cliente = await this.cliente();
     const { error } = await cliente.from(this.tabela).delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
+  async removeMany(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    const cliente = await this.cliente();
+    const { error } = await cliente.from(this.tabela).delete().in('id', ids);
     if (error) throw new Error(error.message);
   }
 

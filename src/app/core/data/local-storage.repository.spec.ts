@@ -58,4 +58,30 @@ describe('LocalStorageRepository (tenancy)', () => {
     expect(lista.length).toBe(1);
     expect(lista[0].institutionId).toBe('instituicao-padrao');
   });
+
+  it('cria vários registros em lote com o tenant ativo', async () => {
+    const repo = criar();
+
+    const criados = await repo.createMany([{ nome: 'A' }, { nome: 'B' }]);
+
+    expect(criados.map((item) => item.nome)).toEqual(['A', 'B']);
+    expect(criados.every((item) => item.institutionId === 'instituicao-padrao')).toBeTrue();
+    expect((await repo.list()).map((item) => item.nome)).toEqual(['A', 'B']);
+  });
+
+  it('remove vários registros do tenant ativo sem afetar os demais', async () => {
+    const repo = criar();
+    const [primeiro, segundo] = await repo.createMany([{ nome: 'A' }, { nome: 'B' }]);
+    await repo.create({ nome: 'C' });
+
+    tenant.definir('outra-instituicao');
+    await criar().create({ nome: 'D' });
+    tenant.definir('instituicao-padrao');
+
+    await repo.removeMany([primeiro.id, segundo.id]);
+
+    expect((await repo.list()).map((item) => item.nome)).toEqual(['C']);
+    tenant.definir('outra-instituicao');
+    expect((await criar().list()).map((item) => item.nome)).toEqual(['D']);
+  });
 });

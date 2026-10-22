@@ -1,5 +1,6 @@
 import {
   DadosEquipe,
+  EMOJIS_EQUIPE,
   Equipe,
   EquipeMembro,
   membrosParaPlacar,
@@ -57,6 +58,12 @@ const DADOS_VALIDOS: DadosEquipe = {
   disciplinaId: null,
   periodoLetivoId: 'periodo-1',
 };
+
+describe('EMOJIS_EQUIPE', () => {
+  it('não repete emojis, para manter o track do seletor estável', () => {
+    expect(new Set(EMOJIS_EQUIPE).size).toBe(EMOJIS_EQUIPE.length);
+  });
+});
 
 describe('validarEquipe', () => {
   it('aceita dados válidos', () => {

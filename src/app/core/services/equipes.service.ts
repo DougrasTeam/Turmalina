@@ -170,8 +170,9 @@ export class EquipesService {
     const equipe = this.porId(id);
     if (!equipe) return;
 
-    for (const membro of this.membrosDaEquipe(id)) {
-      await this.repoMembros.remove(membro.id);
+    const membros = this.membrosDaEquipe(id);
+    if (membros.length) {
+      await this.repoMembros.removeMany(membros.map((membro) => membro.id));
     }
     await this.repoEquipes.remove(id);
 
@@ -256,13 +257,12 @@ export class EquipesService {
    *
    * Participam apenas alunos ativos da turma que ainda não têm equipe ativa no
    * período. O sorteio equilibra os tamanhos considerando quem já está em cada
-   * equipe. Uma falha individual não interrompe os demais: o retorno informa
-   * quantos alunos foram associados e quantos não puderam ser.
+   * equipe e grava todos os vínculos em uma única operação em lote.
    */
   async sortearAlunos(
     dados: DadosSorteioAlunos,
     autor: Usuario,
-  ): Promise<{ quantidadeSorteados: number; quantidadeFalhas: number }> {
+  ): Promise<{ quantidadeSorteados: number }> {
     await this.load();
 
     const equipes = this.equipesDaTurma(
@@ -290,27 +290,49 @@ export class EquipesService {
       tamanhoAtualPorEquipe,
     );
 
-    let quantidadeSorteados = 0;
-    let quantidadeFalhas = 0;
+    const equipesPorId = new Map(equipes.map((equipe) => [equipe.id, equipe]));
+    const alunosPorId = new Map(this.alunos.alunos().map((aluno) => [aluno.id, aluno]));
+    const inicioEm = new Date().toISOString();
+    const novosMembros: Partial<EquipeMembro>[] = [];
+
     for (const { equipeId, alunoIds } of distribuicao) {
+      const equipe = equipesPorId.get(equipeId);
+      if (!equipe) continue;
+
       for (const alunoId of alunoIds) {
-        try {
-          await this.associarAluno(equipeId, alunoId, autor);
-          quantidadeSorteados += 1;
-        } catch {
-          quantidadeFalhas += 1;
-        }
+        const aluno = alunosPorId.get(alunoId);
+        if (!aluno) continue;
+
+        novosMembros.push({
+          equipeId: equipe.id,
+          equipeNome: equipe.nome,
+          alunoId,
+          alunoNome: aluno.nome,
+          turmaId: equipe.turmaId,
+          periodoLetivoId: equipe.periodoLetivoId,
+          ativa: true,
+          inicioEm,
+          fimEm: null,
+          autorId: autor.id,
+          autorNome: autor.nome,
+        });
       }
     }
 
+    if (!novosMembros.length) {
+      throw new Error('Nenhum aluno pôde ser sorteado.');
+    }
+
+    const criados = await this.repoMembros.createMany(novosMembros);
+    this._membros.update((lista) => this.ordenarMembros([...lista, ...criados]));
     this.auditoria.registrar(
       'equipe.sorteio',
       'Equipe',
       null,
-      `${quantidadeSorteados} aluno(s) distribuído(s) entre ${equipes.length} equipe(s).`,
+      `${criados.length} aluno(s) distribuído(s) entre ${equipes.length} equipe(s).`,
     );
 
-    return { quantidadeSorteados, quantidadeFalhas };
+    return { quantidadeSorteados: criados.length };
   }
 
   /** Placar das equipes de uma turma/período, em ordem decrescente de XP. */
@@ -337,13 +359,9 @@ export class EquipesService {
 
   async removerDeTurmas(): Promise<void> {
     const vinculados = this._membros().filter((membro) => membro.turmaId !== '');
-    for (const membro of vinculados) {
-      await this.repoMembros.remove(membro.id);
-    }
     const equipes = this._equipes().filter((equipe) => equipe.turmaId !== '');
-    for (const equipe of equipes) {
-      await this.repoEquipes.remove(equipe.id);
-    }
+    await this.repoMembros.removeMany(vinculados.map((membro) => membro.id));
+    await this.repoEquipes.removeMany(equipes.map((equipe) => equipe.id));
     if (vinculados.length || equipes.length) {
       this._membros.update((lista) => lista.filter((membro) => membro.turmaId === ''));
       this._equipes.update((lista) => lista.filter((equipe) => equipe.turmaId === ''));
@@ -352,12 +370,8 @@ export class EquipesService {
   }
 
   async removerTodos(): Promise<void> {
-    for (const membro of this._membros()) {
-      await this.repoMembros.remove(membro.id);
-    }
-    for (const equipe of this._equipes()) {
-      await this.repoEquipes.remove(equipe.id);
-    }
+    await this.repoMembros.removeMany(this._membros().map((membro) => membro.id));
+    await this.repoEquipes.removeMany(this._equipes().map((equipe) => equipe.id));
     this._membros.set([]);
     this._equipes.set([]);
     this.auditoria.registrar('equipe.excluidas-todas', 'Equipe', null, null);
@@ -365,9 +379,7 @@ export class EquipesService {
 
   /** Remove todos os vínculos de aluno, preservando as equipes. */
   async removerTodosMembros(): Promise<void> {
-    for (const membro of this._membros()) {
-      await this.repoMembros.remove(membro.id);
-    }
+    await this.repoMembros.removeMany(this._membros().map((membro) => membro.id));
     this._membros.set([]);
     this.auditoria.registrar('equipe.membros-removidos-todos', 'Equipe', null, null);
   }

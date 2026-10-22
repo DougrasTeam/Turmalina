@@ -212,7 +212,6 @@ describe('EquipesService', () => {
       .sort((primeiro, segundo) => primeiro - segundo);
 
     expect(resultado.quantidadeSorteados).toBe(4);
-    expect(resultado.quantidadeFalhas).toBe(0);
     expect(tamanhos).toEqual([2, 3]);
     expect(service.equipeAtivaDoAluno(alunosDaTurma[0].id, turmaId, null)?.equipeId).toBe(
       leoes.id,

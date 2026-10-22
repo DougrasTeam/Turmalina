@@ -78,7 +78,6 @@ export class EquipesComponent {
     },
   );
 
-  protected readonly emojis = EMOJIS_EQUIPE;
   protected readonly cores = CORES_EQUIPE;
   protected readonly opcoesCriterio = CRITERIOS_PLACAR.map((criterio) => ({
     valor: criterio,
@@ -89,6 +88,15 @@ export class EquipesComponent {
   protected readonly criterio = signal<CriterioPlacar>('xp_acumulado');
 
   protected readonly formulario = signal<DadosEquipe>({ ...FORMULARIO_VAZIO });
+
+  /** Inclui no seletor um emoji já salvo que não esteja na lista padrão. */
+  protected readonly emojis = computed(() => {
+    const emojiAtual = this.formulario().emoji;
+    if (emojiAtual && !EMOJIS_EQUIPE.includes(emojiAtual)) {
+      return [emojiAtual, ...EMOJIS_EQUIPE];
+    }
+    return EMOJIS_EQUIPE;
+  });
   protected readonly editando = signal<Equipe | null>(null);
   protected readonly modalAberto = signal(false);
   protected readonly erros = signal<string[]>([]);
@@ -442,26 +450,14 @@ export class EquipesComponent {
       );
       this.fecharSorteio();
 
-      if (resultado.quantidadeSorteados) {
-        this.toast.mostrar(
-          `${this.rotuloQuantidade(
-            resultado.quantidadeSorteados,
-            'aluno sorteado',
-            'alunos sorteados',
-          )}.`,
-          'success',
-        );
-      }
-      if (resultado.quantidadeFalhas) {
-        this.toast.mostrar(
-          `${this.rotuloQuantidade(
-            resultado.quantidadeFalhas,
-            'aluno não pôde',
-            'alunos não puderam',
-          )} entrar na equipe.`,
-          'danger',
-        );
-      }
+      this.toast.mostrar(
+        `${this.rotuloQuantidade(
+          resultado.quantidadeSorteados,
+          'aluno sorteado',
+          'alunos sorteados',
+        )}.`,
+        'success',
+      );
     } catch (erro) {
       this.toast.mostrar(this.mensagem(erro), 'danger');
     } finally {
