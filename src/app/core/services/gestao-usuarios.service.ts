@@ -80,6 +80,17 @@ export class GestaoUsuariosService {
     return { userId: dados.userId, email: dados.email, senha: dados.senha };
   }
 
+  /**
+   * Encerra o acesso da conta informada, removendo-a do Supabase Auth e o perfil
+   * vinculado. É chamado ao excluir um cadastro que possuía conta de acesso.
+   */
+  async excluirConta(userId: string): Promise<void> {
+    await this.invocar<{ userId: string; removido: boolean }>({
+      acao: 'excluir-conta',
+      userId,
+    });
+  }
+
   private async invocar<T>(corpo: Record<string, unknown>): Promise<T> {
     if (!this.supabase.disponivel) {
       throw new Error('A gestão de usuários só está disponível no navegador.');

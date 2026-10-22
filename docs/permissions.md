@@ -47,6 +47,10 @@ Regras aplicadas:
   ativar, encerrar e reabrir período registram evento de auditoria.
 - Professores vinculados a turmas/disciplinas são adicionados pelo administrador
   na tela da turma (equipe docente); o vínculo alimenta o painel docente futuro.
+- Excluir um professor (ou aluno) encerra a **conta de acesso** vinculada: a
+  Edge Function `admin-usuarios` remove o usuário do Auth e o perfil, a sessão
+  revalida o perfil ativo e as funções de autorização do banco exigem perfil
+  ativo (`0014`). Assim o acesso cessa mesmo com um token ainda válido.
 - Matrículas de alunos (matricular/transferir/desmatricular) são operadas pelo
   administrador/professor na tela da turma ou no cadastro do aluno; o histórico
   fica visível na lista de alunos. O aluno vê apenas o próprio contexto.

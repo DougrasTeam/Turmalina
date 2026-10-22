@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Professor } from '../models';
 import { Repository } from '../data/repository';
 import { RepositoryFactory } from '../data/repository.factory';
+import { GestaoUsuariosService } from './gestao-usuarios.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProfessoresService {
@@ -9,6 +10,7 @@ export class ProfessoresService {
     'turmalina.professores',
     () => ({ nome: '', email: '', telefone: '', disciplinas: [], ativo: true }),
   );
+  private readonly gestao = inject(GestaoUsuariosService);
 
   private readonly _professores = signal<Professor[]>([]);
   private carregado = false;
@@ -45,7 +47,18 @@ export class ProfessoresService {
     return professor;
   }
 
+  /**
+   * Exclui o professor e encerra a conta de acesso vinculada, quando existir.
+   *
+   * A exclusão do cadastro só surte efeito no acesso se a conta de Auth também
+   * for removida; se a remoção da conta falhar, o cadastro é preservado e o erro
+   * é propagado para o chamador exibir.
+   */
   async remove(id: string): Promise<void> {
+    const professor = this.porId(id);
+    if (professor?.userId) {
+      await this.gestao.excluirConta(professor.userId);
+    }
     await this.repo.remove(id);
     this._professores.update((lista) => lista.filter((p) => p.id !== id));
   }

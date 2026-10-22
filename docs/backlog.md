@@ -43,7 +43,11 @@
   cadastrar professor/aluno via **Edge Function `admin-usuarios`** (usa
   `service_role` no servidor, com rollback), senha provisória exibida uma única
   vez ao administrador, **troca obrigatória de senha** em `/primeiro-acesso`
-  (RPC `security definer`) e **redefinição de senha** na edição do professor.
+  (RPC `security definer`), **redefinição de senha** na edição do professor e
+  **encerramento da conta ao excluir o cadastro** (`acao: 'excluir-conta'`
+  remove o usuário do Auth e o perfil). A sessão revalida o perfil ativo ao
+  restaurar/entrar, e as funções de autorização do banco exigem perfil ativo
+  (`0014`).
 - **Backend real (ADR 0001): Supabase (Auth + Postgres).** Camada de dados com
   repositórios genéricos e de relacionamentos; `supabase/migrations/0001`
   (esquema + RLS), `0002` (dados iniciais), `0003` (primeiro acesso), `0004`

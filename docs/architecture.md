@@ -457,6 +457,22 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   (sem `institutionId`) são migrados na primeira leitura.
 - A UI e os serviços de domínio **não conhecem** o tenant: ativar multi-tenant
   (RLS no Supabase) não altera componentes (ADR 0005).
+
+## Ciclo de vida da conta de acesso
+
+- Excluir um cadastro (professor/aluno) **encerra a conta de acesso**. O
+  `ProfessoresService.remove` resolve a conta pelo `userId` do cadastro e chama
+  `GestaoUsuariosService.excluirConta`, que invoca a Edge Function
+  `admin-usuarios` (`acao: 'excluir-conta'`) — isso remove o usuário do Supabase
+  Auth e o perfil (`public.perfis`).
+- A restauração/entrada de sessão valida o perfil: se o perfil não existir ou
+  estiver inativo, a sessão é encerrada (`SupabaseAuthRepository.restaurarSessao`)
+  ou o login é recusado com `usuario-inativo` (`autenticar`).
+- No banco, as funções de autorização (`auth_papel`, `auth_institution`,
+  `auth_aluno_id`, `auth_turma_id` —
+  `supabase/migrations/0014_perfil_ativo_autorizacao.sql`) exigem perfil
+  **ativo**, de modo que um token de acesso ainda válido não concede acesso após
+  a exclusão do perfil.
 - `Repository<T>` oferece `createMany`/`removeMany` para escritas em lote; no
   Supabase elas viram um único `insert`/`delete ... in (...)`.
 

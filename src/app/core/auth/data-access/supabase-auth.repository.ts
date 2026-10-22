@@ -40,7 +40,13 @@ export class SupabaseAuthRepository extends AuthRepository {
       throw new AutenticacaoErro(motivoDoErro(error));
     }
 
-    return this.comPerfil(mapearSessaoSupabase(data.session));
+    const perfil = await this.buscarPerfil();
+    if (perfil && !perfil.ativo) {
+      await this.encerrarSessao();
+      throw new AutenticacaoErro('usuario-inativo');
+    }
+
+    return this.comPerfilMapeado(mapearSessaoSupabase(data.session), perfil);
   }
 
   async restaurarSessao(): Promise<Sessao | null> {
@@ -55,7 +61,15 @@ export class SupabaseAuthRepository extends AuthRepository {
       return null;
     }
 
-    return this.comPerfil(mapearSessaoSupabase(data.session));
+    const perfil = await this.buscarPerfil();
+    // Sem perfil, ou com perfil inativo, a conta foi removida/bloqueada: encerra
+    // a sessão para não manter o acesso após a exclusão do cadastro.
+    if (!perfil || !perfil.ativo) {
+      await this.encerrarSessao();
+      return null;
+    }
+
+    return this.comPerfilMapeado(mapearSessaoSupabase(data.session), perfil);
   }
 
   async encerrarSessao(): Promise<void> {
@@ -116,8 +130,7 @@ export class SupabaseAuthRepository extends AuthRepository {
    * autoritativa do papel e da flag de primeiro acesso. Se não houver perfil,
    * mantém o papel obtido dos metadados do Auth.
    */
-  private async comPerfil(sessao: Sessao): Promise<Sessao> {
-    const perfil = await this.buscarPerfil();
+  private comPerfilMapeado(sessao: Sessao, perfil: Perfil | null): Sessao {
     return { ...sessao, usuario: aplicarPerfilSupabase(sessao.usuario, perfil) };
   }
 
