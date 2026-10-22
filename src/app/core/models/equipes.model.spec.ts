@@ -4,6 +4,8 @@ import {
   EquipeMembro,
   membrosParaPlacar,
   pontuarEquipe,
+  resumirNomesMembros,
+  sortearAlunosNasEquipes,
   validarEquipe,
   vinculoVigenteNaData,
 } from './equipes.model';
@@ -19,6 +21,7 @@ function criarEquipe(sobrescritos: Partial<Equipe> = {}): Equipe {
     cor: '#2563EB',
     ativa: true,
     turmaId: 'turma-1',
+    disciplinaId: null,
     periodoLetivoId: 'periodo-1',
     ...sobrescritos,
   };
@@ -51,6 +54,7 @@ const DADOS_VALIDOS: DadosEquipe = {
   cor: '#2563EB',
   ativa: true,
   turmaId: 'turma-1',
+  disciplinaId: null,
   periodoLetivoId: 'periodo-1',
 };
 
@@ -73,7 +77,16 @@ describe('validarEquipe', () => {
   it('impede nome duplicado na mesma turma/período', () => {
     const existentes = [criarEquipe()];
     const erros = validarEquipe({ ...DADOS_VALIDOS, nome: 'leões' }, existentes);
-    expect(erros).toContain('Já existe uma equipe com este nome nesta turma/período.');
+    expect(erros).toContain('Já existe uma equipe com este nome neste contexto.');
+  });
+
+  it('permite o mesmo nome em disciplina diferente', () => {
+    const existentes = [criarEquipe({ disciplinaId: 'disciplina-1' })];
+    const erros = validarEquipe(
+      { ...DADOS_VALIDOS, disciplinaId: 'disciplina-2' },
+      existentes,
+    );
+    expect(erros).toEqual([]);
   });
 
   it('permite o mesmo nome em período diferente', () => {
@@ -126,6 +139,22 @@ describe('membrosParaPlacar', () => {
     expect(resultado.map((membro) => membro.id)).toEqual(['m1']);  });
 });
 
+describe('resumirNomesMembros', () => {
+  it('informa que não há integrantes quando a lista está vazia', () => {
+    expect(resumirNomesMembros([])).toBe('Sem integrantes');
+  });
+
+  it('lista os nomes separados por vírgula', () => {
+    expect(resumirNomesMembros(['Ana Lima', 'Bruno Souza'])).toBe('Ana Lima, Bruno Souza');
+  });
+
+  it('resume a lista quando ultrapassa o limite e informa quantos faltam', () => {
+    const nomes = ['Ana', 'Bruno', 'Carla', 'Diego'];
+    expect(resumirNomesMembros(nomes, 2)).toBe('Ana, Bruno +2 outros');
+    expect(resumirNomesMembros(nomes, 3)).toBe('Ana, Bruno, Carla +1 outro');
+  });
+});
+
 describe('pontuarEquipe', () => {
   it('soma o XP de alunos únicos e calcula a média', () => {
     const membros = [
@@ -146,5 +175,56 @@ describe('pontuarEquipe', () => {
   it('retorna zeros sem membros', () => {
     const resultado = pontuarEquipe([], new Map());
     expect(resultado).toEqual({ quantidadeMembros: 0, xpTotal: 0, xpMedio: 0 });
+  });
+});
+
+describe('sortearAlunosNasEquipes', () => {
+  it('distribui todos os alunos equilibrando os tamanhos', () => {
+    const distribuicao = sortearAlunosNasEquipes(
+      ['aluno-1', 'aluno-2', 'aluno-3', 'aluno-4', 'aluno-5'],
+      ['equipe-1', 'equipe-2'],
+      new Map(),
+      () => 0.4,
+    );
+
+    const alunosSorteados = distribuicao.flatMap((item) => item.alunoIds);
+    const tamanhos = distribuicao
+      .map((item) => item.alunoIds.length)
+      .sort((primeiro, segundo) => primeiro - segundo);
+
+    expect(alunosSorteados.length).toBe(5);
+    expect(new Set(alunosSorteados).size).toBe(5);
+    expect(tamanhos).toEqual([2, 3]);
+  });
+
+  it('considera quem já está nas equipes ao equilibrar', () => {
+    const distribuicao = sortearAlunosNasEquipes(
+      ['aluno-1', 'aluno-2'],
+      ['equipe-cheia', 'equipe-vazia'],
+      new Map([
+        ['equipe-cheia', 4],
+        ['equipe-vazia', 0],
+      ]),
+      () => 0,
+    );
+
+    const cheia = distribuicao.find((item) => item.equipeId === 'equipe-cheia');
+    const vazia = distribuicao.find((item) => item.equipeId === 'equipe-vazia');
+
+    expect(cheia?.alunoIds).toEqual([]);
+    expect([...(vazia?.alunoIds ?? [])].sort()).toEqual(['aluno-1', 'aluno-2']);
+  });
+
+  it('devolve uma lista vazia quando não há equipes', () => {
+    expect(sortearAlunosNasEquipes(['aluno-1'], [], new Map(), () => 0)).toEqual([]);
+  });
+
+  it('mantém as equipes vazias quando não há alunos', () => {
+    const distribuicao = sortearAlunosNasEquipes([], ['equipe-1', 'equipe-2'], new Map(), () => 0);
+
+    expect(distribuicao).toEqual([
+      { equipeId: 'equipe-1', alunoIds: [] },
+      { equipeId: 'equipe-2', alunoIds: [] },
+    ]);
   });
 });

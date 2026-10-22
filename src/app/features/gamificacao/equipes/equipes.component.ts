@@ -13,6 +13,7 @@ import {
   Equipe,
   EquipeMembro,
   LinhaPlacarEquipe,
+  resumirNomesMembros,
   rotuloCriterioPlacar,
 } from '../../../core/models/equipes.model';
 import { formatarDataHoraAuditoria } from '../../../core/models/auditoria.model';
@@ -85,7 +86,6 @@ export class EquipesComponent {
   }));
 
   protected readonly turmaId = signal('');
-  protected readonly periodoLetivoId = signal('');
   protected readonly criterio = signal<CriterioPlacar>('xp_acumulado');
 
   protected readonly formulario = signal<DadosEquipe>({ ...FORMULARIO_VAZIO });
@@ -100,6 +100,8 @@ export class EquipesComponent {
   protected readonly exclusaoAberta = signal(false);
   protected readonly equipeEmExclusao = signal<Equipe | null>(null);
   protected readonly excluirTudoAberto = signal(false);
+  protected readonly sorteioAberto = signal(false);
+  protected readonly sorteando = signal(false);
 
   protected readonly turmasDisponiveis = computed<Turma[]>(() =>
     [...this.turmas.turmas()].sort((primeira, segunda) =>
@@ -107,21 +109,31 @@ export class EquipesComponent {
     ),
   );
 
+  /**
+   * Indica que a turma vem do contexto da rota (turma/disciplina).
+   * Nesse caso o professor não pode trocá-la na tela.
+   */
+  protected readonly turmaFixa = computed(() => this.turmaIdQuery() !== '');
+
   protected readonly turmaEfetiva = computed(() => {
-    const selecionada = this.turmaId();
     const disponiveis = this.turmasDisponiveis();
+    const turmaDaRota = this.turmaIdQuery();
+    if (turmaDaRota && disponiveis.some((turma) => turma.id === turmaDaRota)) {
+      return turmaDaRota;
+    }
+    const selecionada = this.turmaId();
     if (disponiveis.some((turma) => turma.id === selecionada)) return selecionada;
     return disponiveis[0]?.id ?? '';
   });
 
-  protected readonly periodoEfetivo = computed(() => {
-    const selecionado = this.periodoLetivoId();
-    if (selecionado) return selecionado;
-    return this.periodos.ativo()?.id ?? '';
-  });
+  /**
+   * O período letivo das equipes é sempre o ativo.
+   * Equipes de períodos encerrados não são editadas por esta tela.
+   */
+  protected readonly periodoEfetivo = computed(() => this.periodos.ativo()?.id ?? '');
 
   protected readonly placar = computed<LinhaPlacarEquipe[]>(() => {
-    const turmaId = this.turmaIdQuery() || this.turmaEfetiva();
+    const turmaId = this.turmaEfetiva();
     if (!turmaId) return [];
     const periodo = this.periodoEfetivo() || null;
     const disciplinaId = this.disciplinaIdQuery() || null;
@@ -129,12 +141,16 @@ export class EquipesComponent {
   });
 
   protected readonly equipesFiltradas = computed<Equipe[]>(() => {
-    const turmaId = this.turmaIdQuery() || this.turmaEfetiva();
+    const turmaId = this.turmaEfetiva();
     if (!turmaId) return [];
     const periodo = this.periodoEfetivo() || null;
     const disciplinaId = this.disciplinaIdQuery() || null;
     return this.equipes.equipesDaTurma(turmaId, periodo, disciplinaId);
   });
+
+  protected readonly equipesAtivasDoContexto = computed<Equipe[]>(() =>
+    this.equipesFiltradas().filter((equipe) => equipe.ativa),
+  );
 
   protected readonly alunosDaTurma = computed<Aluno[]>(() => {
     const turmaId = this.turmaEfetiva();
@@ -144,10 +160,72 @@ export class EquipesComponent {
       .sort((primeiro, segundo) => primeiro.nome.localeCompare(segundo.nome, 'pt-BR'));
   });
 
+  /** Alunos que ainda podem entrar em uma equipe no contexto atual. */
+  protected readonly alunosElegiveisParaSorteio = computed<Aluno[]>(() => {
+    const turmaId = this.turmaEfetiva();
+    if (!turmaId) return [];
+    const periodoLetivoId = this.periodoEfetivo() || null;
+    return this.alunosDaTurma().filter(
+      (aluno) =>
+        this.equipes.equipeAtivaDoAluno(aluno.id, turmaId, periodoLetivoId) === undefined,
+    );
+  });
+
+  protected readonly podeSortear = computed(
+    () =>
+      this.equipesAtivasDoContexto().length > 0 &&
+      this.alunosElegiveisParaSorteio().length > 0,
+  );
+
+  protected readonly mensagemSorteio = computed(() => {
+    const alunos = this.alunosElegiveisParaSorteio().length;
+    const equipes = this.equipesAtivasDoContexto().length;
+    return `Sortear ${this.rotuloQuantidade(alunos, 'aluno', 'alunos')} entre ${this.rotuloQuantidade(
+      equipes,
+      'equipe ativa',
+      'equipes ativas',
+    )}?`;
+  });
+
+  protected readonly tituloSorteio = computed(() => {
+    if (!this.equipesAtivasDoContexto().length) {
+      return 'Crie ao menos uma equipe ativa antes de sortear.';
+    }
+    const alunos = this.alunosElegiveisParaSorteio().length;
+    if (!alunos) return 'Todos os alunos ativos da turma já estão em uma equipe.';
+    return `Sortear ${this.rotuloQuantidade(alunos, 'aluno', 'alunos')} entre as equipes ativas.`;
+  });
+
   protected readonly membrosDaEquipe = computed<EquipeMembro[]>(() => {
     const equipe = this.equipeSelecionada();
     if (!equipe) return [];
-    return this.equipes.membrosDaEquipe(equipe.id, true);
+    return this.integrantesAtivosPorEquipe().get(equipe.id) ?? [];
+  });
+
+  /**
+   * Integrantes ativos de cada equipe, em ordem alfabética.
+   *
+   * O placar soma o XP de todos os vínculos (inclusive encerrados), mas a lista
+   * de integrantes mostra apenas quem está na equipe hoje — é ela que permite
+   * ao professor visualizar e remover alguém do time.
+   */
+  protected readonly integrantesAtivosPorEquipe = computed<Map<string, EquipeMembro[]>>(() => {
+    const integrantesPorEquipe = new Map<string, EquipeMembro[]>();
+
+    for (const membro of this.equipes.membros()) {
+      if (!membro.ativa) continue;
+      const integrantes = integrantesPorEquipe.get(membro.equipeId) ?? [];
+      integrantes.push(membro);
+      integrantesPorEquipe.set(membro.equipeId, integrantes);
+    }
+
+    for (const integrantes of integrantesPorEquipe.values()) {
+      integrantes.sort((primeiro, segundo) =>
+        primeiro.alunoNome.localeCompare(segundo.alunoNome, 'pt-BR'),
+      );
+    }
+
+    return integrantesPorEquipe;
   });
 
   protected readonly alunosSemEquipe = computed<Aluno[]>(() => {
@@ -164,10 +242,6 @@ export class EquipesComponent {
     this.turmaId.set(this.valorDoCampo(evento));
   }
 
-  protected alterarPeriodo(evento: Event): void {
-    this.periodoLetivoId.set(this.valorDoCampo(evento));
-  }
-
   protected alterarCriterio(evento: Event): void {
     const criterio = this.valorDoCampo(evento) as CriterioPlacar;
     this.criterio.set(criterio);
@@ -175,7 +249,7 @@ export class EquipesComponent {
   }
 
   protected abrirNovo(): void {
-    const turmaId = this.turmaIdQuery() || this.turmaEfetiva();
+    const turmaId = this.turmaEfetiva();
     if (!turmaId) {
       this.toast.mostrar('Selecione uma turma antes de criar equipes.', 'info');
       return;
@@ -221,6 +295,11 @@ export class EquipesComponent {
 
   protected alterarCor(evento: Event): void {
     this.atualizar('cor', this.valorDoCampo(evento));
+  }
+
+  /** Aplica uma cor da paleta sugerida ao formulário. */
+  protected selecionarCor(cor: string): void {
+    this.atualizar('cor', cor);
   }
 
   protected alterarAtiva(evento: Event): void {
@@ -283,7 +362,7 @@ export class EquipesComponent {
   protected async desassociar(membro: EquipeMembro): Promise<void> {
     try {
       await this.equipes.desassociarAluno(membro.id);
-      this.toast.mostrar(`${membro.alunoNome} saiu da equipe.`, 'info');
+      this.toast.mostrar(`${membro.alunoNome} saiu da equipe ${membro.equipeNome}.`, 'info');
     } catch (erro) {
       this.toast.mostrar(this.mensagem(erro), 'danger');
     }
@@ -329,6 +408,78 @@ export class EquipesComponent {
     }
   }
 
+  protected abrirSorteio(): void {
+    if (!this.equipesAtivasDoContexto().length) {
+      this.toast.mostrar('Crie ao menos uma equipe ativa antes de sortear.', 'info');
+      return;
+    }
+    if (!this.alunosElegiveisParaSorteio().length) {
+      this.toast.mostrar('Todos os alunos ativos da turma já estão em uma equipe.', 'info');
+      return;
+    }
+    this.sorteioAberto.set(true);
+  }
+
+  protected fecharSorteio(): void {
+    this.sorteioAberto.set(false);
+  }
+
+  protected async realizarSorteio(): Promise<void> {
+    const turmaId = this.turmaEfetiva();
+    const autor = this.auth.usuario();
+    if (!turmaId || !autor || this.sorteando()) return;
+
+    this.sorteando.set(true);
+    try {
+      const resultado = await this.equipes.sortearAlunos(
+        {
+          turmaId,
+          periodoLetivoId: this.periodoEfetivo() || null,
+          disciplinaId: this.disciplinaIdQuery() || null,
+          alunoIds: this.alunosElegiveisParaSorteio().map((aluno) => aluno.id),
+        },
+        autor,
+      );
+      this.fecharSorteio();
+
+      if (resultado.quantidadeSorteados) {
+        this.toast.mostrar(
+          `${this.rotuloQuantidade(
+            resultado.quantidadeSorteados,
+            'aluno sorteado',
+            'alunos sorteados',
+          )}.`,
+          'success',
+        );
+      }
+      if (resultado.quantidadeFalhas) {
+        this.toast.mostrar(
+          `${this.rotuloQuantidade(
+            resultado.quantidadeFalhas,
+            'aluno não pôde',
+            'alunos não puderam',
+          )} entrar na equipe.`,
+          'danger',
+        );
+      }
+    } catch (erro) {
+      this.toast.mostrar(this.mensagem(erro), 'danger');
+    } finally {
+      this.sorteando.set(false);
+    }
+  }
+
+  /** Integrantes ativos de uma equipe, para exibição na lista de equipes. */
+  protected integrantesDaEquipe(equipeId: string): EquipeMembro[] {
+    return this.integrantesAtivosPorEquipe().get(equipeId) ?? [];
+  }
+
+  /** Resumo curto dos nomes dos integrantes, para não estourar a linha da tabela. */
+  protected resumoDosIntegrantes(equipeId: string): string {
+    const nomes = this.integrantesDaEquipe(equipeId).map((membro) => membro.alunoNome);
+    return resumirNomesMembros(nomes);
+  }
+
   protected rotuloCriterio(criterio: CriterioPlacar): string {
     return rotuloCriterioPlacar(criterio);
   }
@@ -353,6 +504,10 @@ export class EquipesComponent {
 
   private valorDoCampo(evento: Event): string {
     return (evento.target as HTMLInputElement | HTMLSelectElement).value;
+  }
+
+  private rotuloQuantidade(quantidade: number, singular: string, plural: string): string {
+    return `${quantidade} ${quantidade === 1 ? singular : plural}`;
   }
 
   private mensagem(erro: unknown): string {

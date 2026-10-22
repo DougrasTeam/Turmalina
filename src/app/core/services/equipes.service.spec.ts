@@ -74,6 +74,7 @@ describe('EquipesService', () => {
       cor: '#2563EB',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
 
@@ -84,6 +85,7 @@ describe('EquipesService', () => {
         cor: '#DC2626',
         ativa: true,
         turmaId,
+        disciplinaId: null,
         periodoLetivoId: null,
       }),
     ).toBeRejected();
@@ -98,6 +100,7 @@ describe('EquipesService', () => {
       cor: '#16A34A',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const aluno = await criarAlunoEm(alunos, 'Ana Lima', turmaId);
@@ -121,6 +124,7 @@ describe('EquipesService', () => {
       cor: '#0EA5E9',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const alunoAlheio = await criarAlunoEm(alunos, 'Bruno Souza', outraTurma.id);
@@ -137,6 +141,7 @@ describe('EquipesService', () => {
       cor: '#2563EB',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const destino = await service.criarEquipe({
@@ -145,6 +150,7 @@ describe('EquipesService', () => {
       cor: '#F97316',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const aluno = await criarAlunoEm(alunos, 'Carla Dias', turmaId);
@@ -158,6 +164,88 @@ describe('EquipesService', () => {
     expect(service.historicoDoAluno(aluno.id).length).toBe(2);
   });
 
+  it('sorteia apenas alunos sem equipe entre as equipes ativas, equilibrando os tamanhos', async () => {
+    const leoes = await service.criarEquipe({
+      nome: 'Leões',
+      emoji: '🦁',
+      cor: '#2563EB',
+      ativa: true,
+      turmaId,
+      disciplinaId: null,
+      periodoLetivoId: null,
+    });
+    const tigres = await service.criarEquipe({
+      nome: 'Tigres',
+      emoji: '🐯',
+      cor: '#F97316',
+      ativa: true,
+      turmaId,
+      disciplinaId: null,
+      periodoLetivoId: null,
+    });
+    const nomes = ['Ana Lima', 'Bruno Souza', 'Carla Dias', 'Diego Reis', 'Elisa Prado'];
+    const alunosDaTurma: Aluno[] = [];
+    for (const nome of nomes) {
+      alunosDaTurma.push(await criarAlunoEm(alunos, nome, turmaId));
+    }
+    await service.associarAluno(leoes.id, alunosDaTurma[0].id, autor);
+
+    const outraTurma = await turmas.create({
+      nome: 'Turma Alheia',
+      codigo: 'EQ-2',
+      turno: 'tarde',
+    });
+    const alunoAlheio = await criarAlunoEm(alunos, 'Forasteiro', outraTurma.id);
+
+    const resultado = await service.sortearAlunos(
+      {
+        turmaId,
+        periodoLetivoId: null,
+        disciplinaId: null,
+        alunoIds: [...alunosDaTurma.map((aluno) => aluno.id), alunoAlheio.id],
+      },
+      autor,
+    );
+
+    const tamanhos = [leoes, tigres]
+      .map((equipe) => service.membrosDaEquipe(equipe.id, true).length)
+      .sort((primeiro, segundo) => primeiro - segundo);
+
+    expect(resultado.quantidadeSorteados).toBe(4);
+    expect(resultado.quantidadeFalhas).toBe(0);
+    expect(tamanhos).toEqual([2, 3]);
+    expect(service.equipeAtivaDoAluno(alunosDaTurma[0].id, turmaId, null)?.equipeId).toBe(
+      leoes.id,
+    );
+    expect(service.equipeAtivaDoAluno(alunoAlheio.id, outraTurma.id, null)).toBeUndefined();
+  });
+
+  it('recusa o sorteio quando não há equipe ativa', async () => {
+    const equipe = await service.criarEquipe({
+      nome: 'Desativada',
+      emoji: '🐺',
+      cor: '#64748B',
+      ativa: true,
+      turmaId,
+      disciplinaId: null,
+      periodoLetivoId: null,
+    });
+    await service.alternarAtiva(equipe.id);
+    const aluno = await criarAlunoEm(alunos, 'Ana Lima', turmaId);
+
+    await expectAsync(
+      service.sortearAlunos(
+        {
+          turmaId,
+          periodoLetivoId: null,
+          disciplinaId: null,
+          alunoIds: [aluno.id],
+        },
+        autor,
+      ),
+    ).toBeRejectedWithError('Crie ao menos uma equipe ativa antes de sortear.');
+  });
+
   it('desassocia o aluno sem apagar o histórico', async () => {
     const equipe = await service.criarEquipe({
       nome: 'Panteras',
@@ -165,6 +253,7 @@ describe('EquipesService', () => {
       cor: '#7C3AED',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const aluno = await criarAlunoEm(alunos, 'Diego Reis', turmaId);
@@ -184,6 +273,7 @@ describe('EquipesService', () => {
       cor: '#2563EB',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const tigres = await service.criarEquipe({
@@ -192,6 +282,7 @@ describe('EquipesService', () => {
       cor: '#F97316',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const anaLima = await criarAlunoEm(alunos, 'Ana Lima', turmaId);
@@ -217,6 +308,7 @@ describe('EquipesService', () => {
       cor: '#16A34A',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
     const aluno = await criarAlunoEm(alunos, 'Elisa Prado', turmaId);
@@ -236,6 +328,7 @@ describe('EquipesService', () => {
       cor: '#64748B',
       ativa: true,
       turmaId,
+      disciplinaId: null,
       periodoLetivoId: null,
     });
 

@@ -5,11 +5,13 @@ import { RepositoryFactory } from '../data/repository.factory';
 import {
   CriterioPlacar,
   DadosEquipe,
+  DadosSorteioAlunos,
   Equipe,
   EquipeMembro,
   LinhaPlacarEquipe,
   membrosParaPlacar,
   pontuarEquipe,
+  sortearAlunosNasEquipes,
   validarEquipe,
 } from '../models/equipes.model';
 import { Usuario } from '../models/usuario.model';
@@ -249,6 +251,68 @@ export class EquipesService {
     );
   }
 
+  /**
+   * Sorteia os alunos informados entre as equipes ativas do contexto.
+   *
+   * Participam apenas alunos ativos da turma que ainda não têm equipe ativa no
+   * período. O sorteio equilibra os tamanhos considerando quem já está em cada
+   * equipe. Uma falha individual não interrompe os demais: o retorno informa
+   * quantos alunos foram associados e quantos não puderam ser.
+   */
+  async sortearAlunos(
+    dados: DadosSorteioAlunos,
+    autor: Usuario,
+  ): Promise<{ quantidadeSorteados: number; quantidadeFalhas: number }> {
+    await this.load();
+
+    const equipes = this.equipesDaTurma(
+      dados.turmaId,
+      dados.periodoLetivoId,
+      dados.disciplinaId,
+    ).filter((equipe) => equipe.ativa);
+    if (!equipes.length) {
+      throw new Error('Crie ao menos uma equipe ativa antes de sortear.');
+    }
+
+    const alunosElegiveis = dados.alunoIds.filter((alunoId) =>
+      this.podeEntrarNoSorteio(alunoId, dados.turmaId, dados.periodoLetivoId),
+    );
+    if (!alunosElegiveis.length) {
+      throw new Error('Todos os alunos ativos da turma já estão em uma equipe.');
+    }
+
+    const tamanhoAtualPorEquipe = new Map(
+      equipes.map((equipe) => [equipe.id, this.membrosDaEquipe(equipe.id, true).length]),
+    );
+    const distribuicao = sortearAlunosNasEquipes(
+      alunosElegiveis,
+      equipes.map((equipe) => equipe.id),
+      tamanhoAtualPorEquipe,
+    );
+
+    let quantidadeSorteados = 0;
+    let quantidadeFalhas = 0;
+    for (const { equipeId, alunoIds } of distribuicao) {
+      for (const alunoId of alunoIds) {
+        try {
+          await this.associarAluno(equipeId, alunoId, autor);
+          quantidadeSorteados += 1;
+        } catch {
+          quantidadeFalhas += 1;
+        }
+      }
+    }
+
+    this.auditoria.registrar(
+      'equipe.sorteio',
+      'Equipe',
+      null,
+      `${quantidadeSorteados} aluno(s) distribuído(s) entre ${equipes.length} equipe(s).`,
+    );
+
+    return { quantidadeSorteados, quantidadeFalhas };
+  }
+
   /** Placar das equipes de uma turma/período, em ordem decrescente de XP. */
   placar(turmaId: string, periodoLetivoId: string | null, disciplinaId: string | null = null): LinhaPlacarEquipe[] {
     const criterio = this._criterioPlacar();
@@ -314,6 +378,16 @@ export class EquipesService {
       fimEm: new Date().toISOString(),
     });
     this._membros.update((lista) => lista.map((item) => (item.id === membro.id ? encerrado : item)));
+  }
+
+  private podeEntrarNoSorteio(
+    alunoId: string,
+    turmaId: string,
+    periodoLetivoId: string | null,
+  ): boolean {
+    const aluno = this.alunos.alunos().find((item) => item.id === alunoId);
+    if (!aluno || !aluno.ativo || aluno.turmaId !== turmaId) return false;
+    return this.equipeAtivaDoAluno(alunoId, turmaId, periodoLetivoId) === undefined;
   }
 
   private mapaXpPorAluno(

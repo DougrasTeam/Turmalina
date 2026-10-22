@@ -34,10 +34,61 @@
   white-space: nowrap;
 }
 
+.equipes__integrantes {
+  max-width: 18rem;
+}
+
+.equipes__quantidade-integrantes {
+  display: block;
+  font-weight: 600;
+}
+
 .equipes__campos {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.equipes__seletor-cor {
+  display: block;
+  width: 3.5rem;
+  height: 2.875rem;
+  padding: 0.25rem;
+  border: 2px solid var(--tl-border);
+  border-radius: var(--tl-radius);
+  background: var(--tl-surface);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--tl-primary);
+    outline-offset: 2px;
+  }
+}
+
+.equipes__paleta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  grid-column: 1 / -1;
+}
+
+.equipes__amostra {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 2px solid var(--tl-border);
+  border-radius: 50%;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--tl-primary);
+    outline-offset: 2px;
+  }
+
+  &--ativa {
+    border-color: var(--tl-ink);
+    box-shadow: 0 0 0 2px var(--tl-surface) inset;
+  }
 }
 
 .equipes__ativa {

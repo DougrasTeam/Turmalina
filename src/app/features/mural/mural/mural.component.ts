@@ -4,7 +4,6 @@ import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
-import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { FeedPublicacoesComponent } from '../feed-publicacoes/feed-publicacoes.component';
 import { PublicacaoFormComponent } from '../publicacao-form/publicacao-form.component';
 import { ComunicadoFormComponent } from '../comunicado-form/comunicado-form.component';
@@ -37,7 +36,6 @@ type Aba = 'feed' | 'recados';
     FeedPublicacoesComponent,
     PublicacaoFormComponent,
     ComunicadoFormComponent,
-    DisciplinaContextoBarComponent,
   ],
   templateUrl: './mural.component.html',
   styleUrl: './mural.component.scss',

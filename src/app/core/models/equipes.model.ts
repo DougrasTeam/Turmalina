@@ -18,6 +18,9 @@ export const NOME_EQUIPE_MAXIMO = 40;
 /** Máximo de equipes sugerido por turma/período. */
 export const MAXIMO_EQUIPES_POR_TURMA = 20;
 
+/** Quantidade máxima de nomes de integrantes exibidos na lista de equipes. */
+export const MAXIMO_NOMES_INTEGRANTES = 5;
+
 /** Cores sugeridas para as equipes (hexadecimais com bom contraste sobre branco). */
 export const CORES_EQUIPE: string[] = [
   '#2563EB',
@@ -105,6 +108,14 @@ export interface DadosEquipeMembro {
   alunoId: string;
 }
 
+/** Contexto e alunos candidatos ao sorteio automático entre equipes. */
+export interface DadosSorteioAlunos {
+  turmaId: string;
+  periodoLetivoId: string | null;
+  disciplinaId: string | null;
+  alunoIds: string[];
+}
+
 /** Linha do placar de uma equipe. */
 export interface LinhaPlacarEquipe {
   equipe: Equipe;
@@ -190,4 +201,82 @@ export function pontuarEquipe(
   const quantidadeMembros = alunosUnicos.size;
   const xpMedio = quantidadeMembros ? Math.round(xpTotal / quantidadeMembros) : 0;
   return { xpTotal, quantidadeMembros, xpMedio };
+}
+
+/**
+ * Resumo compacto dos nomes dos integrantes, usado na lista de equipes.
+ *
+ * Evita células com dezenas de nomes: quando há mais integrantes que o limite,
+ * os excedentes viram "+N outro(s)".
+ */
+export function resumirNomesMembros(
+  nomes: string[],
+  limite = MAXIMO_NOMES_INTEGRANTES,
+): string {
+  if (!nomes.length) return 'Sem integrantes';
+  if (nomes.length <= limite) return nomes.join(', ');
+
+  const visiveis = nomes.slice(0, limite).join(', ');
+  const restantes = nomes.length - limite;
+  return `${visiveis} +${restantes} ${restantes === 1 ? 'outro' : 'outros'}`;
+}
+
+/** Alunos sorteados para uma equipe. */
+export interface DistribuicaoAlunosEquipe {
+  equipeId: string;
+  alunoIds: string[];
+}
+
+/**
+ * Sorteia alunos entre as equipes informadas, equilibrando os tamanhos.
+ *
+ * O sorteio embaralha os alunos e, a cada rodada, envia o próximo aluno para a
+ * equipe com menos integrantes (empates são resolvidos aleatoriamente). Assim,
+ * as equipes terminam com tamanhos iguais ou com diferença de no máximo um
+ * aluno — considerando os integrantes que cada equipe já possui.
+ *
+ * A função é pura: recebe a quantidade atual de integrantes por equipe e a
+ * fonte de aleatoriedade, o que permite testar o resultado de forma determinística.
+ */
+export function sortearAlunosNasEquipes(
+  alunoIds: readonly string[],
+  equipeIds: readonly string[],
+  tamanhoAtualPorEquipe: ReadonlyMap<string, number> = new Map(),
+  aleatorio: () => number = Math.random,
+): DistribuicaoAlunosEquipe[] {
+  const distribuicao = equipeIds.map<DistribuicaoAlunosEquipe>((equipeId) => ({
+    equipeId,
+    alunoIds: [],
+  }));
+  if (!distribuicao.length) return distribuicao;
+
+  const tamanhos = new Map(
+    equipeIds.map((equipeId) => [equipeId, tamanhoAtualPorEquipe.get(equipeId) ?? 0]),
+  );
+  const alunosEmbaralhados = embaralhar([...alunoIds], aleatorio);
+
+  for (const alunoId of alunosEmbaralhados) {
+    const menorTamanho = Math.min(...tamanhos.values());
+    const equipesMenores = distribuicao.filter(
+      (item) => tamanhos.get(item.equipeId) === menorTamanho,
+    );
+    const escolhida = equipesMenores[indiceAleatorio(equipesMenores.length, aleatorio)];
+
+    escolhida.alunoIds.push(alunoId);
+    tamanhos.set(escolhida.equipeId, menorTamanho + 1);
+  }
+
+  return distribuicao;
+}
+
+function embaralhar<T>(lista: T[], aleatorio: () => number): T[] {
+  for (let indice = lista.length - 1; indice > 0; indice -= 1) {
+    const sorteado = indiceAleatorio(indice + 1, aleatorio);
+    [lista[indice], lista[sorteado]] = [lista[sorteado], lista[indice]];
+  }
+  return lista;
+}
+
+function indiceAleatorio(limite: number, aleatorio: () => number): number {
+  return Math.min(limite - 1, Math.floor(aleatorio() * limite));
 }

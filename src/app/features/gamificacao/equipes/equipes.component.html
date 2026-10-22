@@ -7,8 +7,8 @@
     <div>
       <h1>Equipes</h1>
       <p class="tl-text-muted">
-        Organize os alunos em equipes por turma e período, acompanhe o placar e transfira alunos
-        preservando o histórico. O XP nunca altera notas, frequência ou aprovação.
+        Organize os alunos em equipes da turma e do período letivo ativo, acompanhe o placar e
+        transfira alunos preservando o histórico. O XP nunca altera notas, frequência ou aprovação.
       </p>
     </div>
   </header>
@@ -19,26 +19,22 @@
       <select
         id="equipes-turma"
         class="form-select"
-        [value]="turmaEfetiva()"
+        [disabled]="turmaFixa()"
         (change)="alterarTurma($event)"
       >
         @for (turma of turmasDisponiveis(); track turma.id) {
-          <option [value]="turma.id">{{ turma.codigo }} · {{ turma.nome }}</option>
+          <option [value]="turma.id" [selected]="turma.id === turmaEfetiva()">
+            {{ turma.codigo }} · {{ turma.nome }}
+          </option>
         }
       </select>
     </label>
 
     <label class="form-label equipes__filtro" for="equipes-periodo">
       Período letivo
-      <select
-        id="equipes-periodo"
-        class="form-select"
-        [value]="periodoEfetivo()"
-        (change)="alterarPeriodo($event)"
-      >
-        <option value="">Sem período</option>
+      <select id="equipes-periodo" class="form-select" disabled>
         @for (periodo of periodos.periodos(); track periodo.id) {
-          <option [value]="periodo.id">
+          <option [value]="periodo.id" [selected]="periodo.id === periodoEfetivo()">
             {{ periodo.nome }}{{ periodo.status === 'ativo' ? ' (ativo)' : '' }}
           </option>
         }
@@ -61,6 +57,16 @@
 
     <span class="page-toolbar__spacer"></span>
 
+    <button
+      class="btn btn-light"
+      type="button"
+      [disabled]="!podeSortear() || sorteando()"
+      [title]="tituloSorteio()"
+      (click)="abrirSorteio()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">casino</span>
+      {{ sorteando() ? 'Sorteando...' : 'Sortear alunos' }}
+    </button>
     <button
       class="btn btn-light"
       type="button"
@@ -112,7 +118,7 @@
               <tr>
                 <th>#</th>
                 <th>Equipe</th>
-                <th>Membros</th>
+                <th>Integrantes</th>
                 <th>XP total</th>
                 <th>XP médio</th>
                 <th>Status</th>
@@ -128,7 +134,14 @@
                     <span class="equipes__cor" [style.background-color]="linha.equipe.cor"></span>
                     <strong>{{ linha.equipe.nome }}</strong>
                   </td>
-                  <td>{{ linha.quantidadeMembros }}</td>
+                  <td class="equipes__integrantes">
+                    <span class="equipes__quantidade-integrantes">
+                      {{ integrantesDaEquipe(linha.equipe.id).length }}
+                    </span>
+                    <span class="tl-small tl-text-muted">
+                      {{ resumoDosIntegrantes(linha.equipe.id) }}
+                    </span>
+                  </td>
                   <td>
                     <span class="badge badge-info">{{ linha.xpTotal }} XP</span>
                   </td>
@@ -226,17 +239,28 @@
 
       <label class="form-label" for="equipe-cor">
         Cor
-        <select
+        <input
           id="equipe-cor"
-          class="form-select"
+          class="equipes__seletor-cor"
+          type="color"
           [value]="formulario().cor"
-          (change)="alterarCor($event)"
-        >
-          @for (cor of cores; track cor) {
-            <option [value]="cor">{{ cor }}</option>
-          }
-        </select>
+          (input)="alterarCor($event)"
+        />
       </label>
+
+      <div class="equipes__paleta" role="group" aria-label="Cores sugeridas para a equipe">
+        @for (cor of cores; track cor) {
+          <button
+            type="button"
+            class="equipes__amostra"
+            [class.equipes__amostra--ativa]="formulario().cor.toLowerCase() === cor.toLowerCase()"
+            [style.background-color]="cor"
+            [attr.aria-label]="'Usar a cor ' + cor"
+            [attr.aria-pressed]="formulario().cor.toLowerCase() === cor.toLowerCase()"
+            (click)="selecionarCor(cor)"
+          ></button>
+        }
+      </div>
     </div>
 
     <p class="tl-small tl-text-muted">
@@ -259,7 +283,7 @@
 
   <app-modal
     [open]="equipeSelecionada() !== null"
-    [title]="'Membros: ' + (equipeSelecionada()?.nome ?? '')"
+    [title]="'Integrantes: ' + (equipeSelecionada()?.nome ?? '')"
     (close)="fecharMembros()"
   >
     @if (equipeSelecionada(); as equipe) {
@@ -296,7 +320,9 @@
         </p>
       }
 
-      <h3 class="equipes__subtitulo">Membros atuais ({{ membrosDaEquipe().length }})</h3>
+      <h3 class="equipes__subtitulo">
+        Integrantes atuais ({{ membrosDaEquipe().length }})
+      </h3>
 
       @if (membrosDaEquipe().length === 0) {
         <p class="tl-small tl-text-muted mb-0">Nenhum aluno nesta equipe ainda.</p>
@@ -310,6 +336,7 @@
                 class="btn btn-light btn-sm"
                 type="button"
                 title="Remover da equipe"
+                [attr.aria-label]="'Remover ' + membro.alunoNome + ' da equipe'"
                 (click)="desassociar(membro)"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">person_remove</span>
@@ -319,6 +346,32 @@
         </ul>
       }
     }
+  </app-modal>
+
+  <app-modal [open]="sorteioAberto()" title="Sortear alunos" (close)="fecharSorteio()">
+    <p class="mb-2">{{ mensagemSorteio() }}</p>
+
+    <ul class="tl-small tl-text-muted">
+      <li>Somente alunos ativos e sem equipe neste período participam.</li>
+      <li>Quem já está em uma equipe não é alterado.</li>
+      <li>
+        As equipes com mais integrantes recebem menos alunos, para manter os tamanhos
+        equilibrados.
+      </li>
+    </ul>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fecharSorteio()">Cancelar</button>
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="sorteando()"
+        (click)="realizarSorteio()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">casino</span>
+        {{ sorteando() ? 'Sorteando...' : 'Sortear' }}
+      </button>
+    </div>
   </app-modal>
 
   <app-confirmar-texto

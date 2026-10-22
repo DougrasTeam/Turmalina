@@ -175,13 +175,23 @@
 - **Equipes (RF-017):** o administrador/professor cria equipes por turma/período
   (nome, emoji, cor e status) em `/gamificacao/equipes`, associa e transfere
   alunos e acompanha o **placar** por critério (`xp_acumulado` ou `xp_periodo`).
-  A associação usa **vínculos com vigência** (`inicioEm`/`fimEm`/`ativa`):
+  A lista de equipes exibe a coluna **Integrantes** com a quantidade e os nomes
+  de quem está na equipe (resumo limitado a cinco nomes), e o modal de
+  integrantes permite visualizar e remover cada aluno. O botão **Sortear
+  alunos** distribui aleatoriamente os alunos ativos sem equipe entre as equipes
+  ativas, equilibrando os tamanhos e sem mexer em quem já está vinculado. No
+  contexto da turma a turma é fixa e o período letivo é sempre o ativo; o
+  seletor de alunos lista apenas alunos ativos da turma. A associação usa
+  **vínculos com vigência** (`inicioEm`/`fimEm`/`ativa`):
   transferir encerra o vínculo anterior preservando o histórico, e a exclusão de
   equipe remove apenas os vínculos (o XP conquistado é preservado). A cor é
   apenas apoio visual — nome e emoji sempre identificam a equipe. A visão do
   aluno não é alterada (equipe é gamificação, não matrícula). No Supabase,
   `equipes`/`equipe_membros` vivem em `supabase/migrations/0009_equipes.sql`, com
-  índice parcial de vínculo ativo único por (instituição, turma, período, aluno).
+  índice parcial de vínculo ativo único por (instituição, turma, período, aluno);
+  a escrita em ambas as tabelas é liberada à equipe docente nas migrações
+  `0011_equipes_permitir_professor.sql` e
+  `0013_equipes_membros_permitir_professor.sql`.
 - **Tenant-ready (ADR 0005):** `institutionId` em toda entidade, `TenantService`
   e isolamento por instituição na camada de dados, com migração de dados legados.
 - **Exclusão em massa (Zona de perigo):** botão "Excluir todos" nas telas de

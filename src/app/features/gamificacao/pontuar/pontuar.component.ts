@@ -10,7 +10,6 @@ import {
   formatarDeltaXp,
 } from '../../../core/models/gamificacao.model';
 import { formatarDataHoraAuditoria } from '../../../core/models/auditoria.model';
-import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { GamificacaoService } from '../../../core/services/gamificacao.service';
@@ -25,7 +24,6 @@ import { TurmasService } from '../../../core/services/turmas.service';
  */
 @Component({
   selector: 'app-pontuar',
-  imports: [DisciplinaContextoBarComponent],
   templateUrl: './pontuar.component.html',
   styleUrl: './pontuar.component.scss',
 })

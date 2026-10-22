@@ -385,28 +385,50 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   `turmaId`, `periodoLetivoId`), `EquipeMembro` (vínculo do aluno com
   `equipeId`/`equipeNome`, vigência `inicioEm`/`fimEm`/`ativa` e
   `autorId`/`autorNome`) e `LinhaPlacarEquipe`. Constantes `CORES_EQUIPE`,
-  `EMOJIS_EQUIPE`, `NOME_EQUIPE_MAXIMO`, `MAXIMO_EQUIPES_POR_TURMA` e
-  `CRITERIOS_PLACAR` (`xp_acumulado` | `xp_periodo`) com `ROTULOS_CRITERIO_PLACAR`.
-  Helpers puros: `validarEquipe`, `vinculoVigenteNaData`, `membrosParaPlacar` e
-  `pontuarEquipe`.
+  `EMOJIS_EQUIPE`, `NOME_EQUIPE_MAXIMO`, `MAXIMO_EQUIPES_POR_TURMA`,
+  `MAXIMO_NOMES_INTEGRANTES` e `CRITERIOS_PLACAR` (`xp_acumulado` |
+  `xp_periodo`) com `ROTULOS_CRITERIO_PLACAR`. Helpers puros: `validarEquipe`,
+  `vinculoVigenteNaData`, `membrosParaPlacar`, `pontuarEquipe`,
+  `resumirNomesMembros` (resumo curto dos nomes exibido na lista de equipes) e
+  `sortearAlunosNasEquipes` (distribuição aleatória equilibrada, com fonte de
+  aleatoriedade injetável para testes).
 - `EquipesService` (`turmalina.equipes` / `turmalina.equipe-membros`) expõe
   `equipes`/`membros`/`criterioPlacar` (signals) e as operações: CRUD de equipes
   (auditado: `equipe.criada/atualizada/ativada/desativada/excluida`),
   `associarAluno` (valida turma e status, **transfere** encerrando o vínculo
   anterior com auditoria `equipe.associado`/`equipe.transferido`),
-  `desassociarAluno`, `placar(turmaId, periodo)` (ordena por XP total, desempate
+  `desassociarAluno`, `sortearAlunos` (sorteia apenas alunos sem equipe entre as
+  equipes ativas, equilibrando tamanhos, com auditoria `equipe.sorteio`),
+  `placar(turmaId, periodo)` (ordena por XP total, desempate
   por nome), `equipesDaTurma`/`membrosDaEquipe`/`equipeAtivaDoAluno`/
   `historicoDoAluno`, `definirCriterioPlacar` e utilitários de reset
   (`removerDeTurmas`, `removerTodos`, `removerTodosMembros`). No critério
   `xp_periodo`, o XP é somado a partir dos eventos de XP dentro do período.
-- Tela `features/gamificacao/equipes/` (`/gamificacao/equipes`, admin/professor)
-  com toolbar de turma/período/critério, placar em tabela (posição/medalha),
-  modal de CRUD da equipe e modal de membros com associar/desassociar; exclusão
-  individual ou em massa por confirmação digitada. A equipe **não** altera a
-  matrícula do aluno e o XP conquistado é preservado ao encerrar vínculos.
+- Tela `features/gamificacao/equipes/` (`/gamificacao/equipes` e
+  `/turmas/:id/disciplina/:disciplinaId/equipes`, admin/professor) com toolbar
+  de critério do placar. No contexto da turma, o seletor de turma fica
+  desabilitado (fixo pela rota); no acesso pelo menu, a turma é escolhida. O
+  seletor de período letivo permanece apenas informativo (sempre o ativo e
+  desabilitado). Placar em tabela (posição/medalha) e coluna **Integrantes** mostrando a quantidade e os
+  nomes de quem está atualmente em cada equipe (`integrantesAtivosPorEquipe`,
+  em ordem alfabética, resumidos por `resumirNomesMembros`). O modal de
+  integrantes permite associar e desassociar alunos, listando no seletor apenas
+  alunos ativos da turma; a remoção é imediata (com toast e `aria-label` no
+  botão), e a exclusão de equipes é individual ou em massa por confirmação
+  digitada. A cor da equipe é escolhida no seletor nativo
+  (  `<input type="color">`), com a paleta `CORES_EQUIPE` disponível como
+  atalhos. O botão **Sortear alunos** abre uma confirmação e distribui
+  aleatoriamente os alunos ativos sem equipe entre as equipes ativas, mantendo
+  os tamanhos equilibrados e sem alterar quem já está vinculado. A equipe
+  **não** altera a matrícula do aluno e o XP conquistado é
+  preservado ao encerrar vínculos.
 - No Supabase, `equipes`/`equipe_membros` (`0009_equipes.sql`) usam FKs em
   cascata/set-null, índice parcial de vínculo ativo único por (instituição,
-  turma, período, aluno) e o mesmo padrão de RLS da gamificação.
+  turma, período, aluno) e o mesmo padrão de RLS da gamificação. A escrita em
+  `equipes` e em `equipe_membros` é liberada à equipe docente
+  (administrador/professor) — `0011_equipes_permitir_professor.sql` e
+  `0013_equipes_membros_permitir_professor.sql` — para que o professor
+  associe, transfira e desassocie alunos das equipes que administra.
 
 ## Painel do professor (RF-008)
 

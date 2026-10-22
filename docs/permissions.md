@@ -86,6 +86,20 @@ Regras aplicadas:
   por RLS (migração `0007`): leitura pela equipe ou pelo próprio aluno, escrita de
   XP apenas pela equipe e exclusão apenas pelo admin; a equipe só pode atualizar
   `xp`/`moedas` no aluno (política + trigger `proteger_alunos_exceto_xp`).
+- Equipes/RF-017: o **administrador/professor** gerencia as equipes por
+  turma/período em `/gamificacao/equipes` (CRUD da equipe), associa e remove
+  alunos (**vínculos com vigência**, auditados) e vê os integrantes atuais na
+  próprio lista de equipes e no modal de integrantes. O professor também pode
+  usar o **sorteio automático**, que distribui apenas alunos ativos e sem equipe
+  entre as equipes ativas do contexto, equilibrando os tamanhos. A remoção encerra o
+  vínculo sem apagar o XP conquistado. A tela opera sempre na turma do contexto
+  (quando aberta a partir da turma/disciplina) e no período letivo ativo; o
+  seletor do modal lista apenas alunos ativos da turma. O aluno não acessa a
+  tela de equipes. No
+  Supabase, a leitura e a escrita de `equipes`/`equipe_membros` são reforçadas
+  por RLS para o admin e para o professor das turmas que administra
+  (migrações `0011_equipes_permitir_professor.sql` e
+  `0013_equipes_membros_permitir_professor.sql`).
 - Exportação CSV respeita o mesmo escopo de acesso da tela: boletim (equipe e o
   próprio aluno) e listas de alunos/turmas/professores e relatórios (equipe/admin,
   conforme a tela). Toda exportação de dados sensíveis registra evento de

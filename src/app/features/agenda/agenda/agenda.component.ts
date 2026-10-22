@@ -4,7 +4,6 @@ import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
-import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { ListaEventosComponent } from '../lista-eventos/lista-eventos.component';
 import { EventoFormComponent } from '../evento-form/evento-form.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -27,7 +26,7 @@ import {
  */
 @Component({
   selector: 'app-agenda',
-  imports: [ModalComponent, ListaEventosComponent, EventoFormComponent, DisciplinaContextoBarComponent],
+  imports: [ModalComponent, ListaEventosComponent, EventoFormComponent],
   templateUrl: './agenda.component.html',
   styleUrl: './agenda.component.scss',
 })

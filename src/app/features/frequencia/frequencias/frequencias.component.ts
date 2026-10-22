@@ -5,7 +5,6 @@ import { map } from 'rxjs';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
-import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { DadosService } from '../../../core/services/dados.service';
@@ -40,7 +39,7 @@ function mensagemErro(erro: unknown): string {
 
 @Component({
   selector: 'app-frequencias',
-  imports: [ModalComponent, ConfirmarTextoComponent, DisciplinaContextoBarComponent],
+  imports: [ModalComponent, ConfirmarTextoComponent],
   templateUrl: './frequencias.component.html',
   styleUrl: './frequencias.component.scss',
 })

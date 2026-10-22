@@ -5,7 +5,6 @@ import { map } from 'rxjs';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
-import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AvaliacoesService } from '../../../core/services/avaliacoes.service';
 import { DadosService } from '../../../core/services/dados.service';
@@ -58,7 +57,7 @@ function parseNota(texto: string): number | null {
 
 @Component({
   selector: 'app-avaliacoes',
-  imports: [ModalComponent, ConfirmarTextoComponent, DisciplinaContextoBarComponent],
+  imports: [ModalComponent, ConfirmarTextoComponent],
   templateUrl: './avaliacoes.component.html',
   styleUrl: './avaliacoes.component.scss',
 })
