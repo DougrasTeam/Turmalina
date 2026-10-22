@@ -1,4 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { map } from 'rxjs';
 
 import { Aluno, Professor, Turma } from '../../../core/models';
 import {
@@ -7,6 +10,7 @@ import {
   formatarDeltaXp,
 } from '../../../core/models/gamificacao.model';
 import { formatarDataHoraAuditoria } from '../../../core/models/auditoria.model';
+import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { GamificacaoService } from '../../../core/services/gamificacao.service';
@@ -21,10 +25,12 @@ import { TurmasService } from '../../../core/services/turmas.service';
  */
 @Component({
   selector: 'app-pontuar',
+  imports: [DisciplinaContextoBarComponent],
   templateUrl: './pontuar.component.html',
   styleUrl: './pontuar.component.scss',
 })
 export class PontuarComponent {
+  private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthService);
   private readonly alunos = inject(AlunosService);
   protected readonly gamificacao = inject(GamificacaoService);
@@ -32,7 +38,34 @@ export class PontuarComponent {
   private readonly turmas = inject(TurmasService);
   private readonly toast = inject(ToastService);
 
-  protected readonly turmaId = signal('');
+  private readonly routePai = this.route.parent;
+
+  protected readonly turmaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('id') ?? params.get('turmaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('id') ??
+        this.route.snapshot.queryParamMap.get('turmaId') ??
+        '',
+    },
+  );
+  protected readonly disciplinaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('disciplinaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('disciplinaId') ??
+        this.route.snapshot.queryParamMap.get('disciplinaId') ??
+        '',
+    },
+  );
+
+  protected readonly turmaId = signal(
+    this.routePai?.snapshot.paramMap.get('id') ?? this.route.snapshot.queryParamMap.get('turmaId') ?? '',
+  );
   protected readonly acaoId = signal('');
   protected readonly selecionados = signal<Set<string>>(new Set());
   protected readonly salvando = signal(false);

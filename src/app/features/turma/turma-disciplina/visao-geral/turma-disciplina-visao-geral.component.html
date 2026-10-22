@@ -1,0 +1,31 @@
+@if (turma(); as t) {
+  @if (disciplina(); as d) {
+    <div class="kpi-grid">
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">groups</span></span>
+        <div>
+          <div class="kpi-card__value">{{ alunosDaTurma().length }}</div>
+          <div class="kpi-card__label">Alunos na turma</div>
+        </div>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">calendar_month</span></span>
+        <div>
+          <div class="kpi-card__value" style="font-size: 1.2rem;">{{ periodoAtivo()?.nome || '—' }}</div>
+          <div class="kpi-card__label">Periodo letivo</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="card mb-0 mt-3">
+      <div class="card-header">
+        <span><span class="material-symbols-outlined">info</span> Contexto turma + disciplina</span>
+      </div>
+      <div class="card-body">
+        <p class="mb-1"><strong>Turma:</strong> {{ t.nome }} {{ t.serie ? '· ' + t.serie : '' }}</p>
+        <p class="mb-1"><strong>Disciplina:</strong> {{ d.nome }}</p>
+        <p class="mb-0 tl-text-muted">Use os atalhos acima para navegar por Frequencia, Avaliacoes, Pontuar, Agenda ou Mural.</p>
+      </div>
+    </div>
+  }
+}

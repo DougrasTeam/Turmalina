@@ -1,0 +1,35 @@
+.disciplina-context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--tl-surface-raised, #f5f5fb);
+  border: 1px solid var(--tl-border, #d9d6f2);
+  border-radius: var(--tl-radius, 0.75rem);
+}
+
+.disciplina-context-bar__info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.disciplina-context-bar__title {
+  font-weight: 700;
+  color: var(--tl-ink, #1b1740);
+}
+
+.disciplina-context-bar__subtitle {
+  font-size: 0.875rem;
+  color: var(--tl-ink-muted, #5f5b86);
+}
+
+.disciplina-context-bar__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

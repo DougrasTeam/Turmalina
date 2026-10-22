@@ -6,6 +6,8 @@ import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirm
 import { TurmaFormComponent } from '../turma-form/turma-form.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuditoriaService } from '../../../core/services/auditoria.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
 import { DadosService } from '../../../core/services/dados.service';
 import { ExportacaoService, nomeArquivoCsv } from '../../../core/services/exportacao.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
@@ -24,6 +26,8 @@ export class TurmasComponent {
   protected readonly turmas = inject(TurmasService);
   protected readonly professores = inject(ProfessoresService);
   protected readonly alunos = inject(AlunosService);
+  protected readonly auth = inject(AuthService);
+  protected readonly contexto = inject(ContextoProfessorService);
   private readonly vinculos = inject(VinculosDocentesService);
   private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
@@ -37,9 +41,17 @@ export class TurmasComponent {
   protected readonly excluirTudoAberto = signal(false);
   protected readonly confirmacaoTudo = computed(() => this.dados.confirmacao('turmas'));
 
+  protected readonly somenteLeitura = computed(() => !this.auth.temPapel('administrador'));
+  protected readonly ehProfessor = computed(() => this.auth.papel() === 'professor');
+
+  /**
+   * Turmas visíveis: o administrador enxerga todas; o professor apenas as
+   * turmas sob sua responsabilidade.
+   */
   readonly filtradas = computed(() => {
     const termo = this.busca().trim().toLowerCase();
-    const lista = this.turmas.turmas();
+    const lista = this.contexto.turmasDoProfessor();
+
     if (!termo) return lista;
     return lista.filter((t) =>
       [t.nome, t.serie, t.codigo].some((campo) => campo.toLowerCase().includes(termo)),

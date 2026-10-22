@@ -1,0 +1,23 @@
+@if (turma(); as t) {
+  @if (disciplina(); as d) {
+    <div class="disciplina-context-bar">
+      <div class="disciplina-context-bar__info">
+        <span class="material-symbols-outlined">menu_book</span>
+        <div>
+          <div class="disciplina-context-bar__title">{{ d.nome }}</div>
+          <div class="disciplina-context-bar__subtitle">{{ t.nome }}{{ t.serie ? ' · ' + t.serie : '' }}</div>
+        </div>
+      </div>
+      <div class="disciplina-context-bar__actions">
+        <a class="btn btn-sm btn-primary" [routerLink]="['/turmas', t.id, 'disciplina', d.id]">
+          <span class="material-symbols-outlined">dashboard</span>
+          Voltar para a disciplina
+        </a>
+        <a class="btn btn-sm btn-light" [routerLink]="['/turmas', t.id]">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Voltar a turma
+        </a>
+      </div>
+    </div>
+  }
+}

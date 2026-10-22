@@ -5,11 +5,10 @@ import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AvaliacoesService } from '../../../core/services/avaliacoes.service';
 import { BoletimService } from '../../../core/services/boletim.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
 import { FrequenciasService } from '../../../core/services/frequencias.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
-import { ProfessoresService } from '../../../core/services/professores.service';
 import { TurmasService } from '../../../core/services/turmas.service';
-import { VinculosDocentesService } from '../../../core/services/vinculos-docentes.service';
 import { Avaliacao, formatarNota, resumoNotas } from '../../../core/models/avaliacao.model';
 import { classeSituacao, rotuloSituacao } from '../../../core/models/boletim.model';
 import { dataHoje, formatarDataFrequencia, formatarPercentual, calcularResumoFrequencia } from '../../../core/models/frequencia.model';
@@ -23,31 +22,20 @@ import { InstituicaoService } from '../../../core/services/instituicao.service';
 })
 export class PainelProfessorComponent {
   private readonly auth = inject(AuthService);
+  private readonly contexto = inject(ContextoProfessorService);
   protected readonly turmas = inject(TurmasService);
   protected readonly alunos = inject(AlunosService);
-  protected readonly professores = inject(ProfessoresService);
   protected readonly periodos = inject(PeriodosLetivosService);
   protected readonly avaliacoes = inject(AvaliacoesService);
   protected readonly frequencias = inject(FrequenciasService);
   protected readonly boletimService = inject(BoletimService);
-  private readonly vinculos = inject(VinculosDocentesService);
   protected readonly instituicao = inject(InstituicaoService);
 
-  protected readonly professorAtual = computed(() => {
-    const email = this.auth.usuario()?.email;
-    if (!email) return null;
-    return this.professores.professores().find((professor) => professor.email === email) ?? null;
-  });
+  protected readonly professorAtual = this.contexto.professorAtual;
 
-  protected readonly turmasDoProfessor = computed(() => {
-    const professor = this.professorAtual();
-    if (!professor) return [];
-    const vinculadas = new Set(this.vinculos.porProfessor(professor.id).map((vinculo) => vinculo.turmaId));
-    return this.turmas
-      .turmas()
-      .filter((turma) => turma.professorIds.includes(professor.id) || vinculadas.has(turma.id))
-      .sort((primeira, segunda) => primeira.nome.localeCompare(segunda.nome, 'pt-BR'));
-  });
+  protected readonly turmasDoProfessor = computed(() =>
+    this.contexto.turmasDoProfessor().sort((primeira, segunda) => primeira.nome.localeCompare(segunda.nome, 'pt-BR')),
+  );
 
   protected readonly turmaFiltro = linkedSignal(() => this.turmasDoProfessor()[0]?.id ?? '');
   protected readonly periodoFiltro = linkedSignal(

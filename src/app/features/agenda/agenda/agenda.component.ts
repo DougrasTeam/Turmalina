@@ -1,6 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { map } from 'rxjs';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
+import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { ListaEventosComponent } from '../lista-eventos/lista-eventos.component';
 import { EventoFormComponent } from '../evento-form/evento-form.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -23,16 +27,42 @@ import {
  */
 @Component({
   selector: 'app-agenda',
-  imports: [ModalComponent, ListaEventosComponent, EventoFormComponent],
+  imports: [ModalComponent, ListaEventosComponent, EventoFormComponent, DisciplinaContextoBarComponent],
   templateUrl: './agenda.component.html',
   styleUrl: './agenda.component.scss',
 })
 export class AgendaComponent {
+  private readonly route = inject(ActivatedRoute);
   protected readonly auth = inject(AuthService);
   protected readonly eventos = inject(EventosService);
   private readonly turmas = inject(TurmasService);
   private readonly professores = inject(ProfessoresService);
   private readonly toast = inject(ToastService);
+
+  private readonly routePai = this.route.parent;
+
+  protected readonly turmaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('id') ?? params.get('turmaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('id') ??
+        this.route.snapshot.queryParamMap.get('turmaId') ??
+        '',
+    },
+  );
+  protected readonly disciplinaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('disciplinaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('disciplinaId') ??
+        this.route.snapshot.queryParamMap.get('disciplinaId') ??
+        '',
+    },
+  );
 
   protected readonly periodos = PERIODOS_FILTRO_EVENTOS;
   protected readonly filtro = signal<FiltroEventos>(FILTRO_EVENTOS_PADRAO);

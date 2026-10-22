@@ -1840,3 +1840,64 @@ dados, a segurança e a facilidade de uso do professor são os critérios
 de sucesso. A gamificação deve enriquecer esse núcleo e poder ser
 ativada, configurada ou desativada sem afetar o funcionamento de
 frequência, notas e boletins.
+
+
+---
+
+## ADENDO DE PRODUTO — Experiência do professor por turma e disciplina (decisão aprovada)
+
+Este adendo complementa e prevalece sobre orientações anteriores de navegação do professor que possam sugerir selecionar uma disciplina antes de consultar a turma. **O fluxo preferido é abrir primeiro a turma em uma visão geral e, dentro dela, acessar a disciplina para executar tarefas pedagógicas.**
+
+### Modelo mental
+- **Turma** é o agrupamento acadêmico de alunos em um período letivo (ex.: 6º ano A). Não é uma disciplina.
+- **Disciplina ofertada** é uma matéria disponível naquela turma (ex.: Matemática, Português, História).
+- **Vínculo docente** associa `professorId + turmaId + disciplinaId` e determina em qual disciplina o professor pode operar em determinada turma.
+- **Matrícula** associa aluno à turma/período; não deve ser confundida com o vínculo docente.
+- Um professor pode ter vários vínculos, inclusive a mesma disciplina em várias turmas e, se a escola permitir, disciplinas diferentes na mesma turma.
+
+### Jornada obrigatória do professor
+1. Login → painel do professor.
+2. Painel mostra turmas vinculadas, disciplinas que leciona em cada uma, pendências e próximas aulas quando esses dados existirem.
+3. Selecionar uma turma → abrir o detalhe da turma na aba **Visão geral** por padrão.
+4. Na visão geral, consultar dados coletivos permitidos: identificação da turma, quantidade/lista de alunos, equipe docente, disciplinas ofertadas, agenda/comunicados gerais e indicadores agregados permitidos.
+5. A partir da turma, abrir **Disciplinas** e selecionar uma disciplina em que o professor tenha vínculo ativo.
+6. Abrir a área da disciplina, com ações e dados limitados ao vínculo selecionado: avaliações/notas, conteúdos, mural/publicações disciplinares e frequência quando a política escolar for por disciplina.
+7. Trocar de disciplina sem precisar sair da turma. O contexto atual deve permanecer explícito no cabeçalho.
+
+### Requisitos de UX
+- No detalhe da turma, apresentar navegação clara, por exemplo: **Visão geral | Disciplinas | Professores | Alunos | Mural | Agenda**. Adaptar os itens aos módulos já implementados; não criar páginas vazias apenas para cumprir a lista.
+- A área **Disciplinas** lista as disciplinas ofertadas e identifica quais são lecionadas pelo professor autenticado. Mostrar nome da disciplina e, quando útil, nome do docente responsável e quantidade de alunos.
+- Ao selecionar uma disciplina, mostrar breadcrumb/cabeçalho persistente como **Turmas / 6º ano A / Matemática** e um indicador **Minha disciplina**.
+- Dentro da disciplina, oferecer navegação contextual como **Visão geral | Notas e avaliações | Frequência | Mural | Conteúdos**, somente para funcionalidades existentes ou incluídas no escopo atual.
+- Nunca sugerir que o professor administra a turma inteira. A visão geral é primariamente de consulta; ações administrativas da turma (matrículas, configuração, atribuição de docentes) continuam restritas ao papel autorizado.
+- Não obrigar o professor a escolher uma disciplina antes de visualizar a turma. Se só houver uma disciplina vinculada, pode destacá-la como atalho, mas não eliminar a visão geral.
+- Em mobile, preservar o contexto e tornar a troca de turma/disciplina acessível sem sobrecarregar a tela.
+
+### Escopo dos dados e ações
+- A turma define o conjunto de alunos; o vínculo docente define a disciplina e o escopo de escrita do professor.
+- O professor só pode criar/editar avaliações, lançar notas e publicar conteúdos disciplinares na combinação turma-disciplina em que tem vínculo ativo.
+- Não conceder acesso às notas individuais de outras disciplinas só porque o professor vê um indicador consolidado.
+- Indicadores agregados de turma (ex.: média geral entre disciplinas) são somente leitura, devem ter fórmula e período explícitos e só podem ser mostrados se a política da instituição autorizar. Não expor valores individuais de outras disciplinas por meio de drill-down, exportação ou APIs.
+- Separar mural/comunicado geral da turma de publicação vinculada a uma disciplina. Um professor pode publicar no mural disciplinar apenas no escopo autorizado. A publicação geral da turma segue uma permissão própria, configurável pela instituição; não presumir que todo professor pode fazê-la.
+- Frequência pode ser global por aula ou por disciplina. Respeitar a configuração/política existente da instituição; não duplicar chamada geral por disciplina. Professor só registra frequência no escopo permitido.
+- Pontuação/gamificação deve respeitar as regras já existentes e o escopo de turma/aluno; não usar XP como nota acadêmica.
+
+### Segurança e estado de contexto
+- A seleção de turma/disciplina no frontend serve para navegação e UX, **não é mecanismo de segurança**.
+- Validar no serviço/repositório e no Supabase/RLS (ou política equivalente) instituição, papel, vínculo docente ativo, turma, disciplina e período letivo em toda leitura/escrita sensível.
+- Não confiar em `turmaId`/`disciplinaId` enviados pelo cliente sem autorização no servidor/banco.
+- Ao trocar de turma ou disciplina, limpar/recarregar dados dependentes para impedir que notas, alunos ou ações do contexto anterior apareçam momentaneamente ou sejam gravados no contexto errado.
+- Não inventar métricas nem mostrar `0` quando os dados estão ausentes; usar estado vazio/“Sem dados”.
+- Preservar os componentes e padrões já existentes quando possível. Antes de alterar esquema, rotas ou migrações, inspecionar o repositório e reutilizar os vínculos existentes.
+
+### Critérios de aceite
+1. Professor vê no painel somente turmas às quais possui vínculo docente ativo.
+2. Ao abrir uma turma, a primeira tela é a visão geral, não o formulário de notas de uma disciplina.
+3. A visão geral apresenta somente informações permitidas e diferencia claramente dados agregados de dados disciplinares.
+4. A lista de disciplinas mostra quais são acessíveis ao professor; disciplinas sem vínculo não permitem entrar em ferramentas de edição.
+5. Um professor vinculado a Matemática no 6º A e 7º B pode trabalhar em cada combinação sem misturar dados.
+6. Tentativas de consultar/alterar notas de outra disciplina são negadas também no backend/banco, não apenas ocultadas na UI.
+7. Trocar turma, disciplina ou período atualiza cabeçalho, listas, indicadores e formulários e não reaproveita estado incompatível.
+8. Dados ausentes geram estados vazios, não números artificiais.
+9. A experiência responsiva mantém visível o contexto `turma + disciplina`.
+10. Testes cobrem autorização permitida/negada, troca de contexto e isolamento entre disciplinas.

@@ -238,3 +238,36 @@
   acesso ficam indisponíveis (modo demo continua funcionando).
 - **UI Kit não extraído:** não cumpre ainda o critério de compilar isoladamente.
 - **Dados de demonstração** sintéticos; não usar com dados reais de pessoas.
+
+
+---
+
+## Nova tarefa de produto — Navegação docente por turma → visão geral → disciplina
+
+**Objetivo:** ajustar a experiência do professor sem refazer funcionalidades existentes desnecessariamente.
+
+### Escopo
+- [ ] Inspecionar telas, rotas, modelos, serviços, vínculos docentes e políticas RLS existentes.
+- [ ] Atualizar o painel do professor para listar turmas vinculadas e as disciplinas que ele leciona em cada uma.
+- [ ] Fazer o clique na turma abrir a visão geral da turma como padrão.
+- [ ] Na visão geral, apresentar dados coletivos autorizados, equipe docente, disciplinas ofertadas e indicadores agregados confiáveis.
+- [ ] Criar/ajustar a lista de disciplinas da turma, sinalizando as disciplinas acessíveis ao professor atual.
+- [ ] Criar/ajustar a área da disciplina com contexto persistente turma + disciplina e atalhos para funcionalidades já existentes.
+- [ ] Filtrar avaliações, notas, conteúdos, mural e frequência pelo contexto e pelas permissões efetivas.
+- [ ] Distinguir publicação geral da turma de publicação disciplinar.
+- [ ] Confirmar e documentar se a frequência é geral por aula ou por disciplina; respeitar a política atual sem duplicar registros.
+- [ ] Garantir autorização no Supabase/RLS para leitura/escrita, sem depender apenas da UI.
+- [ ] Implementar estados de carregamento, vazio e erro; nunca inventar métricas.
+- [ ] Testar troca de turma/disciplina/período, isolamento de dados e tentativas não autorizadas.
+- [ ] Atualizar a documentação técnica e a matriz de permissões após inspecionar o comportamento real.
+
+### Critérios de aceite
+1. Turma abre primeiro na visão geral.
+2. Professor só opera nas disciplinas vinculadas.
+3. Dados de disciplinas diferentes nunca se misturam após troca de contexto.
+4. Notas individuais de outras disciplinas não ficam acessíveis por indicadores, API ou exportação sem autorização.
+5. Frequência e mural respeitam suas regras de escopo.
+6. Mudanças reaproveitam a arquitetura atual e não alteram funcionalidades não relacionadas.
+7. Build e testes relevantes passam; falhas preexistentes são documentadas separadamente.
+
+**Instrução ao agente:** antes de codificar, comparar este adendo com o repositório real. Não presumir que a documentação descreve fielmente o estado atual. Apresentar um resumo curto dos componentes/serviços/tabelas/RLS que serão reutilizados; depois implementar em mudanças pequenas. Não fazer refatoração ampla nem criar modelos/tabelas duplicados sem justificativa.

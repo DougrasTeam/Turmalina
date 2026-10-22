@@ -63,8 +63,9 @@ export interface Equipe extends BaseEntity {
   /** Cor em hexadecimal usada como reforço visual. */
   cor: string;
   ativa: boolean;
-  /** Contexto da equipe: turma e período letivo. */
+  /** Contexto da equipe: turma, disciplina e período letivo. */
   turmaId: string;
+  disciplinaId: string | null;
   periodoLetivoId: string | null;
 }
 
@@ -74,6 +75,7 @@ export interface DadosEquipe {
   cor: string;
   ativa: boolean;
   turmaId: string;
+  disciplinaId: string | null;
   periodoLetivoId: string | null;
 }
 
@@ -135,11 +137,12 @@ export function validarEquipe(
     (equipe) =>
       equipe.id !== idAtual &&
       equipe.turmaId === dados.turmaId &&
+      (equipe.disciplinaId ?? '') === (dados.disciplinaId ?? '') &&
       equipe.periodoLetivoId === dados.periodoLetivoId &&
       equipe.nome.trim().toLowerCase() === nome.toLowerCase(),
   );
   if (nome && nomeDuplicado) {
-    erros.push('Já existe uma equipe com este nome nesta turma/período.');
+    erros.push('Já existe uma equipe com este nome neste contexto.');
   }
 
   return erros;

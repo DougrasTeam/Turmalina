@@ -465,3 +465,51 @@ npm test -- --watch=false --browsers=ChromeHeadless
   RF-017 e RF-020 prontas; RF-018, RF-019, RF-021 e RF-009 pendentes — ver
   `docs/backlog.md`).
 
+
+
+---
+
+## ADENDO ARQUITETURAL — Contexto de turma e disciplina do professor
+
+Este adendo registra a decisão de UX: o professor abre a turma primeiro em **Visão geral** e depois entra em uma disciplina. Ele complementa as seções existentes de RF-007/RF-008.
+
+### Separação de conceitos
+- `Turma`: grupo de alunos no período letivo.
+- `Matricula`: vínculo do aluno com turma/período.
+- `Disciplina`: catálogo de matéria.
+- Oferta de disciplina na turma: associação que indica quais matérias aquela turma possui.
+- `VinculoDocente`: associação explícita entre `professorId`, `turmaId` e `disciplinaId`, com status/vigência quando suportados. Deve ser a fonte para descobrir as turmas e disciplinas do professor.
+
+Não duplicar `professorIds` ou listas de disciplinas como fonte paralela de autorização se o repositório já possui entidade de vínculo. Inspecionar o modelo atual e definir uma fonte de verdade.
+
+### Composição de telas
+- **Painel do professor:** turmas vinculadas, disciplina(s) de cada turma e pendências calculadas a partir de dados reais.
+- **Detalhe da turma:** inicia na visão geral, com informações coletivas permitidas, equipe docente, alunos, disciplinas ofertadas e indicadores agregados permitidos.
+- **Lista de disciplinas da turma:** apresenta as disciplinas ofertadas e sinaliza quais possuem vínculo ativo com o professor atual.
+- **Área da disciplina:** recebe contexto de turma + disciplina e concentra operações acadêmicas da combinação autorizada.
+
+A tela pode usar rotas já existentes ou estado de navegação consistente; não criar rotas duplicadas sem necessidade. Seguir o padrão do repositório real. Não introduzir microfrontends, uma nova biblioteca de estado ou uma refatoração global só para implementar esta UX.
+
+### Contratos de autorização
+Toda operação sensível deve validar no serviço/backend/banco:
+`usuário autenticado + instituição ativa + papel + vínculo docente ativo + turma + disciplina + período letivo + permissão da operação`.
+
+A interface pode ocultar/desabilitar ações, mas isso é apenas UX. RLS/políticas devem impedir leitura ou escrita fora do escopo. Indicadores agregados não podem permitir recuperar notas individuais de outras disciplinas por detalhes, consultas auxiliares ou exportações.
+
+### Estado do contexto
+Ao mudar turma, disciplina ou período:
+- atualizar cabeçalho/breadcrumb;
+- recarregar os dados dependentes;
+- invalidar estado/cache incompatível;
+- cancelar ou ignorar respostas assíncronas antigas quando necessário;
+- validar novamente a autorização antes de gravar.
+
+Não presumir que `BehaviorSubject`, parâmetro de rota, localStorage ou estado do frontend protegem dados. Podem apoiar a navegação, nunca substituir autorização no servidor.
+
+### Frequência e mural
+- A frequência segue a política da instituição: geral por aula ou vinculada à disciplina. Não criar chamadas duplicadas.
+- Distinguir publicações gerais da turma de publicações disciplinares; aplicar permissões separadas.
+- Não alterar esquema/migrações antes de verificar tabelas, vínculos e RLS existentes. Preferir alterações incrementais e compatíveis.
+
+### Testes técnicos mínimos
+Cobrir professor autorizado e não autorizado para turma-disciplina; isolamento entre duas disciplinas da mesma turma; troca rápida de contexto; tentativa de escrita adulterando IDs no cliente; ausência de dados; e política de frequência/mural conforme configuração.

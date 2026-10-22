@@ -42,6 +42,59 @@ export const routes: Routes = [
       import('./features/turma/turma-detalhe/turma-detalhe.component').then((m) => m.TurmaDetalheComponent),
   },
   {
+    path: 'turmas/:id/disciplina/:disciplinaId',
+    title: 'Disciplina · Turmalina',
+    canActivate: equipeDocente,
+    loadComponent: () =>
+      import('./features/turma/turma-disciplina/turma-disciplina.component').then(
+        (m) => m.TurmaDisciplinaComponent,
+      ),
+    children: [
+      {
+        path: '',
+        title: 'Disciplina · Visao geral · Turmalina',
+        loadComponent: () =>
+          import(
+            './features/turma/turma-disciplina/visao-geral/turma-disciplina-visao-geral.component'
+          ).then((m) => m.TurmaDisciplinaVisaoGeralComponent),
+      },
+      {
+        path: 'frequencia',
+        title: 'Frequencia · Turmalina',
+        loadComponent: () =>
+          import('./features/frequencia/frequencias/frequencias.component').then((m) => m.FrequenciasComponent),
+      },
+      {
+        path: 'avaliacoes',
+        title: 'Avaliacoes e notas · Turmalina',
+        loadComponent: () =>
+          import('./features/avaliacao/avaliacoes/avaliacoes.component').then((m) => m.AvaliacoesComponent),
+      },
+      {
+        path: 'pontuar',
+        title: 'Pontuar · Turmalina',
+        loadComponent: () =>
+          import('./features/gamificacao/pontuar/pontuar.component').then((m) => m.PontuarComponent),
+      },
+      {
+        path: 'equipes',
+        title: 'Equipes · Turmalina',
+        loadComponent: () =>
+          import('./features/gamificacao/equipes/equipes.component').then((m) => m.EquipesComponent),
+      },
+      {
+        path: 'agenda',
+        title: 'Agenda · Turmalina',
+        loadComponent: () => import('./features/agenda/agenda/agenda.component').then((m) => m.AgendaComponent),
+      },
+      {
+        path: 'mural',
+        title: 'Mural · Turmalina',
+        loadComponent: () => import('./features/mural/mural/mural.component').then((m) => m.MuralComponent),
+      },
+    ],
+  },
+  {
     path: 'professores',
     title: 'Professores · Turmalina',
     canActivate: equipeDocente,

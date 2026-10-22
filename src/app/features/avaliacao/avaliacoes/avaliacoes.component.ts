@@ -1,7 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { map } from 'rxjs';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
+import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AvaliacoesService } from '../../../core/services/avaliacoes.service';
 import { DadosService } from '../../../core/services/dados.service';
@@ -54,19 +58,45 @@ function parseNota(texto: string): number | null {
 
 @Component({
   selector: 'app-avaliacoes',
-  imports: [ModalComponent, ConfirmarTextoComponent],
+  imports: [ModalComponent, ConfirmarTextoComponent, DisciplinaContextoBarComponent],
   templateUrl: './avaliacoes.component.html',
   styleUrl: './avaliacoes.component.scss',
 })
 export class AvaliacoesComponent {
-  protected readonly avaliacoes = inject(AvaliacoesService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly turmas = inject(TurmasService);
-  protected readonly alunos = inject(AlunosService);
   protected readonly disciplinas = inject(DisciplinasService);
+  protected readonly alunos = inject(AlunosService);
+  protected readonly avaliacoes = inject(AvaliacoesService);
   protected readonly periodos = inject(PeriodosLetivosService);
   protected readonly instituicao = inject(InstituicaoService);
   private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
+
+  private readonly routePai = this.route.parent;
+
+  protected readonly turmaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('id') ?? params.get('turmaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('id') ??
+        this.route.snapshot.queryParamMap.get('turmaId') ??
+        '',
+    },
+  );
+  protected readonly disciplinaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('disciplinaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('disciplinaId') ??
+        this.route.snapshot.queryParamMap.get('disciplinaId') ??
+        '',
+    },
+  );
 
   protected readonly statusOpcoes = STATUS_AVALIACAO;
 

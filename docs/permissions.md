@@ -111,3 +111,32 @@ Conforme a matriz da especificação (autorização no backend):
 
 A implementação real deve incluir testes de isolamento (ver cenários de
 segurança da especificação §15.2).
+
+
+---
+
+## Adendo — Matriz de escopo docente por turma e disciplina
+
+A matriz de rotas por papel existente deve ser complementada por autorização contextual. Ter papel `professor` não concede acesso a todas as turmas ou disciplinas.
+
+| Ação | Escopo | Regra para professor |
+|---|---|---|
+| Ver painel | Vínculos ativos do próprio professor | Permitido |
+| Abrir visão geral da turma | Turma vinculada | Permitido para dados gerais autorizados |
+| Ver equipe docente e disciplinas ofertadas | Turma vinculada | Consulta |
+| Ver lista de alunos | Turma vinculada | Consulta conforme política escolar |
+| Ver indicador agregado de desempenho | Turma/período | Somente se autorizado; sem revelar notas individuais de outras disciplinas |
+| Criar/editar avaliação | Turma + disciplina + período | Somente com vínculo docente ativo nessa combinação e período aberto |
+| Lançar/alterar notas | Avaliação + turma + disciplina + período | Somente com vínculo ativo e permissão operacional |
+| Publicar conteúdo ou mural disciplinar | Turma + disciplina | Somente na disciplina vinculada |
+| Publicar comunicado geral da turma | Turma | Exige permissão específica da instituição; não presumir por ser professor |
+| Registrar frequência | Aula/turma ou turma + disciplina | Conforme política escolar e vínculo/permissão |
+| Gerenciar matrícula, turma ou equipe docente | Instituição/turma | Negado por padrão; reservado à administração ou permissão explícita |
+| Consultar notas individuais de outra disciplina | Outra disciplina | Negado, salvo autorização institucional explícita |
+
+### Regras de implementação
+- Verificar autorização em todas as operações de leitura e escrita sensíveis, não só no guard/HTML.
+- A seleção de contexto no frontend não concede permissão.
+- IDs enviados pelo cliente devem ser validados contra instituição, vínculo docente, turma, disciplina e período.
+- As políticas RLS devem impedir acesso cruzado entre instituições e entre disciplinas quando aplicável.
+- Testar tentativas diretas via API/cliente, além de testar botões e rotas.

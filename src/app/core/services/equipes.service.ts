@@ -36,6 +36,7 @@ export class EquipesService {
     cor: '#2563EB',
     ativa: true,
     turmaId: '',
+    disciplinaId: null,
     periodoLetivoId: null,
   }));
   private readonly repoMembros: Repository<EquipeMembro> = inject(
@@ -93,9 +94,12 @@ export class EquipesService {
     return validarEquipe(dados, this._equipes(), idAtual);
   }
 
-  equipesDaTurma(turmaId: string, periodoLetivoId: string | null): Equipe[] {
+  equipesDaTurma(turmaId: string, periodoLetivoId: string | null, disciplinaId: string | null = null): Equipe[] {
     return this._equipes().filter(
-      (equipe) => equipe.turmaId === turmaId && equipe.periodoLetivoId === periodoLetivoId,
+      (equipe) =>
+        equipe.turmaId === turmaId &&
+        equipe.periodoLetivoId === periodoLetivoId &&
+        (disciplinaId ? equipe.disciplinaId === disciplinaId : equipe.disciplinaId === null || equipe.disciplinaId === undefined),
     );
   }
 
@@ -246,9 +250,9 @@ export class EquipesService {
   }
 
   /** Placar das equipes de uma turma/período, em ordem decrescente de XP. */
-  placar(turmaId: string, periodoLetivoId: string | null): LinhaPlacarEquipe[] {
+  placar(turmaId: string, periodoLetivoId: string | null, disciplinaId: string | null = null): LinhaPlacarEquipe[] {
     const criterio = this._criterioPlacar();
-    const equipes = this.equipesDaTurma(turmaId, periodoLetivoId);
+    const equipes = this.equipesDaTurma(turmaId, periodoLetivoId, disciplinaId);
     const xpPorAluno = this.mapaXpPorAluno(criterio, periodoLetivoId);
 
     const linhas = equipes.map((equipe) => {
@@ -348,6 +352,7 @@ export class EquipesService {
       cor: dados.cor.trim(),
       ativa: dados.ativa,
       turmaId: dados.turmaId.trim(),
+      disciplinaId: dados.disciplinaId || null,
       periodoLetivoId: dados.periodoLetivoId || null,
     };
   }

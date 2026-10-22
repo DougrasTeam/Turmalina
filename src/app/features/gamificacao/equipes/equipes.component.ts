@@ -1,4 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { map } from 'rxjs';
 
 import { Aluno, Turma } from '../../../core/models';
 import {
@@ -15,12 +18,14 @@ import {
 import { formatarDataHoraAuditoria } from '../../../core/models/auditoria.model';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { EquipesService } from '../../../core/services/equipes.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
 import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
+import { DisciplinaContextoBarComponent } from '../../../shared/disciplina-contexto-bar/disciplina-contexto-bar.component';
 
 const FORMULARIO_VAZIO: DadosEquipe = {
   nome: '',
@@ -28,22 +33,49 @@ const FORMULARIO_VAZIO: DadosEquipe = {
   cor: '#2563EB',
   ativa: true,
   turmaId: '',
+  disciplinaId: null,
   periodoLetivoId: null,
 };
 
 @Component({
   selector: 'app-equipes',
-  imports: [ModalComponent, ConfirmarTextoComponent],
+  imports: [ModalComponent, ConfirmarTextoComponent, DisciplinaContextoBarComponent],
   templateUrl: './equipes.component.html',
   styleUrl: './equipes.component.scss',
 })
 export class EquipesComponent {
+  private readonly route = inject(ActivatedRoute);
+  private readonly routePai = this.route.parent;
   protected readonly equipes = inject(EquipesService);
   protected readonly alunos = inject(AlunosService);
   protected readonly periodos = inject(PeriodosLetivosService);
   protected readonly turmas = inject(TurmasService);
+  protected readonly disciplinas = inject(DisciplinasService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
+
+  protected readonly turmaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('id') ?? params.get('turmaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('id') ??
+        this.route.snapshot.queryParamMap.get('turmaId') ??
+        '',
+    },
+  );
+  protected readonly disciplinaIdQuery = toSignal(
+    (this.routePai?.paramMap ?? this.route.queryParamMap).pipe(
+      map((params) => params.get('disciplinaId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.routePai?.snapshot.paramMap.get('disciplinaId') ??
+        this.route.snapshot.queryParamMap.get('disciplinaId') ??
+        '',
+    },
+  );
 
   protected readonly emojis = EMOJIS_EQUIPE;
   protected readonly cores = CORES_EQUIPE;
@@ -89,10 +121,19 @@ export class EquipesComponent {
   });
 
   protected readonly placar = computed<LinhaPlacarEquipe[]>(() => {
-    const turmaId = this.turmaEfetiva();
+    const turmaId = this.turmaIdQuery() || this.turmaEfetiva();
     if (!turmaId) return [];
     const periodo = this.periodoEfetivo() || null;
-    return this.equipes.placar(turmaId, periodo);
+    const disciplinaId = this.disciplinaIdQuery() || null;
+    return this.equipes.placar(turmaId, periodo, disciplinaId);
+  });
+
+  protected readonly equipesFiltradas = computed<Equipe[]>(() => {
+    const turmaId = this.turmaIdQuery() || this.turmaEfetiva();
+    if (!turmaId) return [];
+    const periodo = this.periodoEfetivo() || null;
+    const disciplinaId = this.disciplinaIdQuery() || null;
+    return this.equipes.equipesDaTurma(turmaId, periodo, disciplinaId);
   });
 
   protected readonly alunosDaTurma = computed<Aluno[]>(() => {
@@ -134,7 +175,7 @@ export class EquipesComponent {
   }
 
   protected abrirNovo(): void {
-    const turmaId = this.turmaEfetiva();
+    const turmaId = this.turmaIdQuery() || this.turmaEfetiva();
     if (!turmaId) {
       this.toast.mostrar('Selecione uma turma antes de criar equipes.', 'info');
       return;
@@ -143,6 +184,7 @@ export class EquipesComponent {
     this.formulario.set({
       ...FORMULARIO_VAZIO,
       turmaId,
+      disciplinaId: this.disciplinaIdQuery() || null,
       periodoLetivoId: this.periodoEfetivo() || null,
     });
     this.erros.set([]);
@@ -157,6 +199,7 @@ export class EquipesComponent {
       cor: equipe.cor,
       ativa: equipe.ativa,
       turmaId: equipe.turmaId,
+      disciplinaId: equipe.disciplinaId ?? null,
       periodoLetivoId: equipe.periodoLetivoId,
     });
     this.erros.set([]);

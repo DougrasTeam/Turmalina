@@ -176,3 +176,21 @@ Backend definitivo, provedor de autenticação, fórmula de média e escala,
 tratamento de faltas justificadas, política de edição após fechamento de
 período, política de ranking, regras de XP/moedas e tipos de recompensa. Adotar
 provisoriamente a alternativa mais segura e reversível, registrando em ADR.
+
+
+---
+
+## Adendo — Regras para visão geral da turma e operação por disciplina
+
+- A turma é um grupo de alunos; não equivale a uma disciplina.
+- A matrícula aluno-turma-período determina a composição da turma.
+- O vínculo professor-turma-disciplina determina o escopo de atuação pedagógica do professor.
+- O professor abre primeiro a visão geral da turma. Essa tela é principalmente de consulta e não concede, por si só, permissão administrativa sobre matrículas ou configurações.
+- O professor só pode operar em disciplinas ofertadas na turma para as quais possui vínculo docente ativo.
+- Avaliações e notas pertencem à combinação turma-disciplina-período; o professor só pode criar, editar ou lançar notas se estiver autorizado nessa combinação e o período permitir alterações.
+- Indicadores gerais (por exemplo, média geral da turma) são agregados e somente leitura, se autorizados pela política da instituição. Não permitem consultar notas individuais de disciplinas sem vínculo.
+- Mural deve distinguir publicação geral da turma e publicação de disciplina. O professor só publica no escopo permitido pela política de permissões; não presumir acesso geral para todos os professores.
+- Frequência segue a configuração escolar: geral por aula ou por disciplina. Uma chamada geral não deve ser duplicada para cada disciplina.
+- Mudanças de turma/disciplina/período devem atualizar os dados dependentes e impedir gravação no contexto anterior.
+- A autorização é validada no backend/banco (incluindo RLS quando aplicável), nunca apenas por controles de interface ou estado local.
+- Dados ausentes não equivalem a zero; indicadores devem usar “Sem dados”/estado vazio quando não houver base suficiente.
