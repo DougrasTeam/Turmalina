@@ -1,0 +1,104 @@
+<div class="contratar tl-ui">
+  <header class="contratar__cabecalho">
+    <div class="contratar__marca">
+      <span class="material-symbols-outlined" aria-hidden="true">diamond</span>
+      <div>
+        <strong>Turmalina</strong>
+        <span>Contratar plano</span>
+      </div>
+    </div>
+    <a class="btn btn-ghost" routerLink="/login">Já tenho conta</a>
+  </header>
+
+  @if (etapa() === 1) {
+    <main class="contratar__conteudo">
+      <section class="contratar__intro">
+        <h1>Escolha o plano ideal para sua escola</h1>
+        <p>Cadastre sua instituição e crie o primeiro acesso de administrador em poucos passos.</p>
+      </section>
+
+      @if (carregandoPlanos()) {
+        <section class="contratar__estado">
+          <span class="material-symbols-outlined" aria-hidden="true">progress_activity</span>
+          <p>Carregando planos…</p>
+        </section>
+      } @else if (planos().length === 0) {
+        <section class="contratar__estado">
+          <span class="material-symbols-outlined" aria-hidden="true">sell</span>
+          <p>Nenhum plano disponível no momento. Fale com a equipe Turmalina.</p>
+        </section>
+      } @else {
+        <section class="contratar__planos">
+          @for (plano of planos(); track plano.id) {
+            <article class="plano-card" [class.plano-card--destaque]="plano.id === 'plano-completo'">
+              @if (plano.id === 'plano-completo') {
+                <span class="plano-card__selo">Mais indicado</span>
+              }
+
+              <header class="plano-card__cabecalho">
+                <h2>{{ plano.nome }}</h2>
+                <p>{{ plano.descricao }}</p>
+                <strong class="plano-card__preco">{{ formatarPreco(plano.precoMensal) }}</strong>
+              </header>
+
+              <button class="btn btn-primary w-100" type="button" (click)="selecionarPlano(plano.id)">
+                Começar com este plano
+              </button>
+            </article>
+          }
+        </section>
+      }
+    </main>
+  } @else {
+    <main class="contratar__conteudo contratar__conteudo--etapa2">
+      <section class="contratar__intro contratar__intro--esquerda">
+        <button class="btn btn-ghost btn-sm" type="button" (click)="voltar()">
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+          Voltar para planos
+        </button>
+        <h1>Dados da escola e do administrador</h1>
+        @if (planoSelecionado(); as plano) {
+          <p>Plano selecionado: <strong>{{ plano.nome }}</strong></p>
+        }
+      </section>
+
+      <form class="contratar__form card" [formGroup]="formulario" (ngSubmit)="contratar()">
+        <section class="form__secao">
+          <h2>Escola</h2>
+          <label class="form__campo">
+            <span>Nome da instituição</span>
+            <input class="input" formControlName="nomeEscola" placeholder="Ex.: Colégio Exemplo" />
+          </label>
+        </section>
+
+        <section class="form__secao">
+          <h2>Administrador</h2>
+          <div class="form__grid">
+            <label class="form__campo">
+              <span>Nome completo</span>
+              <input class="input" formControlName="nomeAdmin" placeholder="Nome do responsável" />
+            </label>
+            <label class="form__campo">
+              <span>E-mail</span>
+              <input class="input" type="email" formControlName="emailAdmin" placeholder="adm@escola.com.br" />
+            </label>
+            <label class="form__campo form__campo--full">
+              <span>Senha</span>
+              <input class="input" type="password" formControlName="senhaAdmin" placeholder="Mínimo 6 caracteres" />
+            </label>
+          </div>
+        </section>
+
+        <footer class="form__rodape">
+          <button class="btn btn-primary" type="submit" [disabled]="enviando()">
+            @if (enviando()) {
+              Criando escola...
+            } @else {
+              Finalizar contratação
+            }
+          </button>
+        </footer>
+      </form>
+    </main>
+  }
+</div>

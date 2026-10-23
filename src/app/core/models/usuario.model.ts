@@ -11,6 +11,11 @@ export interface Usuario {
   papel: Papel;
   ativo: boolean;
   /**
+   * Identificador da instituição (escola) à qual o usuário pertence. Fica vazio
+   * para o `super_admin`, que é global e não está vinculado a uma escola.
+   */
+  institutionId: string;
+  /**
    * Quando verdadeiro, o usuário foi criado pelo painel administrativo com uma
    * senha provisória e precisa definir uma nova senha antes de usar o sistema.
    */

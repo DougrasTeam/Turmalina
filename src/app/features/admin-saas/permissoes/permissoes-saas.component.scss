@@ -1,0 +1,109 @@
+.page {
+  padding: 0 1.5rem 2rem;
+}
+
+.abas {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--tl-border, #e5e7eb);
+  margin-bottom: 1rem;
+}
+
+.aba {
+  padding: 0.6rem 1rem;
+  border: none;
+  background: none;
+  font-weight: 500;
+  color: var(--tl-text-muted, #6b7280);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+
+  &.aba--ativa {
+    color: var(--tl-primary, #2563eb);
+    border-bottom-color: var(--tl-primary, #2563eb);
+  }
+}
+
+.matriz {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.matriz__grupo {
+  border: 1px solid var(--tl-border, #e5e7eb);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.matriz__titulo {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  background-color: var(--tl-surface, #f6f7f9);
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+
+  & th,
+  & td {
+    padding: 0.6rem 1rem;
+    text-align: left;
+    border-top: 1px solid var(--tl-border, #e5e7eb);
+  }
+
+  & thead th {
+    border-top: none;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--tl-text-muted, #6b7280);
+    text-align: center;
+  }
+
+  & thead th:first-child {
+    text-align: left;
+  }
+}
+
+.tabela__celula {
+  text-align: center;
+}
+
+.matriz__nome {
+  display: block;
+  font-weight: 500;
+}
+
+.seletor-escola {
+  max-width: 360px;
+  margin-bottom: 1rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.flags {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.flag {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.flag__texto {
+  display: flex;
+  flex-direction: column;
+}

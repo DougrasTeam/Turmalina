@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 
 import { EMAIL_ALUNO_DEMO, EMAIL_PROFESSOR_DEMO } from '../auth/contas-demo';
 import { AlunosService } from './alunos.service';
+import { AuthService } from './auth.service';
 import { AvaliacoesService } from './avaliacoes.service';
 import { DisciplinasService } from './disciplinas.service';
 import { FrequenciasService } from './frequencias.service';
@@ -13,6 +14,7 @@ import { VinculosDocentesService } from './vinculos-docentes.service';
 import { Aluno, PeriodoLetivo, Professor, Turma, createId } from '../models';
 import { Disciplina } from '../models/disciplina.model';
 import { EtapaAvaliacao } from '../models/etapa-avaliacao.model';
+import { environment } from '../../../environments/environment';
 
 const NOME_PROFESSOR_DEMO = 'Bruno Professor';
 const NOME_ALUNO_DEMO = 'Carla Aluna';
@@ -35,6 +37,7 @@ const DISCIPLINAS_VINCULADAS = 2;
  */
 @Injectable({ providedIn: 'root' })
 export class DadosDemoService {
+  private readonly auth = inject(AuthService);
   private readonly professores = inject(ProfessoresService);
   private readonly alunos = inject(AlunosService);
   private readonly turmas = inject(TurmasService);
@@ -48,6 +51,18 @@ export class DadosDemoService {
   private emAndamento: Promise<void> | null = null;
 
   garantir(): Promise<void> {
+    // Com backend real, os dados de demonstração não devem ser recriados
+    // automaticamente: isso traria de volta registros que o usuário apagou.
+    if (environment.usarSupabaseDados) {
+      return Promise.resolve();
+    }
+
+    // O super_admin administra o SaaS e não participa dos dados acadêmicos
+    // de nenhuma escola — não há o que semear.
+    if (this.auth.papel() === 'super_admin') {
+      return Promise.resolve();
+    }
+
     if (!this.emAndamento) {
       this.emAndamento = this.semear().catch((erro) => {
         console.warn('[DadosDemo] Não foi possível preparar os dados de demonstração.', erro);

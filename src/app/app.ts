@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter } from 'rxjs';
 
 import { AuthService } from './core/services/auth.service';
+import { FuncionalidadesService } from './core/services/funcionalidades.service';
 import { Papel, rotuloPapel } from './core/models/papel.model';
 import { AlunosService } from './core/services/alunos.service';
 import { AvaliacoesService } from './core/services/avaliacoes.service';
@@ -22,13 +23,14 @@ import { TurmasService } from './core/services/turmas.service';
 import { VinculosDocentesService } from './core/services/vinculos-docentes.service';
 import { InstituicaoService } from './core/services/instituicao.service';
 import { PeriodosLetivosService } from './core/services/periodos-letivos.service';
-import { DadosDemoService } from './core/services/dados-demo.service';
 import { AuditoriaService } from './core/services/auditoria.service';
 
 interface ItemNav {
   path: string;
   label: string;
   icon: string;
+  /** Chave de funcionalidade que libera o item (ver catálogo do SaaS). */
+  funcionalidade: string;
 }
 
 interface SecaoNav {
@@ -37,50 +39,69 @@ interface SecaoNav {
 }
 
 const NAV_EQUIPE_PRINCIPAL: ItemNav[] = [
-  { path: '/dashboard', label: 'Painel', icon: 'dashboard' },
-  { path: '/turmas', label: 'Turmas', icon: 'school' },
-  { path: '/mural', label: 'Mural e recados', icon: 'campaign' },
+  { path: '/dashboard', label: 'Painel', icon: 'dashboard', funcionalidade: 'dashboard' },
+  { path: '/turmas', label: 'Turmas', icon: 'school', funcionalidade: 'turmas' },
+  { path: '/mural', label: 'Mural e recados', icon: 'campaign', funcionalidade: 'mural' },
 ];
 
 const NAV_GAMIFICACAO: ItemNav[] = [
-  { path: '/gamificacao/pontuar', label: 'Pontuar', icon: 'stars' },
-  { path: '/gamificacao/equipes', label: 'Equipes', icon: 'diversity_3' },
-  { path: '/gamificacao/acoes', label: 'Ações de XP', icon: 'military_tech' },
-  { path: '/gamificacao/conquistas', label: 'Conquistas', icon: 'workspace_premium' },
-  { path: '/gamificacao/moedas', label: 'Loja de moedas', icon: 'monetization_on' },
+  { path: '/gamificacao/pontuar', label: 'Pontuar', icon: 'stars', funcionalidade: 'gamificacao.pontuar' },
+  { path: '/gamificacao/equipes', label: 'Equipes', icon: 'diversity_3', funcionalidade: 'gamificacao.equipes' },
+  { path: '/gamificacao/acoes', label: 'Ações de XP', icon: 'military_tech', funcionalidade: 'gamificacao.acoes' },
+  {
+    path: '/gamificacao/conquistas',
+    label: 'Conquistas',
+    icon: 'workspace_premium',
+    funcionalidade: 'gamificacao.conquistas',
+  },
+  {
+    path: '/gamificacao/moedas',
+    label: 'Loja de moedas',
+    icon: 'monetization_on',
+    funcionalidade: 'gamificacao.moedas',
+  },
 ];
 
 const NAV_CONSULTA: ItemNav[] = [
-  { path: '/alunos', label: 'Alunos', icon: 'groups' },
-  { path: '/professores', label: 'Professores', icon: 'co_present' },
+  { path: '/alunos', label: 'Alunos', icon: 'groups', funcionalidade: 'alunos' },
+  { path: '/professores', label: 'Professores', icon: 'co_present', funcionalidade: 'professores' },
 ];
 
 const NAV_EQUIPE_MOBILE: ItemNav[] = [
-  { path: '/dashboard', label: 'Painel', icon: 'dashboard' },
-  { path: '/turmas', label: 'Turmas', icon: 'school' },
-  { path: '/gamificacao/pontuar', label: 'Pontuar', icon: 'stars' },
+  { path: '/dashboard', label: 'Painel', icon: 'dashboard', funcionalidade: 'dashboard' },
+  { path: '/turmas', label: 'Turmas', icon: 'school', funcionalidade: 'turmas' },
+  { path: '/gamificacao/pontuar', label: 'Pontuar', icon: 'stars', funcionalidade: 'gamificacao.pontuar' },
 ];
 
 const NAV_ADMIN: ItemNav[] = [
-  { path: '/instituicao', label: 'Instituição', icon: 'account_balance' },
-  { path: '/periodos-letivos', label: 'Períodos letivos', icon: 'calendar_month' },
-  { path: '/disciplinas', label: 'Disciplinas', icon: 'menu_book' },
-  { path: '/frequencia', label: 'Frequência', icon: 'fact_check' },
-  { path: '/avaliacoes', label: 'Avaliações', icon: 'grading' },
-  { path: '/agenda', label: 'Agenda', icon: 'event' },
-  { path: '/relatorios', label: 'Relatórios', icon: 'insights' },
-  { path: '/auditoria', label: 'Auditoria', icon: 'history' },
-  { path: '/reset-dados', label: 'Zona de perigo', icon: 'delete_forever' },
+  { path: '/instituicao', label: 'Instituição', icon: 'account_balance', funcionalidade: 'instituicao' },
+  {
+    path: '/periodos-letivos',
+    label: 'Períodos letivos',
+    icon: 'calendar_month',
+    funcionalidade: 'periodos-letivos',
+  },
+  { path: '/disciplinas', label: 'Disciplinas', icon: 'menu_book', funcionalidade: 'disciplinas' },
+  { path: '/frequencia', label: 'Frequência', icon: 'fact_check', funcionalidade: 'frequencia' },
+  { path: '/avaliacoes', label: 'Avaliações', icon: 'grading', funcionalidade: 'avaliacoes' },
+  { path: '/agenda', label: 'Agenda', icon: 'event', funcionalidade: 'agenda' },
+  { path: '/relatorios', label: 'Relatórios', icon: 'insights', funcionalidade: 'relatorios' },
+  { path: '/auditoria', label: 'Auditoria', icon: 'history', funcionalidade: 'auditoria' },
 ];
 
 const NAV_ALUNO: ItemNav[] = [
-  { path: '/aluno/inicio', label: 'Início', icon: 'home' },
-  { path: '/aluno/boletim', label: 'Boletim', icon: 'description' },
-  { path: '/aluno/mural', label: 'Mural', icon: 'campaign' },
-  { path: '/aluno/agenda', label: 'Agenda', icon: 'event' },
-  { path: '/aluno/gamificacao', label: 'Meu XP', icon: 'stars' },
-  { path: '/aluno/moedas', label: 'Moedas', icon: 'monetization_on' },
-  { path: '/aluno/conquistas', label: 'Álbum', icon: 'workspace_premium' },
+  { path: '/aluno/inicio', label: 'Início', icon: 'home', funcionalidade: 'aluno.inicio' },
+  { path: '/aluno/boletim', label: 'Boletim', icon: 'description', funcionalidade: 'aluno.boletim' },
+  { path: '/aluno/mural', label: 'Mural', icon: 'campaign', funcionalidade: 'aluno.mural' },
+  { path: '/aluno/agenda', label: 'Agenda', icon: 'event', funcionalidade: 'aluno.agenda' },
+  { path: '/aluno/gamificacao', label: 'Meu XP', icon: 'stars', funcionalidade: 'aluno.gamificacao' },
+  { path: '/aluno/moedas', label: 'Moedas', icon: 'monetization_on', funcionalidade: 'aluno.moedas' },
+  {
+    path: '/aluno/conquistas',
+    label: 'Álbum',
+    icon: 'workspace_premium',
+    funcionalidade: 'aluno.conquistas',
+  },
 ];
 
 @Component({
@@ -92,6 +113,7 @@ const NAV_ALUNO: ItemNav[] = [
 export class App {
   protected readonly toasts = inject(ToastService);
   protected readonly auth = inject(AuthService);
+  private readonly funcionalidades = inject(FuncionalidadesService);
 
   private readonly turmas = inject(TurmasService);
   private readonly professores = inject(ProfessoresService);
@@ -109,14 +131,18 @@ export class App {
   private readonly conquistas = inject(ConquistasService);
   private readonly equipes = inject(EquipesService);
   private readonly instituicao = inject(InstituicaoService);
-  private readonly dadosDemo = inject(DadosDemoService);
   private readonly auditoria = inject(AuditoriaService);
   private readonly router = inject(Router);
 
   private readonly urlAtual = signal(this.router.url);
 
+  /** Filtra os itens de menu pelas funcionalidades liberadas para o usuário. */
+  private filtrarItens(itens: readonly ItemNav[]): ItemNav[] {
+    return itens.filter((item) => this.funcionalidades.possui(item.funcionalidade));
+  }
+
   readonly primaryNav = computed<ItemNav[]>(() =>
-    this.auth.papel() === 'aluno' ? NAV_ALUNO : NAV_EQUIPE_PRINCIPAL,
+    this.auth.papel() === 'aluno' ? this.filtrarItens(NAV_ALUNO) : this.filtrarItens(NAV_EQUIPE_PRINCIPAL),
   );
 
   /** Seções do menu lateral para a equipe (administrador e professor). */
@@ -126,20 +152,20 @@ export class App {
     }
 
     const secoes: SecaoNav[] = [
-      { titulo: 'Principal', itens: NAV_EQUIPE_PRINCIPAL },
-      { titulo: 'Gerenciar gamificação', itens: NAV_GAMIFICACAO },
-      { titulo: 'Consulta', itens: NAV_CONSULTA },
+      { titulo: 'Principal', itens: this.filtrarItens(NAV_EQUIPE_PRINCIPAL) },
+      { titulo: 'Gerenciar gamificação', itens: this.filtrarItens(NAV_GAMIFICACAO) },
+      { titulo: 'Consulta', itens: this.filtrarItens(NAV_CONSULTA) },
     ];
 
     if (this.auth.temPapel('administrador')) {
-      secoes.push({ titulo: 'Administração', itens: NAV_ADMIN });
+      secoes.push({ titulo: 'Administração', itens: this.filtrarItens(NAV_ADMIN) });
     }
 
-    return secoes;
+    return secoes.filter((secao) => secao.itens.length > 0);
   });
 
   readonly mobileNav = computed<ItemNav[]>(() =>
-    this.auth.papel() === 'aluno' ? NAV_ALUNO : NAV_EQUIPE_MOBILE,
+    this.auth.papel() === 'aluno' ? this.filtrarItens(NAV_ALUNO) : this.filtrarItens(NAV_EQUIPE_MOBILE),
   );
 
   readonly sidebarOpen = signal(false);
@@ -163,7 +189,6 @@ export class App {
     { prefixo: '/gamificacao/equipes', titulo: 'Equipes' },
     { prefixo: '/gamificacao/moedas', titulo: 'Moedas virtuais' },
     { prefixo: '/auditoria', titulo: 'Auditoria' },
-    { prefixo: '/reset-dados', titulo: 'Zona de perigo' },
     { prefixo: '/boletim', titulo: 'Boletim' },
     { prefixo: '/aluno/boletim', titulo: 'Meu boletim' },
     { prefixo: '/aluno/mural', titulo: 'Meu mural' },
@@ -221,7 +246,15 @@ export class App {
     await this.auth.garantirSessaoCarregada();
     this.usuarioCarregadoId = usuarioId;
 
+    // O super_admin administra o SaaS: não carrega os dados acadêmicos de uma
+    // escola. O painel /admin carrega apenas o que precisa.
+    if (this.auth.papel() === 'super_admin') {
+      await this.funcionalidades.load();
+      return;
+    }
+
     await Promise.all([
+      this.funcionalidades.load(),
       this.turmas.load(),
       this.professores.load(),
       this.alunos.recarregar(),
@@ -240,7 +273,6 @@ export class App {
       this.equipes.load(),
       this.auditoria.carregar(),
     ]);
-    await this.dadosDemo.garantir();
     await this.garantirAlunoVinculado(usuarioId);
   }
 

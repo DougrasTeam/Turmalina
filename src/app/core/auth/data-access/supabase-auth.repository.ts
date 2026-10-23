@@ -40,13 +40,13 @@ export class SupabaseAuthRepository extends AuthRepository {
       throw new AutenticacaoErro(motivoDoErro(error));
     }
 
-    const perfil = await this.buscarPerfil();
-    if (perfil && !perfil.ativo) {
+    const perfil = await this.buscarPerfil(data.session.user.id);
+    if (perfil.encontrado && !perfil.perfil?.ativo) {
       await this.encerrarSessao();
       throw new AutenticacaoErro('usuario-inativo');
     }
 
-    return this.comPerfilMapeado(mapearSessaoSupabase(data.session), perfil);
+    return this.comPerfilMapeado(mapearSessaoSupabase(data.session), perfil.perfil);
   }
 
   async restaurarSessao(): Promise<Sessao | null> {
@@ -61,15 +61,16 @@ export class SupabaseAuthRepository extends AuthRepository {
       return null;
     }
 
-    const perfil = await this.buscarPerfil();
-    // Sem perfil, ou com perfil inativo, a conta foi removida/bloqueada: encerra
-    // a sessão para não manter o acesso após a exclusão do cadastro.
-    if (!perfil || !perfil.ativo) {
+    const perfil = await this.buscarPerfil(data.session.user.id);
+    // Só encerra a sessão quando a consulta funcionou e comprovou que o perfil
+    // não existe mais ou está inativo. Uma falha transitória na consulta não
+    // pode deslogar o usuário.
+    if (perfil.encontrado && (!perfil.perfil || !perfil.perfil.ativo)) {
       await this.encerrarSessao();
       return null;
     }
 
-    return this.comPerfilMapeado(mapearSessaoSupabase(data.session), perfil);
+    return this.comPerfilMapeado(mapearSessaoSupabase(data.session), perfil.perfil);
   }
 
   async encerrarSessao(): Promise<void> {
@@ -134,19 +135,30 @@ export class SupabaseAuthRepository extends AuthRepository {
     return { ...sessao, usuario: aplicarPerfilSupabase(sessao.usuario, perfil) };
   }
 
-  private async buscarPerfil(): Promise<Perfil | null> {
+  private async buscarPerfil(userId: string): Promise<ResultadoPerfil> {
     const cliente = await this.supabase.obterCliente();
     const { data, error } = await cliente
       .from('perfis')
       .select('user_id, institution_id, papel, nome, ativo, precisa_trocar_senha')
+      .eq('user_id', userId)
       .maybeSingle();
 
-    if (error || !data) {
-      return null;
+    if (error) {
+      return { encontrado: false, perfil: null };
     }
 
-    return mapearPerfilSupabase(data as unknown as LinhaPerfil);
+    if (!data) {
+      return { encontrado: true, perfil: null };
+    }
+
+    return { encontrado: true, perfil: mapearPerfilSupabase(data as unknown as LinhaPerfil) };
   }
+}
+
+interface ResultadoPerfil {
+  /** `true` quando a consulta foi concluída (mesmo que sem linha). */
+  encontrado: boolean;
+  perfil: Perfil | null;
 }
 
 function motivoDoErro(erro: AuthError | null): MotivoFalhaAutenticacao {

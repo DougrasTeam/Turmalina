@@ -38,11 +38,25 @@ export function aplicarPerfilSupabase(usuario: Usuario, perfil: Perfil | null): 
     return usuario;
   }
 
+  // O super_admin é global: não pertence a uma escola e não deve ter o
+  // institutionId sobrescrito pelo valor da tabela `perfis`.
+  if (perfil.papel === 'super_admin') {
+    return {
+      ...usuario,
+      papel: 'super_admin',
+      nome: perfil.nome.trim() !== '' ? perfil.nome : usuario.nome,
+      ativo: perfil.ativo,
+      institutionId: 'saas',
+      precisaTrocarSenha: perfil.precisaTrocarSenha,
+    };
+  }
+
   return {
     ...usuario,
     papel: perfil.papel,
     nome: perfil.nome.trim() !== '' ? perfil.nome : usuario.nome,
     ativo: perfil.ativo,
+    institutionId: perfil.institutionId,
     precisaTrocarSenha: perfil.precisaTrocarSenha,
   };
 }

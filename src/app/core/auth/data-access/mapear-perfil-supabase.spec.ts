@@ -46,6 +46,7 @@ describe('aplicarPerfilSupabase', () => {
     email: 'bruno@turmalina.com',
     papel: 'aluno',
     ativo: false,
+    institutionId: 'instituicao-padrao',
     precisaTrocarSenha: false,
   };
 
@@ -65,6 +66,7 @@ describe('aplicarPerfilSupabase', () => {
       email: 'bruno@turmalina.com',
       papel: 'professor',
       ativo: true,
+      institutionId: 'instituicao-padrao',
       precisaTrocarSenha: true,
     });
   });

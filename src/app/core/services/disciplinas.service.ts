@@ -11,6 +11,7 @@ import {
   validarDisciplina,
 } from '../models/disciplina.model';
 import { AuditoriaService } from './auditoria.service';
+import { environment } from '../../../environments/environment';
 
 const CARGA_HORARIA_PADRAO = 80;
 const MARCADOR_SEMENTE = 'turmalina.disciplinas.inicializado';
@@ -35,13 +36,21 @@ export class DisciplinasService {
   async load(): Promise<void> {
     if (this.carregado) return;
     const lista = await this.repo.list();
-    const jaInicializado = localStorage.getItem(MARCADOR_SEMENTE) === '1';
-    if (lista.length || jaInicializado) {
+
+    // Com backend real, os dados iniciais vêm das migrations. Semear no cliente
+    // recriaria registros que o usuário apagou.
+    if (environment.usarSupabaseDados) {
       this._disciplinas.set(this.ordenar(lista));
     } else {
-      this._disciplinas.set(await this.semear());
-      localStorage.setItem(MARCADOR_SEMENTE, '1');
+      const jaInicializado = localStorage.getItem(MARCADOR_SEMENTE) === '1';
+      if (lista.length || jaInicializado) {
+        this._disciplinas.set(this.ordenar(lista));
+      } else {
+        this._disciplinas.set(await this.semear());
+        localStorage.setItem(MARCADOR_SEMENTE, '1');
+      }
     }
+
     this.carregado = true;
   }
 

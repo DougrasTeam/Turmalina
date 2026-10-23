@@ -56,6 +56,10 @@ src/app/
     gamificacao/acoes-gamificacao/      Catálogo de ações de XP (admin)
     gamificacao/pontuar/                Pontuar alunos (equipe)
     aluno/gamificacao/                  XP/nível/histórico do aluno
+    admin-saas/layout/                  Shell do painel do SaaS (super_admin)
+    admin-saas/escolas/                 Escolas e planos (super_admin)
+    admin-saas/planos/                  Editor de planos e funcionalidades (super_admin)
+    admin-saas/permissoes/              Matriz por papel e flags por escola (super_admin)
   shared/
     modal/                Componente de modal reutilizável
   app.ts / app.html / app.scss   Shell (sidebar, topbar, bottom-nav, toasts)
@@ -80,8 +84,14 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 3. `papelGuard('administrador', 'professor')` restringe rotas da equipe docente;
    `papelGuard('aluno')` restringe a área do aluno.
 4. Login (`LoginComponent`) usa formulário reativo, trata erro de credenciais e
-   redireciona conforme o papel (`rotaInicialPorPapel`).
+   redireciona conforme o papel (`rotaInicialPorPapel`); o `super_admin` vai para
+   `/admin/escolas`.
 5. O shell (`App`) exibe/oculta a navegação conforme o papel e oferece logout.
+   Para o `super_admin`, o shell escolar não é renderizado: o painel
+   `/admin` tem layout próprio.
+- `funcionalidadeGuard(chave)` bloqueia rotas cuja funcionalidade não esteja
+  liberada (matriz do papel + flags da escola); `superAdminGuard` restringe o
+  painel do SaaS.
 
 > Autorização é **conveniência de UX**. A autorização real deve ser revalidada
 > no backend/banco.
@@ -497,6 +507,29 @@ Em ambiente sem Google Chrome, aponte o binário para o Microsoft Edge
 $env:CHROME_BIN = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 npm test -- --watch=false --browsers=ChromeHeadless
 ```
+
+## Painel do SaaS (`super_admin`)
+
+O administrador global do SaaS é um papel à parte (`super_admin`), sem vínculo
+com escola. Ele não enxerga o menu escolar: o `App` renderiza apenas o
+`router-outlet` e o painel fornece seu próprio layout
+(`features/admin-saas/layout/`).
+
+- **Modelos** (`core/models`): `funcionalidade.model.ts`, `plano.model.ts`,
+  `permissao.model.ts` e `escola.model.ts`.
+- **Serviços** (`core/services`): `funcionalidades.service.ts` (catálogo e
+  resolução do acesso efetivo), `planos.service.ts`, `permissoes.service.ts` e
+  `escolas-saas.service.ts`.
+- **Guards**: `funcionalidade.guard.ts` e `super-admin.guard.ts`.
+- **Telas**: `escolas/` (status e plano de cada escola), `planos/` (editor de
+  planos e funcionalidades incluídas) e `permissoes/` (matriz por papel e flags
+  por escola).
+
+Acesso efetivo de uma funcionalidade = permitida pelo papel **e** não bloqueada
+pela escola. Sem flag da escola, vale o padrão do papel (a escola só remove
+acesso). No Supabase, a estrutura e o RLS estão em
+`supabase/migrations/0015_saas_planos_permissoes.sql` e os dados iniciais em
+`0016_saas_dados_iniciais.sql`.
 
 ## Limitações conhecidas
 

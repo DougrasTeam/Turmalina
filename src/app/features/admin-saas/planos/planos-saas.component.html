@@ -1,0 +1,148 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Planos</h1>
+      <p class="tl-text-muted">
+        Planos comerciais do Turmalina. Defina o preço e quais funcionalidades cada plano inclui.
+      </p>
+    </div>
+
+    <button class="btn btn-primary" type="button" (click)="novo()">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span> Novo plano
+    </button>
+  </header>
+
+  @if (planos.planos().length === 0) {
+    <p class="tl-text-muted">Nenhum plano cadastrado.</p>
+  } @else {
+    <div class="planos">
+      @for (plano of planos.planos(); track plano.id) {
+        <article class="card plano">
+          <div class="plano__cabecalho">
+            <h2 class="plano__nome">{{ plano.nome }}</h2>
+            <span
+              class="badge"
+              [class.badge-success]="plano.ativo"
+              [class.badge-neutral]="!plano.ativo"
+            >
+              {{ plano.ativo ? 'Ativo' : 'Inativo' }}
+            </span>
+          </div>
+
+          <p class="tl-small tl-text-muted">{{ plano.descricao || 'Sem descrição.' }}</p>
+
+          <div class="plano__meta">
+            <strong>{{ formatarPreco(plano.precoMensal) }}/mês</strong>
+            <span class="tl-small tl-text-muted">
+              {{ contagem(plano) }} de {{ totalFuncionalidades() }} funcionalidades
+            </span>
+          </div>
+
+          <div class="plano__acoes">
+            <button class="btn btn-ghost" type="button" (click)="editar(plano)">
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+            </button>
+            <button class="btn btn-danger" type="button" (click)="remover(plano)">
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span> Remover
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+@if (editor(); as atual) {
+  <div class="modal-fundo" (click)="fechar()">
+    <div class="modal card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal__cabecalho">
+        <h2>{{ atual.id ? 'Editar plano' : 'Novo plano' }}</h2>
+        <button class="btn btn-ghost" type="button" aria-label="Fechar" (click)="fechar()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+
+      <div class="modal__corpo">
+        <div class="campos">
+          <label class="campo">
+            <span>Nome</span>
+            <input
+              class="input"
+              type="text"
+              [value]="atual.nome"
+              (input)="atualizarNome($any($event.target).value)"
+            />
+          </label>
+
+          <label class="campo">
+            <span>Preço mensal (R$)</span>
+            <input
+              class="input"
+              type="number"
+              min="0"
+              step="0.01"
+              [value]="atual.precoMensal"
+              (input)="atualizarPreco($any($event.target).value)"
+            />
+          </label>
+
+          <label class="campo campo--largo">
+            <span>Descrição</span>
+            <textarea
+              class="input"
+              rows="2"
+              [value]="atual.descricao"
+              (input)="atualizarDescricao($any($event.target).value)"
+            ></textarea>
+          </label>
+
+          <label class="chave">
+            <input
+              type="checkbox"
+              [checked]="atual.ativo"
+              (change)="atualizarAtivo($any($event.target).checked)"
+            />
+            Plano ativo
+          </label>
+        </div>
+
+        <h3 class="secao-titulo">Funcionalidades incluídas</h3>
+
+        <div class="grupos">
+          @for (grupo of grupos(); track grupo.grupo) {
+            <div class="grupo">
+              <label class="grupo__titulo chave">
+                <input
+                  type="checkbox"
+                  [checked]="grupoCompleto(grupo.itens)"
+                  (change)="alternarGrupo(grupo.itens)"
+                />
+                <strong>{{ grupo.label }}</strong>
+              </label>
+
+              <div class="grupo__itens">
+                @for (item of grupo.itens; track item.chave) {
+                  <label class="chave">
+                    <input
+                      type="checkbox"
+                      [checked]="estaIncluida(item.chave)"
+                      (change)="alternarFuncionalidade(item.chave)"
+                    />
+                    {{ item.nome }}
+                  </label>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <footer class="modal__rodape">
+        <button class="btn btn-ghost" type="button" (click)="fechar()">Cancelar</button>
+        <button class="btn btn-primary" type="button" [disabled]="salvando()" (click)="salvar()">
+          {{ salvando() ? 'Salvando…' : 'Salvar plano' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

@@ -3,8 +3,20 @@ import { Routes } from '@angular/router';
 import { autenticacaoGuard } from './core/auth/guards/autenticacao.guard';
 import { papelGuard } from './core/auth/guards/papel.guard';
 import { primeiroAcessoGuard } from './core/auth/guards/primeiro-acesso.guard';
+import { funcionalidadeGuard } from './core/auth/guards/funcionalidade.guard';
+import { superAdminGuard } from './core/auth/guards/super-admin.guard';
 
 const equipeDocente = [autenticacaoGuard, papelGuard('administrador', 'professor')];
+
+/** Combina a checagem de papel da equipe com a permissão da funcionalidade. */
+function rotaEquipe(funcionalidade: string) {
+  return [...equipeDocente, funcionalidadeGuard(funcionalidade)];
+}
+
+/** Rota administrativa restrita a administrador e à funcionalidade informada. */
+function rotaAdmin(funcionalidade: string) {
+  return [autenticacaoGuard, papelGuard('administrador'), funcionalidadeGuard(funcionalidade)];
+}
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -23,28 +35,36 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'contratar',
+    title: 'Contratar plano · Turmalina',
+    loadComponent: () =>
+      import('./features/onboarding/contratar/contratar-plano.component').then(
+        (m) => m.ContratarPlanoComponent,
+      ),
+  },
+  {
     path: 'dashboard',
     title: 'Painel · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('dashboard'),
     loadComponent: () => import('./features/dashboard/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
     path: 'turmas',
     title: 'Turmas · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('turmas'),
     loadComponent: () => import('./features/turma/turmas/turmas.component').then((m) => m.TurmasComponent),
   },
   {
     path: 'turmas/:id',
     title: 'Turma · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('turmas'),
     loadComponent: () =>
       import('./features/turma/turma-detalhe/turma-detalhe.component').then((m) => m.TurmaDetalheComponent),
   },
   {
     path: 'turmas/:id/disciplina/:disciplinaId',
     title: 'Disciplina · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('turmas'),
     loadComponent: () =>
       import('./features/turma/turma-disciplina/turma-disciplina.component').then(
         (m) => m.TurmaDisciplinaComponent,
@@ -97,38 +117,38 @@ export const routes: Routes = [
   {
     path: 'professores',
     title: 'Professores · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('professores'),
     loadComponent: () =>
       import('./features/professor/professores/professores.component').then((m) => m.ProfessoresComponent),
   },
   {
     path: 'alunos',
     title: 'Alunos — Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('alunos'),
     loadComponent: () => import('./features/aluno/alunos/alunos.component').then((m) => m.AlunosComponent),
   },
   {
     path: 'frequencia',
     title: 'Frequência · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('frequencia'),
     loadComponent: () => import('./features/frequencia/frequencias/frequencias.component').then((m) => m.FrequenciasComponent),
   },
   {
     path: 'avaliacoes',
     title: 'Avaliações e notas · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('avaliacoes'),
     loadComponent: () => import('./features/avaliacao/avaliacoes/avaliacoes.component').then((m) => m.AvaliacoesComponent),
   },
   {
     path: 'mural',
     title: 'Mural e recados · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('mural'),
     loadComponent: () => import('./features/mural/mural/mural.component').then((m) => m.MuralComponent),
   },
   {
     path: 'agenda',
     title: 'Agenda · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('agenda'),
     loadComponent: () => import('./features/agenda/agenda/agenda.component').then((m) => m.AgendaComponent),
   },
   {
@@ -167,14 +187,14 @@ export const routes: Routes = [
   {
     path: 'instituicao',
     title: 'Instituição · Turmalina',
-    canActivate: [autenticacaoGuard, papelGuard('administrador')],
+    canActivate: rotaAdmin('instituicao'),
     loadComponent: () =>
       import('./features/periodo-letivo/instituicao/instituicao.component').then((m) => m.InstituicaoComponent),
   },
   {
     path: 'periodos-letivos',
     title: 'Períodos letivos · Turmalina',
-    canActivate: [autenticacaoGuard, papelGuard('administrador')],
+    canActivate: rotaAdmin('periodos-letivos'),
     loadComponent: () =>
       import('./features/periodo-letivo/periodos-letivos/periodos-letivos.component').then(
         (m) => m.PeriodosLetivosComponent,
@@ -183,21 +203,21 @@ export const routes: Routes = [
   {
     path: 'disciplinas',
     title: 'Disciplinas · Turmalina',
-    canActivate: [autenticacaoGuard, papelGuard('administrador')],
+    canActivate: rotaAdmin('disciplinas'),
     loadComponent: () =>
       import('./features/disciplina/disciplinas/disciplinas.component').then((m) => m.DisciplinasComponent),
   },
   {
     path: 'relatorios',
     title: 'Relatórios · Turmalina',
-    canActivate: [autenticacaoGuard, papelGuard('administrador')],
+    canActivate: rotaAdmin('relatorios'),
     loadComponent: () =>
       import('./features/relatorios/relatorios/relatorios.component').then((m) => m.RelatoriosComponent),
   },
   {
     path: 'auditoria',
     title: 'Auditoria · Turmalina',
-    canActivate: [autenticacaoGuard, papelGuard('administrador')],
+    canActivate: rotaAdmin('auditoria'),
     loadComponent: () => import('./features/admin/auditoria/auditoria.component').then((m) => m.AuditoriaComponent),
   },
   {
@@ -210,14 +230,14 @@ export const routes: Routes = [
   {
     path: 'gamificacao/pontuar',
     title: 'Pontuar · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('gamificacao.pontuar'),
     loadComponent: () =>
       import('./features/gamificacao/pontuar/pontuar.component').then((m) => m.PontuarComponent),
   },
   {
     path: 'gamificacao/acoes',
     title: 'Ações de XP · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('gamificacao.acoes'),
     loadComponent: () =>
       import('./features/gamificacao/acoes-gamificacao/acoes-gamificacao.component').then(
         (m) => m.AcoesGamificacaoComponent,
@@ -226,7 +246,7 @@ export const routes: Routes = [
   {
     path: 'gamificacao/conquistas',
     title: 'Conquistas · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('gamificacao.conquistas'),
     loadComponent: () =>
       import('./features/gamificacao/conquistas/conquistas.component').then(
         (m) => m.ConquistasComponent,
@@ -235,14 +255,14 @@ export const routes: Routes = [
   {
     path: 'gamificacao/equipes',
     title: 'Equipes · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('gamificacao.equipes'),
     loadComponent: () =>
       import('./features/gamificacao/equipes/equipes.component').then((m) => m.EquipesComponent),
   },
   {
     path: 'gamificacao/moedas',
     title: 'Loja de moedas · Turmalina',
-    canActivate: equipeDocente,
+    canActivate: rotaEquipe('gamificacao.moedas'),
     loadComponent: () =>
       import('./features/gamificacao/moedas/moedas.component').then((m) => m.MoedasComponent),
   },
@@ -259,6 +279,42 @@ export const routes: Routes = [
     canActivate: [autenticacaoGuard, papelGuard('aluno')],
     loadComponent: () =>
       import('./features/aluno/conquistas/album-aluno.component').then((m) => m.AlbumAlunoComponent),
+  },
+  {
+    path: 'admin',
+    title: 'Administração · Turmalina',
+    canActivate: [autenticacaoGuard, superAdminGuard],
+    loadComponent: () =>
+      import('./features/admin-saas/layout/admin-saas-layout.component').then(
+        (m) => m.AdminSaasLayoutComponent,
+      ),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'escolas' },
+      {
+        path: 'escolas',
+        title: 'Escolas · Turmalina',
+        loadComponent: () =>
+          import('./features/admin-saas/escolas/escolas-saas.component').then(
+            (m) => m.EscolasSaasComponent,
+          ),
+      },
+      {
+        path: 'planos',
+        title: 'Planos · Turmalina',
+        loadComponent: () =>
+          import('./features/admin-saas/planos/planos-saas.component').then(
+            (m) => m.PlanosSaasComponent,
+          ),
+      },
+      {
+        path: 'permissoes',
+        title: 'Permissões · Turmalina',
+        loadComponent: () =>
+          import('./features/admin-saas/permissoes/permissoes-saas.component').then(
+            (m) => m.PermissoesSaasComponent,
+          ),
+      },
+    ],
   },
   { path: '**', redirectTo: 'dashboard' },
 ];

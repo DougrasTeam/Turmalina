@@ -3,6 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { PAPEIS, Papel } from '../../models/papel.model';
 import { Sessao } from '../../models/sessao.model';
 import { Usuario } from '../../models/usuario.model';
+import { INSTITUICAO_PADRAO_ID } from '../../services/tenant.service';
 import { PAPEL_POR_CONTA_DEMO } from '../contas-demo';
 
 const UMA_HORA_EM_MILISSEGUNDOS = 60 * 60 * 1000;
@@ -22,6 +23,7 @@ export function mapearUsuarioSupabase(usuario: User): Usuario {
     email: usuario.email ?? '',
     papel: papelDoUsuarioSupabase(usuario),
     ativo: usuarioSupabaseEstaAtivo(usuario),
+    institutionId: INSTITUICAO_PADRAO_ID,
     precisaTrocarSenha: false,
   };
 }

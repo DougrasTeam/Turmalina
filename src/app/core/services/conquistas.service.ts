@@ -14,6 +14,7 @@ import { criarChaveIdempotencia } from '../models/gamificacao.model';
 import { AlunosService } from './alunos.service';
 import { AuditoriaService } from './auditoria.service';
 import { GamificacaoService } from './gamificacao.service';
+import { environment } from '../../../environments/environment';
 
 const MARCADOR_SEMENTE = 'turmalina.conquistas.inicializado';
 
@@ -73,7 +74,7 @@ export class ConquistasService {
     ]);
 
     const jaInicializado = localStorage.getItem(MARCADOR_SEMENTE) === '1';
-    if (conquistas.length || jaInicializado) {
+    if (environment.usarSupabaseDados || conquistas.length || jaInicializado) {
       this._conquistas.set(this.ordenarConquistas(conquistas));
     } else {
       this._conquistas.set(await this.semearConquistas());

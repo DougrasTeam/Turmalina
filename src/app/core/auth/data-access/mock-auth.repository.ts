@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
 import { StorageService } from '../../services/storage.service';
+import { INSTITUICAO_PADRAO_ID } from '../../services/tenant.service';
 import { AutenticacaoErro } from '../../models/autenticacao-erro';
 import { Credenciais } from '../../models/credenciais.model';
 import { Sessao } from '../../models/sessao.model';
@@ -27,6 +28,7 @@ const USUARIOS_DEMO: readonly UsuarioDemo[] = [
     email: EMAIL_ADMIN_DEMO,
     papel: 'administrador',
     ativo: true,
+    institutionId: INSTITUICAO_PADRAO_ID,
     senha: SENHA_DEMO,
   },
   {
@@ -35,6 +37,7 @@ const USUARIOS_DEMO: readonly UsuarioDemo[] = [
     email: EMAIL_PROFESSOR_DEMO,
     papel: 'professor',
     ativo: true,
+    institutionId: INSTITUICAO_PADRAO_ID,
     senha: SENHA_DEMO,
   },
   {
@@ -43,6 +46,7 @@ const USUARIOS_DEMO: readonly UsuarioDemo[] = [
     email: EMAIL_ALUNO_DEMO,
     papel: 'aluno',
     ativo: true,
+    institutionId: INSTITUICAO_PADRAO_ID,
     senha: SENHA_DEMO,
   },
 ];
@@ -120,6 +124,7 @@ export class MockAuthRepository extends AuthRepository {
         email: usuarioDemo.email,
         papel: usuarioDemo.papel,
         ativo: usuarioDemo.ativo,
+        institutionId: INSTITUICAO_PADRAO_ID,
         precisaTrocarSenha: false,
       },
       expiraEm: new Date(Date.now() + DURACAO_SESSAO_MS).toISOString(),

@@ -12,6 +12,7 @@ const USUARIO: Usuario = {
   email: 'bruno@turmalina.com',
   papel: 'professor',
   ativo: true,
+  institutionId: 'instituicao-padrao',
   precisaTrocarSenha: true,
 };
 

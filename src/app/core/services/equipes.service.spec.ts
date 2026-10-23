@@ -25,6 +25,7 @@ const autor: Usuario = {
   email: 'ana@turmalina.com',
   papel: 'professor',
   ativo: true,
+  institutionId: 'instituicao-padrao',
   precisaTrocarSenha: false,
 };
 

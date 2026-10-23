@@ -17,6 +17,7 @@ import { AlunosService } from './alunos.service';
 import { AuditoriaService } from './auditoria.service';
 import { AuthService } from './auth.service';
 import { MoedasService } from './moedas.service';
+import { environment } from '../../../environments/environment';
 
 const MARCADOR_SEMENTE = 'turmalina.gamificacao.inicializado';
 
@@ -83,7 +84,7 @@ export class GamificacaoService {
 
     if (!podeAdministrarCatalogo) {
       this._acoes.set([]);
-    } else if (acoes.length || jaInicializado) {
+    } else if (environment.usarSupabaseDados || acoes.length || jaInicializado) {
       this._acoes.set(this.ordenarAcoes(acoes));
     } else {
       this._acoes.set(await this.semearAcoes());
