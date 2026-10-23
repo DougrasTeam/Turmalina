@@ -5,6 +5,7 @@ import { Credenciais } from '../models/credenciais.model';
 import { Papel } from '../models/papel.model';
 import { Sessao } from '../models/sessao.model';
 import { Usuario } from '../models/usuario.model';
+import { INSTITUICAO_PADRAO_ID, TenantService } from './tenant.service';
 
 /**
  * Serviço de autenticação e sessão.
@@ -13,6 +14,7 @@ import { Usuario } from '../models/usuario.model';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly repositorio = inject(AuthRepository);
+  private readonly tenant = inject(TenantService);
 
   private readonly _sessao = signal<Sessao | null>(null);
   private readonly _carregando = signal(true);
@@ -35,7 +37,7 @@ export class AuthService {
   private async restaurar(): Promise<void> {
     try {
       const sessao = await this.repositorio.restaurarSessao();
-      this._sessao.set(sessao);
+      this.aplicarSessao(sessao);
     } finally {
       this._carregando.set(false);
     }
@@ -44,7 +46,7 @@ export class AuthService {
   async entrar(credenciais: Credenciais): Promise<Usuario> {
     try {
       const sessao = await this.repositorio.autenticar(credenciais);
-      this._sessao.set(sessao);
+      this.aplicarSessao(sessao);
       return sessao.usuario;
     } finally {
       this._carregando.set(false);
@@ -53,7 +55,17 @@ export class AuthService {
 
   async sair(): Promise<void> {
     await this.repositorio.encerrarSessao();
-    this._sessao.set(null);
+    this.aplicarSessao(null);
+  }
+
+  /**
+   * Mantém o contexto de tenancy alinhado à sessão. É esse valor que os
+   * repositórios gravam em `institution_id`; se ele ficar no padrão, o RLS
+   * rejeita escritas de escolas criadas fora do seed.
+   */
+  private aplicarSessao(sessao: Sessao | null): void {
+    this._sessao.set(sessao);
+    this.tenant.definir(sessao?.usuario.institutionId ?? INSTITUICAO_PADRAO_ID);
   }
 
   /**

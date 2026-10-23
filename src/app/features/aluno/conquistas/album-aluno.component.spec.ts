@@ -84,6 +84,7 @@ describe('AlbumAlunoComponent', () => {
       email: 'adm@turmalina.com',
       papel: 'administrador',
       ativo: true,
+      institutionId: 'instituicao-padrao',
       precisaTrocarSenha: false,
     });
 

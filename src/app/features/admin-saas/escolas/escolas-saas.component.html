@@ -1,0 +1,82 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Escolas</h1>
+      <p class="tl-text-muted">
+        Escolas cadastradas no Turmalina. Veja o status e o plano contratado de cada uma.
+      </p>
+    </div>
+
+    <div class="resumo" role="status">
+      <span class="resumo__numero">{{ escolas.totalAtivas() }}</span>
+      <span class="tl-small tl-text-muted">escolas ativas</span>
+    </div>
+  </header>
+
+  <div class="barra">
+    <label class="chave">
+      <input type="checkbox" [checked]="apenasAtivas()" (change)="alternarAtivas()" />
+      Mostrar apenas ativas
+    </label>
+  </div>
+
+  @if (escolas.carregando()) {
+    <p class="tl-text-muted">Carregando escolas…</p>
+  } @else if (listaExibida().length === 0) {
+    <p class="tl-text-muted">Nenhuma escola encontrada.</p>
+  } @else {
+    <div class="escolas">
+      @for (escola of listaExibida(); track escola.id) {
+        <article class="card escola">
+          <div class="escola__cabecalho">
+            <div class="escola__identidade">
+              <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+              <div>
+                <h2 class="escola__nome">{{ escola.nome || 'Escola sem nome' }}</h2>
+                <span class="tl-small tl-text-muted">{{ escola.fusoHorario }}</span>
+              </div>
+            </div>
+
+            <span
+              class="badge"
+              [class.badge-success]="escola.status === 'ativa'"
+              [class.badge-neutral]="escola.status !== 'ativa'"
+            >
+              {{ escola.status === 'ativa' ? 'Ativa' : 'Inativa' }}
+            </span>
+          </div>
+
+          <div class="escola__plano">
+            <label class="campo">
+              <span class="tl-small tl-text-muted">Plano</span>
+              <select class="select" [value]="escola.planoId ?? ''" (change)="trocarPlano(escola, $event)">
+                <option value="">Sem plano</option>
+                @for (plano of planos.planos(); track plano.id) {
+                  <option [value]="plano.id">{{ plano.nome }}</option>
+                }
+              </select>
+            </label>
+
+            @if (planoDa(escola); as planoAtual) {
+              <div class="escola__detalhe">
+                <span class="badge badge-neutral">{{ planoAtual.nome }}</span>
+                <span class="tl-small tl-text-muted">
+                  {{ formatarPreco(planoAtual.precoMensal) }}/mês
+                </span>
+              </div>
+            }
+          </div>
+
+          <div class="escola__acoes">
+            <button class="btn btn-ghost" type="button" (click)="alternarStatus(escola)">
+              <span class="material-symbols-outlined" aria-hidden="true">
+                {{ escola.status === 'ativa' ? 'block' : 'check_circle' }}
+              </span>
+              {{ escola.status === 'ativa' ? 'Inativar' : 'Ativar' }}
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

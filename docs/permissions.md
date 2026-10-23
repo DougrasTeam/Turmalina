@@ -6,6 +6,7 @@
 
 ## Papéis
 
+- `super_admin` — administrador global do SaaS; não pertence a uma escola.
 - `administrador` — administrador da instituição.
 - `professor` — professor vinculado a turmas/disciplinas.
 - `aluno` — aluno (acesso apenas aos próprios dados).
@@ -108,6 +109,32 @@ Regras aplicadas:
   próprio aluno) e listas de alunos/turmas/professores e relatórios (equipe/admin,
   conforme a tela). Toda exportação de dados sensíveis registra evento de
   auditoria.
+
+## Painel do SaaS (`super_admin`)
+
+O papel global `super_admin` não pertence a uma escola: sua `institutionId` é uma
+sentinela e ele acessa apenas o painel `/admin`, com layout próprio (sem o
+menu escolar). As rotas são protegidas por `superAdminGuard`.
+
+- `/admin/escolas` — escolas cadastradas com status (ativa/inativa) e plano
+  contratado; o super admin ativa/inativa e troca o plano.
+- `/admin/planos` — editor de planos comerciais (nome, descrição, preço
+  mensal, ativo) e das funcionalidades incluídas em cada plano.
+- `/admin/permissoes` — duas abas: **Por papel** (matriz papel ×
+  funcionalidade, o que cada papel pode acessar) e **Por escola** (feature flags
+  que liberam/bloqueiam funcionalidades para uma escola).
+
+Persistência no Supabase: `funcionalidades`, `planos`, `planos_funcionalidades`,
+`permissoes_papel` e `escola_funcionalidades` (migração `0015`, com RLS; dados
+iniciais na `0016`, incluindo o plano padrão e a promoção do admin a
+`super_admin`).
+
+Regra de acesso efetivo de uma funcionalidade (menu, rotas e ações):
+
+`permitida pelo papel (permissoes_papel) E não bloqueada pela escola (escola_funcionalidades)`.
+
+A ausência de flag para a escola mantém o padrão do papel: a escola só **remove**
+acesso. O `super_admin` tem acesso total ao catálogo por definição.
 
 ### Isolamento por instituição (tenant)
 

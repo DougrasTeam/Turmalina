@@ -3,6 +3,8 @@
     <span class="material-symbols-outlined" aria-hidden="true">progress_activity</span>
     <span>Carregando…</span>
   </div>
+} @else if (auth.autenticado() && auth.papel() === 'super_admin') {
+  <router-outlet />
 } @else if (auth.autenticado()) {
   <div class="tl-app tl-ui" [class.tl-app--sidebar-open]="sidebarOpen()">
     <aside class="tl-sidebar">

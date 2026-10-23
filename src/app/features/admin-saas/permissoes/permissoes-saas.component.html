@@ -1,0 +1,124 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Permissões</h1>
+      <p class="tl-text-muted">
+        Controle o que cada papel acessa e quais funcionalidades cada escola pode usar.
+      </p>
+    </div>
+  </header>
+
+  <div class="abas" role="tablist">
+    <button
+      class="aba"
+      type="button"
+      role="tab"
+      [class.aba--ativa]="aba() === 'papeis'"
+      [attr.aria-selected]="aba() === 'papeis'"
+      (click)="selecionarAba('papeis')"
+    >
+      Por papel
+    </button>
+    <button
+      class="aba"
+      type="button"
+      role="tab"
+      [class.aba--ativa]="aba() === 'escolas'"
+      [attr.aria-selected]="aba() === 'escolas'"
+      (click)="selecionarAba('escolas')"
+    >
+      Por escola
+    </button>
+  </div>
+
+  @if (aba() === 'papeis') {
+    <p class="tl-small tl-text-muted">
+      Marque as funcionalidades que cada papel pode acessar. As escolas podem apenas
+      <strong>remover</strong> acesso; para conceder além do papel, ajuste a matriz.
+    </p>
+
+    <div class="matriz">
+      @for (grupo of grupos(); track grupo.grupo) {
+        <div class="matriz__grupo">
+          <h2 class="matriz__titulo">{{ grupo.label }}</h2>
+
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th scope="col">Funcionalidade</th>
+                @for (papel of papeis; track papel) {
+                  <th scope="col">{{ rotulo(papel) }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of grupo.itens; track item.chave) {
+                <tr>
+                  <th scope="row">
+                    <span class="matriz__nome">{{ item.nome }}</span>
+                    <span class="tl-small tl-text-muted">{{ item.descricao }}</span>
+                  </th>
+                  @for (papel of papeis; track papel) {
+                    <td class="tabela__celula">
+                      <input
+                        type="checkbox"
+                        [checked]="papelPossui(papel, item)"
+                        [attr.aria-label]="rotulo(papel) + ' · ' + item.nome"
+                        (change)="alternarPapel(papel, item)"
+                      />
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="seletor-escola">
+      <label class="campo">
+        <span class="tl-small tl-text-muted">Escola</span>
+        <select class="select" [value]="escolaSelecionadaId() ?? ''" (change)="selecionarEscola($event)">
+          <option value="">Selecione uma escola</option>
+          @for (escola of escolas.escolas(); track escola.id) {
+            <option [value]="escola.id">{{ escola.nome || 'Escola sem nome' }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @if (!escolaSelecionada()) {
+      <p class="tl-text-muted">Selecione uma escola para configurar as funcionalidades.</p>
+    } @else {
+      <p class="tl-small tl-text-muted">
+        Bloqueie funcionalidades específicas desta escola. O padrão segue o papel; a escola
+        não pode conceder acesso que o papel não tem.
+      </p>
+
+      <div class="matriz">
+        @for (grupo of grupos(); track grupo.grupo) {
+          <div class="matriz__grupo">
+            <h2 class="matriz__titulo">{{ grupo.label }}</h2>
+
+            <div class="flags">
+              @for (item of grupo.itens; track item.chave) {
+                <label class="flag">
+                  <input
+                    type="checkbox"
+                    [checked]="flagDaEscola(item) === true"
+                    (change)="alternarFlagEscola(item)"
+                  />
+                  <span class="flag__texto">
+                    <span class="matriz__nome">{{ item.nome }}</span>
+                    <span class="tl-small tl-text-muted">{{ rotuloEstadoFlag(item) }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

@@ -1,0 +1,53 @@
+<div class="saas tl-ui">
+  <aside class="saas__sidebar" [class.saas__sidebar--aberta]="sidebarOpen()">
+    <div class="saas__marca">
+      <span class="material-symbols-outlined" aria-hidden="true">tactic</span>
+      <div>
+        <strong>Turmalina</strong>
+        <span class="tl-small tl-text-muted">Administração do SaaS</span>
+      </div>
+    </div>
+
+    <nav class="saas__nav" aria-label="Navegação do SaaS">
+      @for (item of itens; track item.path) {
+        <a
+          class="saas__link"
+          [routerLink]="item.path"
+          routerLinkActive="saas__link--ativo"
+          (click)="closeSidebar()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="saas__rodape">
+      <div class="saas__usuario">
+        <span class="material-symbols-outlined" aria-hidden="true">shield_person</span>
+        <div>
+          <strong>{{ auth.usuario()?.nome }}</strong>
+          <span class="tl-small tl-text-muted">{{ auth.usuario()?.email }}</span>
+        </div>
+      </div>
+      <button class="btn btn-ghost" type="button" (click)="sair()">
+        <span class="material-symbols-outlined" aria-hidden="true">logout</span> Sair
+      </button>
+    </div>
+  </aside>
+
+  <main class="saas__conteudo">
+    <header class="saas__topo">
+      <button
+        class="btn btn-ghost saas__menu"
+        type="button"
+        aria-label="Abrir menu"
+        (click)="toggleSidebar()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+      </button>
+    </header>
+
+    <router-outlet />
+  </main>
+</div>

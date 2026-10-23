@@ -9,9 +9,14 @@
   — RF-027); **Fase 3 — Gamificação em andamento** com **RF-015 — Ações e XP**,
   **RF-016 — Moedas virtuais**, **RF-020 — Conquistas e álbum** e **RF-017 —
   Equipes** implementadas. Refinamentos de acessibilidade contínuos.
-- **Features recém-concluídas:** **RF-023 — Agenda** (US-014), **RF-027 —
-  Auditoria**, **RF-015 — Ações e XP**, **RF-016 — Moedas virtuais**,
-  **RF-020 — Conquistas e álbum** e **RF-017 — Equipes**. A RF-016 mantém o saldo de moedas como soma de
+- **Features recém-concluídas:** **Painel do SaaS (`super_admin`)**,
+  **RF-023 — Agenda** (US-014), **RF-027 — Auditoria**, **RF-015 — Ações e XP**,
+  **RF-016 — Moedas virtuais**, **RF-020 — Conquistas e álbum** e **RF-017 —
+  Equipes**. O painel do SaaS (`/admin`) é exclusivo do papel global
+  `super_admin` e tem layout próprio: **escolas** (status e plano), **planos**
+  (editor e funcionalidades incluídas) e **permissoes** (matriz papel ×
+  funcionalidade e flags por escola). Acesso efetivo = papel **e** escola.
+- **Moedas virtuais (RF-016):** mantém o saldo de moedas como soma de
   um **ledger imutável** de movimentações (`/gamificacao/moedas` para o
   administrador ajustar/estornar; `/aluno/moedas` mostra saldo e extrato do
   aluno), com **estorno auditado** em vez de exclusão. A RF-020 permite
@@ -35,7 +40,7 @@
 - Cadastros: turmas (lista, formulário, detalhe com membros), professores,
   alunos (cadastro, formulário, importação CSV com mapeamento de colunas).
 - Painel com indicadores básicos de cadastro.
-- **Autenticação e autorização reais (RF-001):** Supabase Auth (e-mail/senha;
+- **Painel do SaaS (`super_admin`):** layout próprio em `/admin` (escolas, planos, permissões). Matrizes papel×funcionalidade, flags por escola, serviços e guards. Migrations `0015`, `0016`. Acesso efetivo = papel **e** escola; `super_admin` tem acesso total.
   Google preparado), sessão restaurável, papéis a partir da tabela `perfis`
   (fonte autoritativa), guards de autenticação, de papel e de primeiro acesso,
   shell por papel e área do aluno. Sem senha/segredo no frontend.
@@ -47,7 +52,7 @@
   **encerramento da conta ao excluir o cadastro** (`acao: 'excluir-conta'`
   remove o usuário do Auth e o perfil). A sessão revalida o perfil ativo ao
   restaurar/entrar, e as funções de autorização do banco exigem perfil ativo
-  (`0014`).
+  (`0014`). Services e guards novos: `FuncionalidadesService`, `PlanosService`, `PermissoesService`, `EscolasSaasService`; `funcionalidadeGuard`, `superAdminGuard`. Rotas `/admin/*`, menu filtrado por funcionalidade, shell escolar oculto para `super_admin`.
 - **Backend real (ADR 0001): Supabase (Auth + Postgres).** Camada de dados com
   repositórios genéricos e de relacionamentos; `supabase/migrations/0001`
   (esquema + RLS), `0002` (dados iniciais), `0003` (primeiro acesso), `0004`

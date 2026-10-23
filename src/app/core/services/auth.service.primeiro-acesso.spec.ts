@@ -6,6 +6,7 @@ import { AuthRepository } from '../auth/data-access/auth.repository';
 import { Credenciais } from '../models/credenciais.model';
 import { Sessao } from '../models/sessao.model';
 import { Usuario } from '../models/usuario.model';
+import { TenantService } from './tenant.service';
 
 class AuthRepositoryStub extends AuthRepository {
   senhaAlterada: string | null = null;
@@ -46,6 +47,7 @@ class AuthRepositoryStub extends AuthRepository {
       email: 'bruno@turmalina.com',
       papel: 'professor',
       ativo: true,
+      institutionId: 'escola-nova',
       precisaTrocarSenha: true,
     };
 
@@ -77,6 +79,12 @@ describe('AuthService — primeiro acesso', () => {
     await servico.entrar({ email: 'bruno@turmalina.com', senha: 'provisoria' });
 
     expect(servico.precisaTrocarSenha()).toBeTrue();
+  });
+
+  it('aplica a instituição da sessão no contexto de tenancy', async () => {
+    await servico.entrar({ email: 'bruno@turmalina.com', senha: 'provisoria' });
+
+    expect(TestBed.inject(TenantService).atual()).toBe('escola-nova');
   });
 
   it('altera a senha, conclui o primeiro acesso e limpa a flag', async () => {

@@ -131,6 +131,7 @@ describe('mapearUsuarioSupabase', () => {
       email: EMAIL_PROFESSOR_DEMO,
       papel: 'professor',
       ativo: true,
+      institutionId: 'instituicao-padrao',
       precisaTrocarSenha: false,
     });
   });
