@@ -3,6 +3,8 @@
     <span class="material-symbols-outlined" aria-hidden="true">progress_activity</span>
     <span>Carregando…</span>
   </div>
+} @else if (auth.precisaSelecionarEscola()) {
+  <router-outlet />
 } @else if (auth.autenticado() && auth.papel() === 'super_admin') {
   <router-outlet />
 } @else if (auth.autenticado()) {
@@ -10,7 +12,7 @@
     <aside class="tl-sidebar">
       <div class="tl-brand">
         <span class="tl-brand__logo" aria-hidden="true">
-          <span class="material-symbols-outlined">diamond</span>
+          <img src="/favicon.ico" alt="" />
         </span>
         <div>
           <strong class="tl-brand__name">Turmalina</strong>
@@ -57,6 +59,25 @@
       </nav>
 
       <div class="tl-sidebar__footer">
+        @if (auth.escolaAtual(); as escola) {
+          <div class="tl-user">
+            <span class="tl-nav__icon" aria-hidden="true">
+              <span class="material-symbols-outlined">apartment</span>
+            </span>
+            <div class="tl-user__info">
+              <small class="tl-text-muted">Escola</small>
+              <strong>{{ escola.nome }}</strong>
+            </div>
+          </div>
+        }
+
+        @if (auth.instituicoes().length > 1) {
+          <button class="btn btn-sm btn-light btn-block" type="button" (click)="trocarEscola()">
+            <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span>
+            Trocar escola
+          </button>
+        }
+
         @if (auth.usuario(); as usuario) {
           <div class="tl-user">
             <span class="avatar" aria-hidden="true">{{ iniciais(usuario.nome) }}</span>

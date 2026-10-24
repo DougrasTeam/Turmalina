@@ -2,7 +2,7 @@
   <div class="login__card">
     <div class="login__brand">
       <span class="login__logo" aria-hidden="true">
-        <span class="material-symbols-outlined">diamond</span>
+        <img src="/favicon.ico" alt="" />
       </span>
       <div>
         <strong class="login__name">Turmalina</strong>
@@ -12,6 +12,16 @@
 
     <h1 class="login__title">Entrar</h1>
     <p class="tl-text-muted">Acesse com suas credenciais institucionais.</p>
+
+    @if (escolaContexto(); as escola) {
+      <div class="login__escola">
+        <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+        <div>
+          <strong>{{ escola.nome }}</strong>
+          <small class="tl-text-muted">Você está entrando pelo link desta escola.</small>
+        </div>
+      </div>
+    }
 
     @if (mensagemErro(); as erro) {
       <div class="alert alert-danger" role="alert">{{ erro }}</div>

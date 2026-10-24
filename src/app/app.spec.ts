@@ -18,12 +18,17 @@ const USUARIO_AUTENTICADO: Usuario = {
 
 const authAutenticado = {
   carregando: () => false,
+  sessao: () => ({ usuario: USUARIO_AUTENTICADO }),
   autenticado: () => true,
   papel: () => USUARIO_AUTENTICADO.papel,
   usuario: () => USUARIO_AUTENTICADO,
   temPapel: () => true,
+  instituicoes: () => [],
+  escolaAtual: () => null,
+  precisaSelecionarEscola: () => false,
   garantirSessaoCarregada: () => Promise.resolve(),
   sair: () => Promise.resolve(),
+  trocarEscola: () => Promise.resolve(),
 };
 
 describe('App', () => {

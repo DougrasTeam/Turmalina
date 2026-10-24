@@ -1,0 +1,69 @@
+<div class="tl-ui selecionar-escola">
+  <div class="selecionar-escola__card">
+    <div class="selecionar-escola__cabecalho">
+      <span class="selecionar-escola__logo" aria-hidden="true">
+        <img src="/favicon.ico" alt="" />
+      </span>
+      <div>
+        <strong class="selecionar-escola__marca">Turmalina</strong>
+        <small class="tl-text-muted">Gestão escolar gamificada</small>
+      </div>
+    </div>
+
+    <h1 class="selecionar-escola__titulo">Escolha a escola</h1>
+    <p class="tl-text-muted">
+      Sua conta está vinculada a mais de uma escola. Selecione com qual deseja
+      trabalhar agora.
+    </p>
+
+    @if (auth.usuario(); as usuario) {
+      <p class="selecionar-escola__usuario tl-small tl-text-muted">
+        {{ usuario.nome }} · {{ usuario.email }}
+      </p>
+    }
+
+    @if (escolas().length === 0) {
+      <p class="tl-text-muted">Nenhuma escola vinculada à sua conta.</p>
+    } @else {
+      <ul class="selecionar-escola__lista">
+        @for (escola of escolas(); track escola.institutionId) {
+          <li>
+            <button
+              class="selecionar-escola__escola"
+              type="button"
+              [disabled]="!podeSelecionar(escola)"
+              (click)="selecionar(escola)"
+            >
+              <span class="selecionar-escola__icone" aria-hidden="true">
+                <span class="material-symbols-outlined">apartment</span>
+              </span>
+
+              <span class="selecionar-escola__dados">
+                <strong>{{ escola.nome }}</strong>
+                <span class="tl-small tl-text-muted">
+                  {{ rotuloDoPapel(escola) }}
+                  @if (escola.slug) {
+                    · /e/{{ escola.slug }}
+                  }
+                </span>
+              </span>
+
+              @if (escola.status !== 'ativa') {
+                <span class="badge badge-neutral">Inativa</span>
+              } @else if (selecionandoId() === escola.institutionId) {
+                <span class="tl-small tl-text-muted">Entrando…</span>
+              } @else {
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    <button class="btn btn-light btn-block mt-3" type="button" (click)="sair()">
+      <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+      Sair
+    </button>
+  </div>
+</div>

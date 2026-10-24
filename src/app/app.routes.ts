@@ -5,6 +5,8 @@ import { papelGuard } from './core/auth/guards/papel.guard';
 import { primeiroAcessoGuard } from './core/auth/guards/primeiro-acesso.guard';
 import { funcionalidadeGuard } from './core/auth/guards/funcionalidade.guard';
 import { superAdminGuard } from './core/auth/guards/super-admin.guard';
+import { selecaoEscolaGuard } from './core/auth/guards/selecao-escola.guard';
+import { visitanteGuard } from './core/auth/guards/visitante.guard';
 
 const equipeDocente = [autenticacaoGuard, papelGuard('administrador', 'professor')];
 
@@ -26,6 +28,23 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'selecionar-escola',
+    title: 'Escolher escola · Turmalina',
+    canActivate: [selecaoEscolaGuard],
+    loadComponent: () =>
+      import('./features/auth/selecionar-escola/selecionar-escola.component').then(
+        (m) => m.SelecionarEscolaComponent,
+      ),
+  },
+  {
+    path: 'e/:slug',
+    title: 'Acesso à escola · Turmalina',
+    loadComponent: () =>
+      import('./features/auth/escola-publica/escola-publica.component').then(
+        (m) => m.EscolaPublicaComponent,
+      ),
+  },
+  {
     path: 'primeiro-acesso',
     title: 'Primeiro acesso · Turmalina',
     canActivate: [autenticacaoGuard, primeiroAcessoGuard],
@@ -37,6 +56,7 @@ export const routes: Routes = [
   {
     path: 'contratar',
     title: 'Contratar plano · Turmalina',
+    canActivate: [visitanteGuard],
     loadComponent: () =>
       import('./features/onboarding/contratar/contratar-plano.component').then(
         (m) => m.ContratarPlanoComponent,

@@ -76,7 +76,7 @@ export class EscolasSaasService {
   private async carregarEscolas(cliente: SupabaseClient): Promise<EscolaResumo[]> {
     const { data, error } = await cliente
       .from('instituicoes')
-      .select('id, nome, status, fuso_horario, plano_id, criado_em')
+      .select('id, nome, slug, status, fuso_horario, plano_id, criado_em')
       .order('nome');
     if (error) throw new Error(error.message);
     return paraCamelCaseLista<EscolaResumo>(data);

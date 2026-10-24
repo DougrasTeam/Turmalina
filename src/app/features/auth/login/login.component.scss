@@ -31,6 +31,13 @@
   border-radius: 1rem;
   background: linear-gradient(135deg, var(--tl-primary), #8b5cf6);
   color: #fff;
+
+  & img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 }
 
 .login__name {
@@ -47,6 +54,22 @@
 
 .login__erro {
   color: var(--tl-danger-dark) !important;
+}
+
+.login__escola {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 1rem 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px dashed var(--tl-border);
+  border-radius: var(--tl-radius);
+
+  & div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
 }
 
 .login__demo {

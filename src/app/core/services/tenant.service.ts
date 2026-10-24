@@ -21,10 +21,13 @@ export class TenantService {
     return this._institutionId();
   }
 
-  definir(institutionId: string): void {
-    const limpo = institutionId.trim();
-    if (limpo) {
-      this._institutionId.set(limpo);
-    }
+  /**
+   * Define a escola ativa. Um valor vazio (ex.: usuário multi-escola que ainda
+   * não escolheu) volta ao padrão, evitando que o tenant anterior vaze para a
+   * próxima sessão.
+   */
+  definir(institutionId: string | null): void {
+    const limpo = (institutionId ?? '').trim();
+    this._institutionId.set(limpo || INSTITUICAO_PADRAO_ID);
   }
 }

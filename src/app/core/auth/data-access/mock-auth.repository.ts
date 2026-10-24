@@ -115,6 +115,14 @@ export class MockAuthRepository extends AuthRepository {
     // Sem backend de autenticação no modo de demonstração.
   }
 
+  async selecionarInstituicao(_institutionId: string): Promise<void> {
+    // O modo de demonstração possui uma única escola.
+  }
+
+  async limparInstituicaoSelecionada(): Promise<void> {
+    // O modo de demonstração possui uma única escola.
+  }
+
   private criarSessao(usuarioDemo: UsuarioDemo): Sessao {
     return {
       token: `demo-${usuarioDemo.id}-${Date.now().toString(36)}`,

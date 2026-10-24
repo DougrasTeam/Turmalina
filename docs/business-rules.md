@@ -35,7 +35,18 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   preservando o passado (RN-003 — nunca excluir fisicamente).
 - **Isolamento por instituição (tenant-ready):** todo dado carrega
   `institutionId`; leituras são filtradas pela instituição ativa e escritas não
-  afetam outras instituições. No backend, reforçar com RLS (ver ADR 0005).
+  afetam outras instituições. Um usuário pode ter vínculos em **várias escolas**;
+  a escola ativa é escolhida no login (`/selecionar-escola`) ou trocada no shell,
+  e as funções `auth_*` no banco resolvem a escola ativa (migrations `0019` e
+  `0020`). O login e a seleção recusam escolas inativas; o RLS também bloqueia
+  seus dados para sessões já abertas. Sem escola ativa, com mais de um vínculo,
+  a RLS bloqueia os dados. Links públicos usam `/e/:slug`; o slug identifica o
+  contexto da escola, não autentica o usuário (ADR 0006).
+- **Contratação pública de plano:** em `/contratar`, a pessoa escolhe um plano
+  ativo e informa os dados da escola e do primeiro administrador. A Edge
+  Function valida o plano, cria escola, conta de Auth, vínculo de administrador
+  e funcionalidades associadas ao plano; em caso de erro, tenta remover os
+  registros criados. O fluxo não processa nem confirma pagamento.
 - **RF-010 (frequência):** a chamada registra turma, data e, opcionalmente,
   disciplina (nulo = frequência geral por aula). Estados: `presente`, `falta`,
   `falta_justificada`. Não há duas chamadas para o mesmo turma/data/disciplina

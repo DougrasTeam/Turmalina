@@ -266,6 +266,11 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.tl-ui .kpi-card__icon.material-symbols-outlined {
+  display: grid;
+  place-items: center;
+}
+
 // Tela de carregamento inicial (restauração de sessão)
 .tl-boot {
   min-height: 100dvh;
@@ -315,5 +320,4 @@
   font-size: 0.75rem;
   font-weight: 700;
 }
-
 

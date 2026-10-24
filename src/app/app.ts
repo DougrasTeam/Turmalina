@@ -204,7 +204,11 @@ export class App {
     return this.titulos.find((titulo) => url.startsWith(titulo.prefixo))?.titulo ?? 'Turmalina';
   });
 
-  private usuarioCarregadoId: string | null = null;
+  /**
+   * Chave `usuarioId:institutionId` já carregada. Inclui a escola para que a
+   * troca de escola recarregue os dados acadêmicos no novo tenant.
+   */
+  private chaveCarregada: string | null = null;
 
   constructor() {
     void this.auth.garantirSessaoCarregada();
@@ -223,8 +227,15 @@ export class App {
 
     effect(() => {
       const usuario = this.auth.usuario();
-      if (!usuario) return;
-      if (this.usuarioCarregadoId === usuario.id) return;
+      if (!usuario || this.auth.precisaSelecionarEscola()) {
+        this.chaveCarregada = null;
+        return;
+      }
+
+      const chave = `${usuario.id}:${usuario.institutionId}`;
+      if (this.chaveCarregada === chave) return;
+
+      this.chaveCarregada = chave;
       void this.carregarDados(usuario.id);
     });
 
@@ -244,7 +255,6 @@ export class App {
     // disponível ao cliente de dados; sem isso, o RLS poderia responder como
     // visitante e as listas chegariam vazias.
     await this.auth.garantirSessaoCarregada();
-    this.usuarioCarregadoId = usuarioId;
 
     // O super_admin administra o SaaS: não carrega os dados acadêmicos de uma
     // escola. O painel /admin carrega apenas o que precisa.
@@ -313,6 +323,17 @@ export class App {
     await this.auth.sair();
     this.closeSidebar();
     await this.router.navigateByUrl('/login');
+  }
+
+  /** Remove a seleção atual e leva o usuário à escolha de escola. */
+  async trocarEscola(): Promise<void> {
+    this.closeSidebar();
+    try {
+      await this.auth.trocarEscola();
+      await this.router.navigateByUrl('/selecionar-escola');
+    } catch {
+      await this.router.navigateByUrl('/login');
+    }
   }
 
   themeToggle(): void {
