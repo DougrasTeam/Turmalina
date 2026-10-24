@@ -133,6 +133,14 @@ export class AlunoFormComponent {
 
     try {
       const credenciais = await this.gestao.criarContaAluno(aluno.id, email, dados.nome);
+      if ('contaExistente' in credenciais) {
+        this.toast.mostrar(
+          'Conta existente vinculada a esta escola. O aluno deverá usar a senha que já possui.',
+          'info',
+        );
+        return;
+      }
+
       this.credenciais.set(credenciais);
     } catch (erro) {
       this.toast.mostrar(

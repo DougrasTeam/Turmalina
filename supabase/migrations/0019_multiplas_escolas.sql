@@ -242,17 +242,17 @@ as $$
   select case
     when exists (
       select 1
-      from public.perfis
-      where user_id = auth.uid()
-        and ativo
-        and papel = 'super_admin'
+      from public.perfis as perfil
+      where perfil.user_id = auth.uid()
+        and perfil.ativo
+        and perfil.papel = 'super_admin'
     ) then 'super_admin'
     else (
-      select papel
-      from public.perfis
-      where user_id = auth.uid()
-        and ativo
-        and institution_id = public.auth_institution()
+      select perfil.papel
+      from public.perfis as perfil
+      where perfil.user_id = auth.uid()
+        and perfil.ativo
+        and perfil.institution_id = public.auth_institution()
       limit 1
     )
   end;
@@ -341,9 +341,9 @@ begin
   if exists (
     select 1
     from public.perfis
-    where user_id = auth.uid()
-      and ativo
-      and papel = 'super_admin'
+    where perfis.user_id = auth.uid()
+      and perfis.ativo
+      and perfis.papel = 'super_admin'
   ) then
     return query
       select
@@ -353,11 +353,11 @@ begin
         'super_admin'::text,
         coalesce(
           (
-            select nome
-            from public.perfis
-            where user_id = auth.uid()
-              and ativo
-              and papel = 'super_admin'
+            select perfil.nome
+            from public.perfis as perfil
+            where perfil.user_id = auth.uid()
+              and perfil.ativo
+              and perfil.papel = 'super_admin'
             limit 1
           ),
           'Administrador SaaS'

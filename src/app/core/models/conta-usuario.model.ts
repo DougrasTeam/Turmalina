@@ -23,3 +23,12 @@ export interface CredenciaisContaUsuario {
   email: string;
   senha: string;
 }
+
+/** Resultado quando uma conta Auth existente é vinculada a uma nova escola. */
+export interface ContaUsuarioExistente {
+  userId: string;
+  email: string;
+  contaExistente: true;
+}
+
+export type ResultadoCriacaoContaUsuario = CredenciaisContaUsuario | ContaUsuarioExistente;

@@ -266,10 +266,12 @@
   aluno) seguem em `core/models/index.ts`; os mais novos já vivem em arquivos
   próprios (`disciplina.model.ts`, `vinculo-docente.model.ts`,
   `periodo-letivo.model.ts`, etc.). Migrar os restantes ao mesmo padrão.
-- **Validação e estado de deploy do Supabase:** migrations `0019` e `0020`
+- **Validação e estado de deploy do Supabase:** migrations `0019` a `0023`
   implementam vínculos multi-escola e bloqueio de escolas inativas via
-  `auth_institution()`. Aplicar na ordem no projeto Supabase e validar troca de
-  escola, inativação durante sessão aberta e isolamento entre tenants. O
+  `auth_institution()`, correção da RPC `minhas_instituicoes` e unicidade de
+  vínculos perfil/escola e vínculos acadêmicos por escola. Aplicar na ordem no
+  projeto Supabase e validar troca de escola, inativação durante sessão aberta
+  e isolamento entre tenants. O
   frontend ainda usa autenticação legada de perfil único até aplicar a 0019.
   Publicação das Edge Functions `admin-usuarios` e `contratar-plano` também
   depende de configuração/deploy manual no Supabase; sem isso, criação de

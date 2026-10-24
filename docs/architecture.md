@@ -119,7 +119,10 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   confirma uma cobrança.
 - Para ativar o fluxo em um ambiente, é necessário configurar/deployar a Edge
   Function e aplicar as migrations SaaS e tenancy correspondentes, incluindo
-  `0019_multiplas_escolas.sql` e `0020_bloquear_escolas_inativas.sql`.
+  `0019_multiplas_escolas.sql`, `0020_bloquear_escolas_inativas.sql`,
+  `0021_corrigir_rpc_minhas_instituicoes.sql` e
+  `0022_indice_unico_perfis_por_escola.sql` e
+  `0023_vinculos_academicos_por_escola.sql`.
 
 ## Configuração acadêmica (RF-002)
 
@@ -588,7 +591,12 @@ acesso). No Supabase, a estrutura e o RLS estão em
 - O modo demo (mock/localStorage) continua disponível; o Supabase é o backend
   real. O fluxo multi-escola e o bloqueio de escolas inativas só ficam ativos
   após aplicar `0019_multiplas_escolas.sql` e, em seguida,
-  `0020_bloquear_escolas_inativas.sql` no projeto Supabase usado pela aplicação.
+  `0020_bloquear_escolas_inativas.sql`,
+  `0021_corrigir_rpc_minhas_instituicoes.sql` e
+  `0022_indice_unico_perfis_por_escola.sql` e
+  `0023_vinculos_academicos_por_escola.sql` no projeto Supabase usado pela
+  aplicação. A função `admin-usuarios` reutiliza a conta Auth quando o e-mail
+  já pertence a um usuário vinculado a outra escola, sem redefinir a senha.
 - UI Kit ainda **não** é uma biblioteca separada (ver ADR 0004).
 - `Repository<T>` é genérico e síncrono por natureza do mock; operações
   atômicas/transacionais (moedas, resgates) não existem ainda.
