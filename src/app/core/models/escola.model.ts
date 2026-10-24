@@ -7,6 +7,8 @@ import { StatusInstituicao } from './instituicao.model';
 export interface EscolaResumo {
   id: string;
   nome: string;
+  /** Slug público usado no link de acesso `/e/:slug`. */
+  slug: string | null;
   status: StatusInstituicao;
   fusoHorario: string;
   planoId: string | null;

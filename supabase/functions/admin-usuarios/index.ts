@@ -5,25 +5,25 @@
 //
 // Por que uma Edge Function: criar usuários exige a chave `service_role`, que
 // nunca pode ir para o frontend. Esta função roda no servidor com essa chave e
-// só executa a ação após confirmar que quem chamou é um administrador.
+// só executa a ação após confirmar que quem chamou é administrador da escola
+// ativa no token.
 //
 // Ações aceitas (campo `acao` no corpo JSON):
 //   - criar:          { email, nome, papel, referencia? }
-//                     Cria a conta, grava o perfil e vincula um registro de
-//                     domínio (professor/aluno) via `referencia`.
+//                     Cria a conta, grava o perfil na escola do administrador e
+//                     vincula um registro de domínio (professor/aluno).
 //   - redefinir-senha: { userId }
 //                     Gera uma nova senha para a conta informada.
 //   - excluir-conta:  { userId }
-//                     Remove a conta de acesso e o perfil, encerrando o acesso
-//                     imediatamente. Usado ao excluir o cadastro do usuário.
+//                     Remove o vínculo (perfil) do usuário com a escola do
+//                     administrador. A conta de Auth só é apagada quando o
+//                     usuário não possui outros vínculos.
 //
 // Resposta (sucesso): { userId, email, senha }
 // Resposta (erro):    { erro } com status HTTP adequado.
 //
-// O papel e a flag de primeiro acesso vivem em `public.perfis` (ver 0003).
-// A lista de papéis aceitos abaixo é o ponto de extensão para novos cargos
-// (diretor, coordenação, secretaria...). O frontend restringe a hierarquia
-// hoje a `administrador`, `professor` e `aluno`.
+// Com múltiplas escolas por usuário, o perfil é identificado por
+// `(user_id, institution_id)` (ver migration 0019).
 // =============================================================================
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -47,6 +47,12 @@ interface CorpoRequisicao {
   papel?: string;
   referencia?: ReferenciaAcademica;
   userId?: string;
+}
+
+interface AdministradorAutenticado {
+  userId: string;
+  /** Escola ativa no contexto do token (ver `auth_institution()`). */
+  institutionId: string;
 }
 
 const CABECALHOS_CORS = {
@@ -95,15 +101,15 @@ function ehTabelaReferencia(tabela: string): tabela is TabelaReferencia {
 }
 
 /**
- * Confirma que o chamador está autenticado e é administrador.
- * Usa um cliente com o token do próprio usuário para respeitar as políticas
- * de RLS ao ler `perfis`.
+ * Confirma que o chamador está autenticado e é administrador da escola ativa.
+ * Usa um cliente com o token do próprio usuário para respeitar as políticas de
+ * RLS e a escola selecionada no login (multi-escola).
  */
 async function verificarAdministrador(
   url: string,
   anonKey: string,
   authorization: string | null,
-): Promise<string | null> {
+): Promise<AdministradorAutenticado | null> {
   if (!authorization) {
     return null;
   }
@@ -117,20 +123,33 @@ async function verificarAdministrador(
     return null;
   }
 
+  const { data: institutionId, error: erroInstituicao } =
+    await clienteDoChamador.rpc('auth_institution');
+
+  if (erroInstituicao || typeof institutionId !== 'string' || !institutionId) {
+    return null;
+  }
+
   const { data: perfil, error: erroPerfil } = await clienteDoChamador
     .from('perfis')
     .select('papel')
     .eq('user_id', dadosUsuario.user.id)
+    .eq('institution_id', institutionId)
+    .eq('ativo', true)
     .maybeSingle();
 
   if (erroPerfil || perfil?.papel !== PAPEL_ADMINISTRADOR) {
     return null;
   }
 
-  return dadosUsuario.user.id;
+  return { userId: dadosUsuario.user.id, institutionId };
 }
 
-async function criarConta(admin: SupabaseClient, corpo: CorpoRequisicao): Promise<Response> {
+async function criarConta(
+  admin: SupabaseClient,
+  corpo: CorpoRequisicao,
+  institutionId: string,
+): Promise<Response> {
   const email = (corpo.email ?? '').trim().toLowerCase();
   const nome = (corpo.nome ?? '').trim();
   const papel = corpo.papel ?? '';
@@ -162,12 +181,13 @@ async function criarConta(admin: SupabaseClient, corpo: CorpoRequisicao): Promis
   const { error: erroPerfil } = await admin.from('perfis').upsert(
     {
       user_id: criado.user.id,
+      institution_id: institutionId,
       papel,
       nome,
       ativo: true,
       precisa_trocar_senha: true,
     },
-    { onConflict: 'user_id' },
+    { onConflict: 'user_id,institution_id' },
   );
 
   if (erroPerfil) {
@@ -180,7 +200,8 @@ async function criarConta(admin: SupabaseClient, corpo: CorpoRequisicao): Promis
     const { error: erroVinculo } = await admin
       .from(referencia.tabela)
       .update({ user_id: criado.user.id })
-      .eq('id', referencia.id);
+      .eq('id', referencia.id)
+      .eq('institution_id', institutionId);
 
     if (erroVinculo) {
       return respostaErro('Conta criada, mas não foi possível vincular ao cadastro.', 500);
@@ -190,7 +211,11 @@ async function criarConta(admin: SupabaseClient, corpo: CorpoRequisicao): Promis
   return respostaJson({ userId: criado.user.id, email, senha });
 }
 
-async function redefinirSenha(admin: SupabaseClient, corpo: CorpoRequisicao): Promise<Response> {
+async function redefinirSenha(
+  admin: SupabaseClient,
+  corpo: CorpoRequisicao,
+  institutionId: string,
+): Promise<Response> {
   const userId = (corpo.userId ?? '').trim();
   if (!userId) {
     return respostaErro('Informe o usuário.');
@@ -207,25 +232,50 @@ async function redefinirSenha(admin: SupabaseClient, corpo: CorpoRequisicao): Pr
     return respostaErro(erroAtualizacao?.message ?? 'Não foi possível redefinir a senha.', 400);
   }
 
-  await admin.from('perfis').update({ precisa_trocar_senha: true }).eq('user_id', userId);
+  await admin
+    .from('perfis')
+    .update({ precisa_trocar_senha: true })
+    .eq('user_id', userId)
+    .eq('institution_id', institutionId);
 
   return respostaJson({ userId, email: atualizado.user.email ?? '', senha });
 }
 
 /**
- * Remove a conta de acesso e o perfil associado.
+ * Remove o vínculo do usuário com a escola do administrador.
  *
- * É a garantia de que a exclusão do cadastro encerra o acesso: sem a conta de
- * Auth o usuário não consegue mais autenticar, e a remoção do perfil o exclui
- * das políticas de RLS. Idempotente: contas já removidas não geram erro.
+ * A conta de Auth só é apagada quando o usuário não pertence a nenhuma outra
+ * escola. Assim a exclusão de um cadastro encerra o acesso àquela escola sem
+ * derrubar vínculos legítimos em outras. Idempotente.
  */
-async function excluirConta(admin: SupabaseClient, corpo: CorpoRequisicao): Promise<Response> {
+async function excluirConta(
+  admin: SupabaseClient,
+  corpo: CorpoRequisicao,
+  institutionId: string,
+): Promise<Response> {
   const userId = (corpo.userId ?? '').trim();
   if (!userId) {
     return respostaErro('Informe o usuário.');
   }
 
-  await admin.from('perfis').delete().eq('user_id', userId);
+  await admin
+    .from('perfis')
+    .delete()
+    .eq('user_id', userId)
+    .eq('institution_id', institutionId);
+
+  const { count, error: erroContagem } = await admin
+    .from('perfis')
+    .select('user_id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (erroContagem) {
+    return respostaErro('Não foi possível verificar os vínculos do usuário.', 500);
+  }
+
+  if ((count ?? 0) > 0) {
+    return respostaJson({ userId, removido: true, contaMantida: true });
+  }
 
   const { error: erroRemocao } = await admin.auth.admin.deleteUser(userId);
 
@@ -257,13 +307,13 @@ Deno.serve(async (requisicao) => {
     return respostaErro('Configuração do servidor incompleta.', 500);
   }
 
-  const administradorId = await verificarAdministrador(
+  const administrador = await verificarAdministrador(
     url,
     anonKey,
     requisicao.headers.get('Authorization'),
   );
 
-  if (!administradorId) {
+  if (!administrador) {
     return respostaErro('Ação permitida apenas para administradores.', 403);
   }
 
@@ -280,11 +330,11 @@ Deno.serve(async (requisicao) => {
 
   switch (corpo.acao) {
     case 'criar':
-      return criarConta(admin, corpo);
+      return criarConta(admin, corpo, administrador.institutionId);
     case 'redefinir-senha':
-      return redefinirSenha(admin, corpo);
+      return redefinirSenha(admin, corpo, administrador.institutionId);
     case 'excluir-conta':
-      return excluirConta(admin, corpo);
+      return excluirConta(admin, corpo, administrador.institutionId);
     default:
       return respostaErro('Ação desconhecida.');
   }

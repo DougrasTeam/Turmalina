@@ -141,21 +141,36 @@ acesso. O `super_admin` tem acesso total ao catálogo por definição.
 Todo registro carrega `institutionId`; as leituras já são filtradas pela
 instituição ativa na camada de dados e as escritas não afetam outras
 instituições. No mock, o tenant ativo é uma instituição padrão (`TenantService`).
-**No backend, esse isolamento deve ser reforçado por RLS** (ver ADR 0005) — não
-confiar apenas no frontend.
 
-## Alvo (a implementar)
+Um usuário pode ter **vários vínculos** (uma linha em `public.perfis` por
+escola). A escola ativa fica em `public.instituicoes_ativas` e é resolvida no
+banco por `auth_institution()`; sem escola selecionada e com mais de um vínculo,
+a RLS bloqueia os dados até o usuário escolher em `/selecionar-escola`.
+`auth_papel()` prioriza `super_admin` global e, nos demais casos, usa o papel do
+vínculo na escola ativa. Portanto, **papel e escola são avaliados juntos**.
+
+**O isolamento por instituição é aplicado por RLS no backend** — as funções
+`auth_*` resolvem o vínculo ativo e não se deve confiar apenas no frontend. A
+migration `0019_multiplas_escolas.sql` concentra vínculos, seleção de escola e
+slug; `0020_bloquear_escolas_inativas.sql` bloqueia no banco escolas inativadas,
+inclusive para sessões já abertas. A aplicação da 0019 e depois da 0020 no
+projeto Supabase é necessária para que esse comportamento esteja ativo naquele
+ambiente.
+
+## Escopos ainda a completar e validar
 
 Conforme a matriz da especificação (autorização no backend):
 
 - Professor acessa **apenas** turmas/disciplinas com vínculo.
 - Aluno vê **apenas** os próprios dados (notas, frequência, boletim, agenda,
   recados, missões, conquistas) e resgata recompensas quando elegível.
-- Administrador gerencia cadastros, vínculos e relatórios agregados, sem ver
-  senhas nem dados de outra instituição.
+- Completar e validar autorizações por vínculo docente/turma/disciplina no
+  banco, inclusive para chamadas diretas à API; os guards de papel no frontend
+  não bastam para impor esse escopo.
 
 A implementação real deve incluir testes de isolamento (ver cenários de
-segurança da especificação §15.2).
+segurança da especificação §15.2), especialmente cruzamento entre escolas,
+troca de escola, vínculos inativos e revogação ao inativar uma escola.
 
 
 ---

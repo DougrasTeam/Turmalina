@@ -1,0 +1,29 @@
+<div class="tl-ui escola-publica">
+  <div class="escola-publica__card">
+    <span class="escola-publica__logo" aria-hidden="true">
+      <img src="/favicon.ico" alt="" />
+    </span>
+
+    @if (carregando()) {
+      <p class="tl-text-muted" role="status">Carregando escola…</p>
+    } @else if (mensagemErro(); as erro) {
+      <h1 class="escola-publica__titulo">Acesso à escola</h1>
+      <div class="alert alert-danger" role="alert">{{ erro }}</div>
+
+      @if (precisaTrocarConta()) {
+        <button
+          class="btn btn-primary btn-block mt-3"
+          type="button"
+          (click)="sairEEntrarComOutraConta()"
+        >
+          Sair e entrar com outra conta
+        </button>
+      } @else {
+        <a class="btn btn-primary btn-block mt-3" routerLink="/login">Ir para o login</a>
+      }
+    } @else if (escola(); as escolaAtual) {
+      <h1 class="escola-publica__titulo">{{ escolaAtual.nome }}</h1>
+      <p class="tl-text-muted">Redirecionando para o acesso da escola…</p>
+    }
+  </div>
+</div>

@@ -1,11 +1,13 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { AuthRepository, ProvedorOAuth } from '../auth/data-access/auth.repository';
+import { AcessoEscola } from '../models/acesso-escola.model';
+import { AutenticacaoErro } from '../models/autenticacao-erro';
 import { Credenciais } from '../models/credenciais.model';
 import { Papel } from '../models/papel.model';
 import { Sessao } from '../models/sessao.model';
 import { Usuario } from '../models/usuario.model';
-import { INSTITUICAO_PADRAO_ID, TenantService } from './tenant.service';
+import { TenantService } from './tenant.service';
 
 /**
  * Serviço de autenticação e sessão.
@@ -26,6 +28,28 @@ export class AuthService {
   readonly autenticado = computed(() => this._sessao() !== null);
   readonly precisaTrocarSenha = computed(() => this._sessao()?.usuario.precisaTrocarSenha ?? false);
   readonly carregando = this._carregando.asReadonly();
+
+  /** Escolas vinculadas ao usuário (uma por perfil). */
+  readonly instituicoes = computed<readonly AcessoEscola[]>(
+    () => this._sessao()?.instituicoes ?? [],
+  );
+
+  /** Escola atualmente selecionada, se houver. */
+  readonly escolaAtual = computed<AcessoEscola | null>(() => {
+    const institutionId = this.usuario()?.institutionId;
+    if (!institutionId) return null;
+    return this.instituicoes().find((acesso) => acesso.institutionId === institutionId) ?? null;
+  });
+
+  /**
+   * Verdadeiro quando o usuário possui vínculos, mas ainda não há escola ativa
+   * na sessão. A UI deve mostrar a escolha de escola antes do shell.
+   */
+  readonly precisaSelecionarEscola = computed(() => {
+    const usuario = this.usuario();
+    if (!usuario || usuario.papel === 'super_admin') return false;
+    return this.instituicoes().length > 0 && usuario.institutionId === '';
+  });
 
   async garantirSessaoCarregada(): Promise<void> {
     if (!this.restauracaoEmAndamento) {
@@ -65,7 +89,31 @@ export class AuthService {
    */
   private aplicarSessao(sessao: Sessao | null): void {
     this._sessao.set(sessao);
-    this.tenant.definir(sessao?.usuario.institutionId ?? INSTITUICAO_PADRAO_ID);
+    this.tenant.definir(sessao?.usuario.institutionId ?? null);
+  }
+
+  /** Define a escola ativa e recarrega a sessão já no novo contexto. */
+  async selecionarEscola(institutionId: string): Promise<void> {
+    await this.repositorio.selecionarInstituicao(institutionId);
+    await this.recarregarSessao();
+  }
+
+  /**
+   * Remove a seleção atual para que o usuário escolha outra escola.
+   * A sessão resultante fica sem `institutionId` até nova escolha.
+   */
+  async trocarEscola(): Promise<void> {
+    await this.repositorio.limparInstituicaoSelecionada();
+    await this.recarregarSessao();
+  }
+
+  private async recarregarSessao(): Promise<void> {
+    const sessao = await this.repositorio.restaurarSessao();
+    if (!sessao) {
+      this.aplicarSessao(null);
+      throw new AutenticacaoErro('sem-acesso-escola');
+    }
+    this.aplicarSessao(sessao);
   }
 
   /**

@@ -86,15 +86,40 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 4. Login (`LoginComponent`) usa formulário reativo, trata erro de credenciais e
    redireciona conforme o papel (`rotaInicialPorPapel`); o `super_admin` vai para
    `/admin/escolas`.
-5. O shell (`App`) exibe/oculta a navegação conforme o papel e oferece logout.
+5. Com mais de uma escola vinculada, `autenticacaoGuard` envia para
+   `/selecionar-escola` (protegida por `selecaoEscolaGuard`); `AuthService`
+   expõe `instituicoes`, `escolaAtual`, `precisaSelecionarEscola`,
+   `selecionarEscola` e `trocarEscola`. Na troca, o shell recarrega os dados
+   usando a chave `usuarioId:institutionId` e o `TenantService` é atualizado.
+6. O shell (`App`) exibe/oculta a navegação conforme o papel e oferece logout.
    Para o `super_admin`, o shell escolar não é renderizado: o painel
-   `/admin` tem layout próprio.
+   `/admin` tem layout próprio. Links públicos de contratação/entrada usam
+   `/e/:slug` (`ContextoEscolaService` + `EscolaPublicaService`), resolvendo a
+   escola pela RPC `escola_por_slug`. O caminho por slug evita exigir DNS
+   curinga e certificados por escola; subdomínios ficam para uma fase com
+   infraestrutura própria.
 - `funcionalidadeGuard(chave)` bloqueia rotas cuja funcionalidade não esteja
   liberada (matriz do papel + flags da escola); `superAdminGuard` restringe o
   painel do SaaS.
 
 > Autorização é **conveniência de UX**. A autorização real deve ser revalidada
 > no backend/banco.
+
+## Contratação pública de plano
+
+- A rota pública `/contratar` apresenta planos ativos e coleta os dados da
+  escola e do administrador em duas etapas.
+- `ContratacaoService` envia a contratação para a Edge Function
+  `contratar-plano`. No servidor, ela valida o plano, cria a instituição (com
+  slug gerado no banco), cria a conta no Supabase Auth e o perfil de
+  administrador, e associa as funcionalidades do plano. Em caso de falha, a
+  função tenta remover a conta e a instituição criadas.
+- Após sucesso, a interface orienta o novo administrador a entrar pelo login.
+  Esta etapa cria a escola e associa um plano; não processa pagamento nem
+  confirma uma cobrança.
+- Para ativar o fluxo em um ambiente, é necessário configurar/deployar a Edge
+  Function e aplicar as migrations SaaS e tenancy correspondentes, incluindo
+  `0019_multiplas_escolas.sql` e `0020_bloquear_escolas_inativas.sql`.
 
 ## Configuração acadêmica (RF-002)
 
@@ -459,9 +484,26 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 
 ## Tenancy (isolamento por instituição)
 
-- `BaseEntity` carrega `institutionId`. O **tenant ativo** é resolvido por
-  `TenantService` (`core/services/tenant.service.ts`): hoje a instituição padrão;
-  com o backend real, a instituição da sessão autenticada.
+- `BaseEntity` carrega `institutionId`. O **tenant ativo** vem da escola
+  autenticada e é mantido por `TenantService`
+  (`core/services/tenant.service.ts`); `definir(null)` volta à instituição
+  padrão para nunca vazar dados entre escolas no modo mock.
+- Um usuário pode ter **vários vínculos** em `public.perfis` (uma linha por
+  escola, `UNIQUE (user_id, institution_id)`). A escola escolhida fica em
+  `public.instituicoes_ativas` (RLS habilitado, sem policies; leitura/escrita
+  apenas por funções `security definer`).
+- `auth_institution()` retorna a escola selecionada somente se o vínculo e a
+  escola continuam ativos. Se a escola selecionada for inativada, retorna
+  `NULL` sem trocar o usuário para outra escola; a RLS bloqueia os dados da
+  sessão atual. Sem seleção, uma única escola ativa pode ser resolvida
+  automaticamente; com múltiplas escolas, a RLS bloqueia os dados até a escolha.
+  `auth_papel()` retorna `super_admin` se houver qualquer vínculo ativo com esse
+  papel e, caso contrário, o papel do vínculo na escola ativa.
+  `auth_aluno_id`/`auth_turma_id` seguem a mesma escola ativa.
+- O frontend resolve os vínculos pela RPC `minhas_instituicoes` e troca de escola
+  por `selecionar_instituicao(institutionId)`/`limpar_instituicao_ativa()`. Enquanto a
+  migration `0019_multiplas_escolas.sql` não estiver aplicada, o repositório usa
+  o fluxo legado (`buscarPerfil`/`validarAcessoDoPerfil`) com um único perfil.
 - `RepositoryFactory` injeta o tenant em cada `LocalStorageRepository`, que
   preenche `institutionId` na criação, **filtra** leituras por instituição e
   limita `update`/`remove` ao tenant ativo (sem afetar as demais). Dados legados
@@ -471,14 +513,22 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 
 ## Ciclo de vida da conta de acesso
 
-- Excluir um cadastro (professor/aluno) **encerra a conta de acesso**. O
+- Excluir um cadastro (professor/aluno) **encerra o vínculo com a escola**. O
   `ProfessoresService.remove` resolve a conta pelo `userId` do cadastro e chama
   `GestaoUsuariosService.excluirConta`, que invoca a Edge Function
-  `admin-usuarios` (`acao: 'excluir-conta'`) — isso remove o usuário do Supabase
-  Auth e o perfil (`public.perfis`).
-- A restauração/entrada de sessão valida o perfil: se o perfil não existir ou
-  estiver inativo, a sessão é encerrada (`SupabaseAuthRepository.restaurarSessao`)
-  ou o login é recusado com `usuario-inativo` (`autenticar`).
+  `admin-usuarios` (`acao: 'excluir-conta'`). A função valida o administrador
+  pela escola ativa (`auth_institution`), remove apenas o vínculo
+  (`public.perfis` com aquele `institution_id`) e só apaga a conta do Supabase
+  Auth quando o usuário não tiver outros vínculos.
+- A restauração/entrada de sessão valida os vínculos: sem nenhum perfil ativo a
+  sessão é encerrada (`SupabaseAuthRepository.restaurarSessao`) ou o login é
+  recusado com `usuario-inativo` (`autenticar`); com vínculos ativos, mas sem
+  escola selecionável, o erro é `sem-acesso-escola`.
+- Escolas inativas não aparecem como opções selecionáveis e, quando todos os
+  vínculos estão inativos, o login informa `escola-inativa`. A migration `0020`
+  também bloqueia no RLS sessões que já estavam abertas antes da inativação.
+- `concluir_primeiro_acesso()` limpa a flag `precisa_trocar_senha` em **todos**
+  os vínculos, pois a troca de senha é da conta, não de uma escola.
 - No banco, as funções de autorização (`auth_papel`, `auth_institution`,
   `auth_aluno_id`, `auth_turma_id` —
   `supabase/migrations/0014_perfil_ativo_autorizacao.sql`) exigem perfil
@@ -521,9 +571,11 @@ com escola. Ele não enxerga o menu escolar: o `App` renderiza apenas o
   resolução do acesso efetivo), `planos.service.ts`, `permissoes.service.ts` e
   `escolas-saas.service.ts`.
 - **Guards**: `funcionalidade.guard.ts` e `super-admin.guard.ts`.
-- **Telas**: `escolas/` (status e plano de cada escola), `planos/` (editor de
-  planos e funcionalidades incluídas) e `permissoes/` (matriz por papel e flags
-  por escola).
+- **Telas**: `escolas/` (status, plano e slug de cada escola), `planos/` (editor
+  de planos e funcionalidades incluídas) e `permissoes/` (matriz por papel e
+  flags por escola). O slug é gerado no banco (`gerar_slug` + trigger
+  `trg_slug_instituicao`) e usado no link público `/e/:slug`; a Edge Function
+  `contratar-plano` retorna `{ ok, instituicaoId, slug }`.
 
 Acesso efetivo de uma funcionalidade = permitida pelo papel **e** não bloqueada
 pela escola. Sem flag da escola, vale o padrão do papel (a escola só remove
@@ -533,7 +585,10 @@ acesso). No Supabase, a estrutura e o RLS estão em
 
 ## Limitações conhecidas
 
-- Autenticação e dados são **mock de demonstração** (sem segurança real).
+- O modo demo (mock/localStorage) continua disponível; o Supabase é o backend
+  real. O fluxo multi-escola e o bloqueio de escolas inativas só ficam ativos
+  após aplicar `0019_multiplas_escolas.sql` e, em seguida,
+  `0020_bloquear_escolas_inativas.sql` no projeto Supabase usado pela aplicação.
 - UI Kit ainda **não** é uma biblioteca separada (ver ADR 0004).
 - `Repository<T>` é genérico e síncrono por natureza do mock; operações
   atômicas/transacionais (moedas, resgates) não existem ainda.

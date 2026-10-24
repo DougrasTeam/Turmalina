@@ -11,8 +11,9 @@
   Equipes** implementadas. Refinamentos de acessibilidade contínuos.
 - **Features recém-concluídas:** **Painel do SaaS (`super_admin`)**,
   **RF-023 — Agenda** (US-014), **RF-027 — Auditoria**, **RF-015 — Ações e XP**,
-  **RF-016 — Moedas virtuais**, **RF-020 — Conquistas e álbum** e **RF-017 —
-  Equipes**. O painel do SaaS (`/admin`) é exclusivo do papel global
+  **RF-016 — Moedas virtuais**, **RF-020 — Conquistas e álbum**, **RF-017 —
+  Equipes** e **múltiplas escolas por usuário**. O painel do SaaS (`/admin`) é
+  exclusivo do papel global
   `super_admin` e tem layout próprio: **escolas** (status e plano), **planos**
   (editor e funcionalidades incluídas) e **permissoes** (matriz papel ×
   funcionalidade e flags por escola). Acesso efetivo = papel **e** escola.
@@ -41,9 +42,23 @@
   alunos (cadastro, formulário, importação CSV com mapeamento de colunas).
 - Painel com indicadores básicos de cadastro.
 - **Painel do SaaS (`super_admin`):** layout próprio em `/admin` (escolas, planos, permissões). Matrizes papel×funcionalidade, flags por escola, serviços e guards. Migrations `0015`, `0016`. Acesso efetivo = papel **e** escola; `super_admin` tem acesso total.
-  Google preparado), sessão restaurável, papéis a partir da tabela `perfis`
+- **Autenticação (Supabase Auth):** login com e-mail/senha (e Google
+  preparado), sessão restaurável, papéis a partir da tabela `perfis`
   (fonte autoritativa), guards de autenticação, de papel e de primeiro acesso,
   shell por papel e área do aluno. Sem senha/segredo no frontend.
+- **Múltiplas escolas por usuário (`0019`):** um usuário pode ter vários
+  vínculos em `perfis` (`UNIQUE (user_id, institution_id)`), com escola ativa em
+  `instituicoes_ativas` (RLS sem policies; acesso via funções `security definer`).
+  Login com mais de uma escola abre `/selecionar-escola`; o shell permite
+  **trocar de escola** sem sair da conta. Novos RPCs `minhas_instituicoes`,
+  `selecionar_instituicao` e `limpar_instituicao_ativa`; `auth_institution`,
+  `auth_papel`, `auth_aluno_id`, `auth_turma_id` e `concluir_primeiro_acesso`
+  foram redefinidas para considerar a escola ativa. A Edge Function
+  `admin-usuarios` remove só o vínculo da escola e apaga a conta Auth apenas
+  quando não há outros vínculos. Escolas ganharam **slug** (`gerar_slug` +
+  trigger) e link público `/e/:slug`; `contratar-plano` retorna o slug. Escolas
+  inativas são exibidas como indisponíveis e não podem ser escolhidas; a
+  migration `0020` também faz o RLS negar acesso a sessões ainda abertas.
 - **Primeiro acesso e gestão de contas:** criação automática da conta Auth ao
   cadastrar professor/aluno via **Edge Function `admin-usuarios`** (usa
   `service_role` no servidor, com rollback), senha provisória exibida uma única
@@ -58,8 +73,10 @@
   (esquema + RLS), `0002` (dados iniciais), `0003` (primeiro acesso), `0004`
   (mural/comunicados), `0005` (fotos do mural no Storage), `0006` (agenda) e
   `0007` (gamificação: ações de XP e eventos de XP); flag
-  `usarSupabaseDados` (fallback mock/localStorage). RLS por instituição ainda
-  precisa de verificação com dados reais (ver Riscos).
+  `usarSupabaseDados` (fallback mock/localStorage). RLS por instituição usa
+  `auth_institution()` e ainda precisa de validação com dados reais (ver Riscos).
+  O onboarding público `/contratar` cria escola e conta de administrador via
+  Edge Function `contratar-plano`; não há processamento de pagamento.
 - **Instituição e período letivo (RF-002):** dados da instituição, períodos com
   um único ativo, etapas de avaliação, validações de data/sobreposição e
   auditoria de operações críticas.
@@ -249,12 +266,14 @@
   aluno) seguem em `core/models/index.ts`; os mais novos já vivem em arquivos
   próprios (`disciplina.model.ts`, `vinculo-docente.model.ts`,
   `periodo-letivo.model.ts`, etc.). Migrar os restantes ao mesmo padrão.
-- **RLS por instituição a reforçar:** `institution_id` já existe nos modelos e no
-  repositório (ADR 0005), mas as políticas no Supabase precisam ser verificadas
-  e ampliadas contra o banco real.
-- **Dependência de passos manuais no Supabase:** migrações e deploy da Edge
-  Function exigem ações em console/CLI; sem isso, criação de conta/primeiro
-  acesso ficam indisponíveis (modo demo continua funcionando).
+- **Validação e estado de deploy do Supabase:** migrations `0019` e `0020`
+  implementam vínculos multi-escola e bloqueio de escolas inativas via
+  `auth_institution()`. Aplicar na ordem no projeto Supabase e validar troca de
+  escola, inativação durante sessão aberta e isolamento entre tenants. O
+  frontend ainda usa autenticação legada de perfil único até aplicar a 0019.
+  Publicação das Edge Functions `admin-usuarios` e `contratar-plano` também
+  depende de configuração/deploy manual no Supabase; sem isso, criação de
+  contas e contratação pública não funcionam.
 - **UI Kit não extraído:** não cumpre ainda o critério de compilar isoladamente.
 - **Dados de demonstração** sintéticos; não usar com dados reais de pessoas.
 

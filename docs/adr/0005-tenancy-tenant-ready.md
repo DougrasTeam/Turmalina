@@ -1,6 +1,6 @@
 # ADR 0005 — Tenancy "tenant-ready" na camada de dados
 
-- **Status:** Aceito
+- **Status:** Aceito (complementado pelo ADR 0006)
 - **Data:** 2026-10-15
 
 ## Contexto
@@ -27,14 +27,15 @@ mantendo o mock local como demonstração:
 - Registros legados (sem `institutionId`) são **migrados** para o tenant ativo na
   primeira leitura.
 
-## Adiado (fase de backend — depende de ADR 0001/0002)
+## Adiado na época
 
-- Autenticação real multi-escola, `RLS` no Supabase, roteamento por
-  subdomínio/slug, papéis por instituição, convite de escola, cobrança/planos.
+- Autenticação real multi-escola, `RLS` no Supabase e roteamento por escola.
+  Esses itens foram implementados posteriormente, conforme ADR 0006.
+- Convite de escola e cobrança/planos continuam fora do escopo deste ADR.
 
 ## Consequências
 
 - Isolamento por tenant já existe no mock (mesmo padrão da futura `RLS`).
 - A UI e os serviços de domínio **não** mudam ao ativar o backend real.
-- Continua **single-tenant em produção** até o backend: a separação efetiva de
-  dados entre escolas só é garantida pelo banco (RLS), não pelo frontend.
+- A separação efetiva de dados entre escolas é garantida no backend pelo RLS,
+  não pelo frontend.

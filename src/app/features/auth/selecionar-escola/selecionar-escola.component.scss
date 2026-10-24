@@ -1,0 +1,114 @@
+.selecionar-escola {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--tl-bg);
+}
+
+.selecionar-escola__card {
+  width: min(100%, 520px);
+  padding: 1.75rem;
+  background: var(--tl-surface);
+  border: 2px solid var(--tl-border);
+  border-bottom-width: 5px;
+  border-radius: var(--tl-radius-lg);
+}
+
+.selecionar-escola__cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.selecionar-escola__logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--tl-primary), #8b5cf6);
+  color: #fff;
+
+  & img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.selecionar-escola__marca {
+  display: block;
+  font-family: var(--tl-font-display);
+  font-size: 1.35rem;
+  line-height: 1.1;
+  letter-spacing: 5px;
+}
+
+.selecionar-escola__titulo {
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.selecionar-escola__usuario {
+  margin-top: 0.75rem;
+}
+
+.selecionar-escola__lista {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.selecionar-escola__escola {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: var(--tl-surface);
+  border: 2px solid var(--tl-border);
+  border-radius: var(--tl-radius);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    border-color: var(--tl-primary);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.selecionar-escola__icone {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: var(--tl-bg);
+}
+
+.selecionar-escola__dados {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+
+  & strong {
+    font-size: 1rem;
+  }
+}

@@ -34,6 +34,9 @@
               <div>
                 <h2 class="escola__nome">{{ escola.nome || 'Escola sem nome' }}</h2>
                 <span class="tl-small tl-text-muted">{{ escola.fusoHorario }}</span>
+                @if (escola.slug) {
+                  <span class="tl-small tl-text-muted">/e/{{ escola.slug }}</span>
+                }
               </div>
             </div>
 

@@ -1,13 +1,13 @@
 <div class="contratar tl-ui">
   <header class="contratar__cabecalho">
     <div class="contratar__marca">
-      <span class="material-symbols-outlined" aria-hidden="true">diamond</span>
+      <img class="contratar__logo" src="/favicon.ico" alt="" />
       <div>
         <strong>Turmalina</strong>
         <span>Contratar plano</span>
       </div>
     </div>
-    <a class="btn btn-ghost" routerLink="/login">Já tenho conta</a>
+    <a class="btn btn-outline-primary" routerLink="/login">Já tenho conta</a>
   </header>
 
   @if (etapa() === 1) {
@@ -52,7 +52,7 @@
   } @else {
     <main class="contratar__conteudo contratar__conteudo--etapa2">
       <section class="contratar__intro contratar__intro--esquerda">
-        <button class="btn btn-ghost btn-sm" type="button" (click)="voltar()">
+        <button class="btn btn-outline-primary btn-sm" type="button" (click)="voltar()">
           <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
           Voltar para planos
         </button>
@@ -67,7 +67,11 @@
           <h2>Escola</h2>
           <label class="form__campo">
             <span>Nome da instituição</span>
-            <input class="input" formControlName="nomeEscola" placeholder="Ex.: Colégio Exemplo" />
+            <input
+              class="form-control"
+              formControlName="nomeEscola"
+              placeholder="Ex.: Colégio Exemplo"
+            />
           </label>
         </section>
 
@@ -76,15 +80,29 @@
           <div class="form__grid">
             <label class="form__campo">
               <span>Nome completo</span>
-              <input class="input" formControlName="nomeAdmin" placeholder="Nome do responsável" />
+              <input
+                class="form-control"
+                formControlName="nomeAdmin"
+                placeholder="Nome do responsável"
+              />
             </label>
             <label class="form__campo">
               <span>E-mail</span>
-              <input class="input" type="email" formControlName="emailAdmin" placeholder="adm@escola.com.br" />
+              <input
+                class="form-control"
+                type="email"
+                formControlName="emailAdmin"
+                placeholder="adm@escola.com.br"
+              />
             </label>
             <label class="form__campo form__campo--full">
               <span>Senha</span>
-              <input class="input" type="password" formControlName="senhaAdmin" placeholder="Mínimo 6 caracteres" />
+              <input
+                class="form-control"
+                type="password"
+                formControlName="senhaAdmin"
+                placeholder="Mínimo 6 caracteres"
+              />
             </label>
           </div>
         </section>

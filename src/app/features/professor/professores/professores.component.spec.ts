@@ -1,6 +1,9 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { AuthRepository } from '../../../core/auth/data-access/auth.repository';
+import { MockAuthRepository } from '../../../core/auth/data-access/mock-auth.repository';
+import { AuthService } from '../../../core/services/auth.service';
 import { DadosService } from '../../../core/services/dados.service';
 import { AuditoriaService } from '../../../core/services/auditoria.service';
 import { ExportacaoService } from '../../../core/services/exportacao.service';
@@ -27,6 +30,8 @@ const dados = {
 const exportacao = { exportarCsv: jasmine.createSpy('exportarCsv') };
 
 const auditoria = { registrar: jasmine.createSpy('registrar') };
+
+const auth = { temPapel: (papel: string) => papel === 'administrador' };
 
 function botaoPorTexto(
   fixture: ComponentFixture<ProfessoresComponent>,
@@ -57,6 +62,8 @@ describe('ProfessoresComponent', () => {
       imports: [ProfessoresComponent],
       providers: [
         provideZonelessChangeDetection(),
+        { provide: AuthRepository, useClass: MockAuthRepository },
+        { provide: AuthService, useValue: auth },
         { provide: GestaoUsuariosService, useValue: gestao },
         { provide: ToastService, useValue: toast },
         { provide: DadosService, useValue: dados },

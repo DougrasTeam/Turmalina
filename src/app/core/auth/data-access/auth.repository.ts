@@ -30,4 +30,16 @@ export abstract class AuthRepository {
 
   /** Marca como concluída a troca obrigatória de senha do primeiro acesso. */
   abstract concluirPrimeiroAcesso(): Promise<void>;
+
+  /**
+   * Define a escola ativa do usuário. A sessão que carrega os dados acadêmicos
+   * passa a ser resolvida nesse contexto.
+   */
+  abstract selecionarInstituicao(institutionId: string): Promise<void>;
+
+  /**
+   * Remove a seleção de escola, voltando ao estado "escolher escola" quando o
+   * usuário possui mais de um vínculo.
+   */
+  abstract limparInstituicaoSelecionada(): Promise<void>;
 }

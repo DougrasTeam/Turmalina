@@ -40,6 +40,14 @@ class AuthRepositoryStub extends AuthRepository {
     this.primeiroAcessoConcluido = true;
   }
 
+  async selecionarInstituicao(_institutionId: string): Promise<void> {
+    // Sem efeito.
+  }
+
+  async limparInstituicaoSelecionada(): Promise<void> {
+    // Sem efeito.
+  }
+
   private criarSessao(): Sessao {
     const usuario: Usuario = {
       id: 'user-1',

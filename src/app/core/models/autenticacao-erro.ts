@@ -1,6 +1,8 @@
 export type MotivoFalhaAutenticacao =
   | 'credenciais-invalidas'
   | 'usuario-inativo'
+  | 'escola-inativa'
+  | 'sem-acesso-escola'
   | 'email-nao-confirmado'
   | 'provedor-indisponivel'
   | 'falha-desconhecida';
@@ -8,6 +10,8 @@ export type MotivoFalhaAutenticacao =
 const MENSAGENS: Record<MotivoFalhaAutenticacao, string> = {
   'credenciais-invalidas': 'E-mail ou senha incorretos.',
   'usuario-inativo': 'Este usuário está inativo. Procure a administração.',
+  'escola-inativa': 'A escola deste usuário está inativa. Procure a administração.',
+  'sem-acesso-escola': 'Sua conta não está vinculada a nenhuma escola ativa.',
   'email-nao-confirmado': 'Confirme seu e-mail antes de entrar.',
   'provedor-indisponivel': 'Login por provedor externo não está disponível.',
   'falha-desconhecida': 'Não foi possível entrar. Tente novamente.',

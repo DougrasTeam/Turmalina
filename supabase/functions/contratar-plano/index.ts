@@ -45,17 +45,22 @@ serve(async (req) => {
       });
     }
 
-    // 1) Criar instituição
+    // 1) Criar instituição. O `slug` público (usado em `/e/:slug`) é gerado
+    // pelo banco no gatilho `trg_slug_instituicao`.
     instituicaoId = crypto.randomUUID();
-    const { error: erroInstituicao } = await supabaseAdmin.from('instituicoes').insert({
-      id: instituicaoId,
-      institution_id: instituicaoId,
-      nome: escola.nome.trim(),
-      plano_id: planoId,
-      status: 'ativa',
-    });
+    const { data: instituicaoCriada, error: erroInstituicao } = await supabaseAdmin
+      .from('instituicoes')
+      .insert({
+        id: instituicaoId,
+        institution_id: instituicaoId,
+        nome: escola.nome.trim(),
+        plano_id: planoId,
+        status: 'ativa',
+      })
+      .select('slug')
+      .single();
 
-    if (erroInstituicao) throw erroInstituicao;
+    if (erroInstituicao || !instituicaoCriada) throw erroInstituicao;
 
     // 2) Criar usuário no Auth
     const email = admin.email.trim().toLowerCase();
@@ -101,10 +106,13 @@ serve(async (req) => {
       if (erroFuncionalidades) throw erroFuncionalidades;
     }
 
-    return new Response(JSON.stringify({ ok: true, instituicaoId }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ ok: true, instituicaoId, slug: instituicaoCriada.slug }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    );
   } catch (erro) {
     console.error(erro);
 
