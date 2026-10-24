@@ -54,6 +54,12 @@ describe('ProfessoresComponent', () => {
       email: 'ana@escola.com',
       senha: 'nova-senha',
     });
+    gestao.criarContaProfessor.calls.reset();
+    gestao.criarContaProfessor.and.resolveTo({
+      userId: 'usuario-existente',
+      email: 'ana@escola.com',
+      contaExistente: true,
+    });
     toast.mostrar.calls.reset();
     exportacao.exportarCsv.calls.reset();
     auditoria.registrar.calls.reset();
@@ -113,6 +119,34 @@ describe('ProfessoresComponent', () => {
       'Este professor ainda não tem uma conta de acesso.',
       'warning',
     );
+  });
+
+  it('vincula uma conta existente sem exibir ou redefinir a senha', async () => {
+    const fixture = TestBed.createComponent(ProfessoresComponent);
+    fixture.detectChanges();
+
+    botaoPorTexto(fixture, 'Novo professor')!.click();
+    fixture.detectChanges();
+
+    const campoNome = fixture.nativeElement.querySelector('#prof-nome') as HTMLInputElement;
+    campoNome.value = 'Ana Professora';
+    campoNome.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const campoEmail = fixture.nativeElement.querySelector('#prof-email') as HTMLInputElement;
+    campoEmail.value = 'ana@escola.com';
+    campoEmail.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const formulario = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    formulario.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(gestao.criarContaProfessor).toHaveBeenCalled();
+    expect(toast.mostrar).toHaveBeenCalledWith(
+      'Conta existente vinculada a esta escola. O professor deverá usar a senha que já possui.',
+      'info',
+    );
+    expect(fixture.nativeElement.querySelector('.credenciais__campo')).toBeNull();
   });
 
   it('exporta os professores filtrados em CSV e registra auditoria', async () => {

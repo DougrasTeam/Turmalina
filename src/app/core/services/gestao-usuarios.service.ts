@@ -1,7 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 
 import { SupabaseService } from './supabase.service';
-import { CredenciaisContaUsuario, NovaContaUsuario } from '../models/conta-usuario.model';
+import {
+  CredenciaisContaUsuario,
+  NovaContaUsuario,
+  ResultadoCriacaoContaUsuario,
+} from '../models/conta-usuario.model';
 import { environment } from '../../../environments/environment';
 
 const NOME_FUNCAO = 'admin-usuarios';
@@ -9,7 +13,8 @@ const NOME_FUNCAO = 'admin-usuarios';
 interface RespostaCredenciais {
   userId: string;
   email: string;
-  senha: string;
+  senha?: string;
+  contaExistente?: true;
 }
 
 interface RespostaErro {
@@ -34,7 +39,7 @@ export class GestaoUsuariosService {
   readonly disponivel = this.supabase.disponivel && environment.usarSupabaseDados;
 
   /** Cria uma conta de acesso e devolve as credenciais para exibir uma vez. */
-  async criarConta(novaConta: NovaContaUsuario): Promise<CredenciaisContaUsuario> {
+  async criarConta(novaConta: NovaContaUsuario): Promise<ResultadoCriacaoContaUsuario> {
     const dados = await this.invocar<RespostaCredenciais>({
       acao: 'criar',
       email: novaConta.email,
@@ -42,6 +47,18 @@ export class GestaoUsuariosService {
       papel: novaConta.papel,
       referencia: novaConta.referencia,
     });
+
+    if (dados.contaExistente) {
+      return {
+        userId: dados.userId,
+        email: dados.email,
+        contaExistente: true,
+      };
+    }
+
+    if (!dados.senha) {
+      throw new Error('A função não retornou a senha provisória da conta.');
+    }
 
     return { userId: dados.userId, email: dados.email, senha: dados.senha };
   }
@@ -51,7 +68,7 @@ export class GestaoUsuariosService {
     professorId: string,
     email: string,
     nome: string,
-  ): Promise<CredenciaisContaUsuario> {
+  ): Promise<ResultadoCriacaoContaUsuario> {
     return this.criarConta({
       email,
       nome,
@@ -61,7 +78,11 @@ export class GestaoUsuariosService {
   }
 
   /** Cria a conta de um aluno vinculada ao cadastro existente. */
-  criarContaAluno(alunoId: string, email: string, nome: string): Promise<CredenciaisContaUsuario> {
+  criarContaAluno(
+    alunoId: string,
+    email: string,
+    nome: string,
+  ): Promise<ResultadoCriacaoContaUsuario> {
     return this.criarConta({
       email,
       nome,
@@ -76,6 +97,10 @@ export class GestaoUsuariosService {
       acao: 'redefinir-senha',
       userId,
     });
+
+    if (!dados.senha) {
+      throw new Error('A função não retornou a nova senha.');
+    }
 
     return { userId: dados.userId, email: dados.email, senha: dados.senha };
   }

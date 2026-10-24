@@ -155,7 +155,12 @@ migration `0019_multiplas_escolas.sql` concentra vínculos, seleção de escola 
 slug; `0020_bloquear_escolas_inativas.sql` bloqueia no banco escolas inativadas,
 inclusive para sessões já abertas. A aplicação da 0019 e depois da 0020 no
 projeto Supabase é necessária para que esse comportamento esteja ativo naquele
-ambiente.
+ambiente. A migration `0021_corrigir_rpc_minhas_instituicoes.sql` qualifica as
+colunas da RPC para evitar ambiguidades no PL/pgSQL, e
+`0022_indice_unico_perfis_por_escola.sql` garante unicidade do vínculo por
+usuário e escola. A migration `0023_vinculos_academicos_por_escola.sql` permite
+que um mesmo usuário Auth seja associado a registros de professor ou aluno em
+escolas diferentes, mantendo a unicidade dentro de cada escola.
 
 ## Escopos ainda a completar e validar
 

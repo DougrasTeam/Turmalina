@@ -1,7 +1,7 @@
 // =============================================================================
 // Edge Function: admin-usuarios
 // =============================================================================
-// Cria e redefine contas de acesso (Supabase Auth) em nome do administrador.
+// Cria, vincula e redefine contas de acesso (Supabase Auth) em nome do administrador.
 //
 // Por que uma Edge Function: criar usuários exige a chave `service_role`, que
 // nunca pode ir para o frontend. Esta função roda no servidor com essa chave e
@@ -10,8 +10,8 @@
 //
 // Ações aceitas (campo `acao` no corpo JSON):
 //   - criar:          { email, nome, papel, referencia? }
-//                     Cria a conta, grava o perfil na escola do administrador e
-//                     vincula um registro de domínio (professor/aluno).
+//                     Cria a conta ou vincula uma conta existente, grava o perfil
+//                     na escola do administrador e vincula o registro acadêmico.
 //   - redefinir-senha: { userId }
 //                     Gera uma nova senha para a conta informada.
 //   - excluir-conta:  { userId }
@@ -19,14 +19,14 @@
 //                     administrador. A conta de Auth só é apagada quando o
 //                     usuário não possui outros vínculos.
 //
-// Resposta (sucesso): { userId, email, senha }
+// Resposta (sucesso): { userId, email, senha } ou { userId, email, contaExistente: true }
 // Resposta (erro):    { erro } com status HTTP adequado.
 //
 // Com múltiplas escolas por usuário, o perfil é identificado por
 // `(user_id, institution_id)` (ver migration 0019).
 // =============================================================================
 
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const PAPEIS_ACEITOS = ['administrador', 'professor', 'aluno'] as const;
 const PAPEL_ADMINISTRADOR = 'administrador';
@@ -53,6 +53,16 @@ interface AdministradorAutenticado {
   userId: string;
   /** Escola ativa no contexto do token (ver `auth_institution()`). */
   institutionId: string;
+}
+
+interface PerfilExistente {
+  institution_id: string;
+  precisa_trocar_senha: boolean;
+}
+
+interface UsuarioAuth {
+  id: string;
+  email?: string;
 }
 
 const CABECALHOS_CORS = {
@@ -98,6 +108,38 @@ function ehPapel(papel: string): papel is Papel {
 
 function ehTabelaReferencia(tabela: string): tabela is TabelaReferencia {
   return (TABELAS_REFERENCIA as readonly string[]).includes(tabela);
+}
+
+async function encontrarUsuarioPorEmail(
+  admin: SupabaseClient,
+  email: string,
+): Promise<{ user: UsuarioAuth | null; error: Error | null }> {
+  const usuariosPorPagina = 1000;
+  let pagina = 1;
+
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page: pagina,
+      perPage: usuariosPorPagina,
+    });
+
+    if (error) {
+      return { user: null, error };
+    }
+
+    const usuarioEncontrado =
+      data.users.find((user) => user.email?.trim().toLowerCase() === email) ?? null;
+
+    if (usuarioEncontrado) {
+      return { user: usuarioEncontrado, error: null };
+    }
+
+    if (data.users.length < usuariosPorPagina) {
+      return { user: null, error: null };
+    }
+
+    pagina += 1;
+  }
 }
 
 /**
@@ -164,8 +206,17 @@ async function criarConta(
     return respostaErro('Papel inválido.');
   }
 
-  const senha = gerarSenha();
+  const referencia = corpo.referencia;
+  if (
+    referencia &&
+    (!ehTabelaReferencia(referencia.tabela) ||
+      typeof referencia.id !== 'string' ||
+      !referencia.id.trim())
+  ) {
+    return respostaErro('Referência acadêmica inválida.');
+  }
 
+  const senha = gerarSenha();
   const { data: criado, error: erroCriacao } = await admin.auth.admin.createUser({
     email,
     password: senha,
@@ -174,41 +225,172 @@ async function criarConta(
     user_metadata: { nome },
   });
 
-  if (erroCriacao || !criado.user) {
-    return respostaErro(erroCriacao?.message ?? 'Não foi possível criar a conta.', 409);
+  let userId: string;
+  let contaExistente = false;
+  let precisaTrocarSenha = true;
+  let cadastroJaVinculado = false;
+
+  if (!erroCriacao && criado.user) {
+    userId = criado.user.id;
+  } else {
+    const resultadoBusca = await encontrarUsuarioPorEmail(admin, email);
+    if (resultadoBusca.error) {
+      console.error('Falha ao localizar conta existente pelo e-mail.', {
+        code: resultadoBusca.error.name,
+      });
+      return respostaErro('Não foi possível verificar se já existe uma conta para este e-mail.', 500);
+    }
+
+    const usuarioExistente = resultadoBusca.user;
+    if (!usuarioExistente) {
+      return respostaErro('Não foi possível criar a conta com este e-mail.', 409);
+    }
+
+    userId = usuarioExistente.id;
+    contaExistente = true;
+
+    const { data: perfisExistentes, error: erroPerfis } = await admin
+      .from('perfis')
+      .select('institution_id, precisa_trocar_senha')
+      .eq('user_id', userId);
+
+    if (erroPerfis) {
+      console.error('Falha ao verificar vínculos da conta existente.', {
+        code: erroPerfis.code,
+      });
+      return respostaErro('Não foi possível verificar os vínculos da conta existente.', 500);
+    }
+
+    const perfis = (perfisExistentes ?? []) as PerfilExistente[];
+    const jaVinculadoNestaEscola = perfis.some(
+      (perfil) => perfil.institution_id === institutionId,
+    );
+    const vinculadoEmOutraEscola = perfis.some(
+      (perfil) => perfil.institution_id !== institutionId,
+    );
+
+    if (jaVinculadoNestaEscola) {
+      return respostaErro('Esta conta já possui vínculo com a escola atual.', 409);
+    }
+
+    if (!vinculadoEmOutraEscola) {
+      return respostaErro(
+        'Este e-mail já pertence a uma conta, mas ela não está vinculada a outra escola.',
+        409,
+      );
+    }
+
+    precisaTrocarSenha = perfis.some((perfil) => perfil.precisa_trocar_senha);
   }
 
-  const { error: erroPerfil } = await admin.from('perfis').upsert(
-    {
-      user_id: criado.user.id,
-      institution_id: institutionId,
-      papel,
-      nome,
-      ativo: true,
-      precisa_trocar_senha: true,
-    },
-    { onConflict: 'user_id,institution_id' },
-  );
+  if (referencia) {
+    const { data: cadastro, error: erroCadastro } = await admin
+      .from(referencia.tabela)
+      .select('user_id')
+      .eq('id', referencia.id)
+      .eq('institution_id', institutionId)
+      .maybeSingle();
+
+    if (erroCadastro) {
+      console.error('Falha ao verificar cadastro acadêmico.', {
+        code: erroCadastro.code,
+      });
+      await removerContaAuthSeNova(admin, userId, contaExistente);
+      return respostaErro('Não foi possível verificar o cadastro acadêmico.', 500);
+    }
+
+    if (!cadastro) {
+      await removerContaAuthSeNova(admin, userId, contaExistente);
+      return respostaErro('Cadastro acadêmico não encontrado na escola atual.', 404);
+    }
+
+    if (cadastro.user_id && cadastro.user_id !== userId) {
+      await removerContaAuthSeNova(admin, userId, contaExistente);
+      return respostaErro('Este cadastro já está vinculado a outra conta.', 409);
+    }
+
+    cadastroJaVinculado = cadastro.user_id === userId;
+  }
+
+  const { error: erroPerfil } = await admin.from('perfis').insert({
+    user_id: userId,
+    institution_id: institutionId,
+    papel,
+    nome,
+    ativo: true,
+    precisa_trocar_senha: precisaTrocarSenha,
+  });
 
   if (erroPerfil) {
-    await admin.auth.admin.deleteUser(criado.user.id);
+    console.error('Falha ao registrar perfil do usuário.', {
+      code: erroPerfil.code,
+    });
+    await removerContaAuthSeNova(admin, userId, contaExistente);
     return respostaErro('Não foi possível registrar o perfil do usuário.', 500);
   }
 
-  const referencia = corpo.referencia;
-  if (referencia && ehTabelaReferencia(referencia.tabela) && referencia.id) {
-    const { error: erroVinculo } = await admin
+  if (referencia && !cadastroJaVinculado) {
+    const { data: cadastroAtualizado, error: erroVinculo } = await admin
       .from(referencia.tabela)
-      .update({ user_id: criado.user.id })
+      .update({ user_id: userId })
       .eq('id', referencia.id)
-      .eq('institution_id', institutionId);
+      .eq('institution_id', institutionId)
+      .is('user_id', null)
+      .select('id')
+      .maybeSingle();
 
-    if (erroVinculo) {
-      return respostaErro('Conta criada, mas não foi possível vincular ao cadastro.', 500);
+    if (erroVinculo || !cadastroAtualizado) {
+      console.error('Falha ao vincular conta ao cadastro acadêmico.', {
+        code: erroVinculo?.code ?? 'no_row_updated',
+      });
+      await removerPerfilEContaSeNova(admin, userId, institutionId, contaExistente);
+      return respostaErro('Não foi possível vincular a conta ao cadastro acadêmico.', 500);
     }
   }
 
-  return respostaJson({ userId: criado.user.id, email, senha });
+  if (contaExistente) {
+    return respostaJson({ userId, email, contaExistente: true });
+  }
+
+  return respostaJson({ userId, email, senha });
+}
+
+async function removerContaAuthSeNova(
+  admin: SupabaseClient,
+  userId: string,
+  contaExistente: boolean,
+): Promise<void> {
+  if (!contaExistente) {
+    const { error } = await admin.auth.admin.deleteUser(userId);
+    if (error) {
+      console.error('Falha ao remover conta Auth após erro no cadastro.', {
+        code: error.name,
+      });
+    }
+  }
+}
+
+async function removerPerfilEContaSeNova(
+  admin: SupabaseClient,
+  userId: string,
+  institutionId: string,
+  contaExistente: boolean,
+): Promise<void> {
+  if (contaExistente) {
+    const { error } = await admin
+      .from('perfis')
+      .delete()
+      .eq('user_id', userId)
+      .eq('institution_id', institutionId);
+    if (error) {
+      console.error('Falha ao desfazer vínculo de perfil após erro.', {
+        code: error.code,
+      });
+    }
+    return;
+  }
+
+  await removerContaAuthSeNova(admin, userId, contaExistente);
 }
 
 async function redefinirSenha(

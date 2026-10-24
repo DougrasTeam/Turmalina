@@ -215,6 +215,14 @@ export class ProfessoresComponent {
     this.criandoConta.set(true);
     try {
       const credenciais = await this.gestao.criarContaProfessor(professor.id, email, dados.nome);
+      if ('contaExistente' in credenciais) {
+        this.toast.mostrar(
+          'Conta existente vinculada a esta escola. O professor deverá usar a senha que já possui.',
+          'info',
+        );
+        return;
+      }
+
       this.tituloCredenciais.set('Conta de acesso do professor');
       this.credenciais.set(credenciais);
     } catch (erro) {
