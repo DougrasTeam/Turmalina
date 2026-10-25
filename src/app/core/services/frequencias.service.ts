@@ -96,9 +96,7 @@ export class FrequenciasService {
   }
 
   async removerTodas(): Promise<void> {
-    for (const frequencia of this._frequencias()) {
-      await this.repo.remove(frequencia.id);
-    }
+    await this.repo.removeAll();
     this._frequencias.set([]);
     this.auditoria.registrar('frequencia.excluidas-todas', 'Frequencia', null, null);
   }

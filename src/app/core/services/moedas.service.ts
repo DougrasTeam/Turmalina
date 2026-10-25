@@ -207,9 +207,7 @@ export class MoedasService {
 
   /** Remove todas as movimentações sem recalcular (usado ao excluir alunos). */
   async limparMovimentacoes(): Promise<void> {
-    for (const movimentacao of this._movimentacoes()) {
-      await this.repo.remove(movimentacao.id);
-    }
+    await this.repo.removeAll();
     this._movimentacoes.set([]);
   }
 

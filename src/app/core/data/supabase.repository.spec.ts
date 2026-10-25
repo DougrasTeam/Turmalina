@@ -136,6 +136,18 @@ describe('SupabaseRepository', () => {
     expect(servidor.chamada('itens', 'in')?.argumentos).toEqual(['id', ['item-1', 'item-2']]);
   });
 
+  it('remove todos os registros do tenant ativo em uma única operação', async () => {
+    servidor.definirRespostas('itens', [{ error: null }]);
+
+    await criar().removeAll();
+
+    expect(servidor.chamadasDe('itens', 'delete').length).toBe(1);
+    expect(servidor.chamada('itens', 'eq')?.argumentos).toEqual([
+      'institution_id',
+      'instituicao-padrao',
+    ]);
+  });
+
   it('não chama o Supabase para lotes vazios', async () => {
     await criar().createMany([]);
     await criar().removeMany([]);

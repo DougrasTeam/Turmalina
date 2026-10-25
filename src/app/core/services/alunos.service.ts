@@ -79,11 +79,9 @@ export class AlunosService {
   }
 
   async createMuitos(inputs: Partial<Aluno>[]): Promise<Aluno[]> {
+    if (inputs.length === 0) return [];
     const listaAtual = this._alunos();
-    const novos: Aluno[] = [];
-    for (const input of inputs) {
-      novos.push(await this.repo.create(input));
-    }
+    const novos = await this.repo.createMany(inputs);
     this._alunos.set([...listaAtual, ...novos]);
     return novos;
   }
@@ -100,9 +98,7 @@ export class AlunosService {
   }
 
   async removeTodos(): Promise<void> {
-    for (const aluno of this._alunos()) {
-      await this.repo.remove(aluno.id);
-    }
+    await this.repo.removeAll();
     this._alunos.set([]);
   }
 

@@ -27,16 +27,20 @@
   } @else {
     <div class="escolas">
       @for (escola of listaExibida(); track escola.id) {
-        <article class="card escola">
+        <article class="card escola" [class.escola--inativa]="escola.status !== 'ativa'">
           <div class="escola__cabecalho">
             <div class="escola__identidade">
-              <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+              <span class="escola__icone" aria-hidden="true">
+                <span class="material-symbols-outlined">apartment</span>
+              </span>
               <div>
                 <h2 class="escola__nome">{{ escola.nome || 'Escola sem nome' }}</h2>
-                <span class="tl-small tl-text-muted">{{ escola.fusoHorario }}</span>
-                @if (escola.slug) {
-                  <span class="tl-small tl-text-muted">/e/{{ escola.slug }}</span>
-                }
+                <p class="escola__referencia">
+                  <span>{{ escola.fusoHorario }}</span>
+                  @if (escola.slug) {
+                    <span>/e/{{ escola.slug }}</span>
+                  }
+                </p>
               </div>
             </div>
 
@@ -51,8 +55,12 @@
 
           <div class="escola__plano">
             <label class="campo">
-              <span class="tl-small tl-text-muted">Plano</span>
-              <select class="select" [value]="escola.planoId ?? ''" (change)="trocarPlano(escola, $event)">
+              <span class="campo__rotulo">Plano contratado</span>
+              <select
+                class="form-select"
+                [value]="escola.planoId ?? ''"
+                (change)="trocarPlano(escola, $event)"
+              >
                 <option value="">Sem plano</option>
                 @for (plano of planos.planos(); track plano.id) {
                   <option [value]="plano.id">{{ plano.nome }}</option>
@@ -62,16 +70,24 @@
 
             @if (planoDa(escola); as planoAtual) {
               <div class="escola__detalhe">
-                <span class="badge badge-neutral">{{ planoAtual.nome }}</span>
-                <span class="tl-small tl-text-muted">
-                  {{ formatarPreco(planoAtual.precoMensal) }}/mês
-                </span>
+                <strong>{{ formatarPreco(planoAtual.precoMensal) }}</strong>
+                <span>/ mês</span>
+              </div>
+            } @else {
+              <div class="escola__detalhe escola__detalhe--vazio">
+                <span>Sem cobrança</span>
               </div>
             }
           </div>
 
           <div class="escola__acoes">
-            <button class="btn btn-ghost" type="button" (click)="alternarStatus(escola)">
+            <button
+              class="btn"
+              [class.btn-light]="escola.status === 'ativa'"
+              [class.btn-primary]="escola.status !== 'ativa'"
+              type="button"
+              (click)="alternarStatus(escola)"
+            >
               <span class="material-symbols-outlined" aria-hidden="true">
                 {{ escola.status === 'ativa' ? 'block' : 'check_circle' }}
               </span>

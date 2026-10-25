@@ -1283,3 +1283,87 @@ textarea.form-control { min-height: 7rem; resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   .tl-ui *, .btn, .card-hover, .progress-bar { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+html[data-tema='corp'] {
+  --tl-sidebar-bg: #2C3E52;
+  --tl-bg: #F3F5F8;
+  --tl-ink: #1C2733;
+  --tl-ink-muted: #5B6877;
+  --tl-ink-subtle: #758292;
+  --tl-primary: #1F5FA8;
+  --tl-primary-dark: #174A85;
+  --tl-success: #12805C;
+  --tl-success-dark: #0B6B4B;
+  --tl-warning: #E6A700;
+  --tl-warning-dark: #B68100;
+  --tl-danger: #C2283A;
+  --tl-danger-dark: #A31E2E;
+  --tl-border: #D8DEE6;
+  --tl-border-strong: #B7C1CD;
+  --tl-surface: #FFFFFF;
+  --tl-surface-raised: #F8FAFC;
+  --tl-surface-hover: #EEF2F6;
+  --tl-info: #2E6EAB;
+  --tl-radius-sm: 0.375rem;
+  --tl-radius: 0.5rem;
+  --tl-radius-lg: 0.625rem;
+  --tl-radius-xl: 0.75rem;
+  --tl-shadow-soft: none;
+  --tl-font-body: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --tl-font-display: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --tl-input-bg: #FFFFFF;
+}
+
+html[data-tema='corp'] .tl-ui {
+  font-weight: 500;
+}
+
+html[data-tema='corp'] .tl-ui h1,
+html[data-tema='corp'] .tl-ui h2,
+html[data-tema='corp'] .tl-ui h3,
+html[data-tema='corp'] .tl-display {
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+html[data-tema='corp'] .btn,
+html[data-tema='corp'] .card,
+html[data-tema='corp'] .badge,
+html[data-tema='corp'] .chip,
+html[data-tema='corp'] .form-control,
+html[data-tema='corp'] .form-select {
+  border-radius: var(--tl-radius);
+  box-shadow: none;
+}
+
+html[data-tema='corp'] .card {
+  border-bottom-width: 2px;
+}
+
+html[data-tema='corp'] .btn:active,
+html[data-tema='corp'] .card-hover:hover {
+  transform: none;
+}
+
+html[data-tl-theme='dark'][data-tema='corp'] {
+  --tl-sidebar-bg: #202D3A;
+  --tl-bg: #1B232C;
+  --tl-ink: #F2F5F8;
+  --tl-ink-muted: #B0BBC7;
+  --tl-ink-subtle: #8E9BA9;
+  --tl-primary: #78AEE6;
+  --tl-primary-dark: #4E8BCB;
+  --tl-success: #5BC99C;
+  --tl-success-dark: #35A77C;
+  --tl-warning: #F4C663;
+  --tl-warning-dark: #D5A83F;
+  --tl-danger: #F08A96;
+  --tl-danger-dark: #D96574;
+  --tl-border: #394754;
+  --tl-border-strong: #526170;
+  --tl-surface: #242F3A;
+  --tl-surface-raised: #2D3A46;
+  --tl-surface-hover: #354553;
+  --tl-info: #83B9EA;
+  --tl-input-bg: #202B36;
+}

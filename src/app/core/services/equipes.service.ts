@@ -370,8 +370,8 @@ export class EquipesService {
   }
 
   async removerTodos(): Promise<void> {
-    await this.repoMembros.removeMany(this._membros().map((membro) => membro.id));
-    await this.repoEquipes.removeMany(this._equipes().map((equipe) => equipe.id));
+    await this.repoMembros.removeAll();
+    await this.repoEquipes.removeAll();
     this._membros.set([]);
     this._equipes.set([]);
     this.auditoria.registrar('equipe.excluidas-todas', 'Equipe', null, null);
@@ -379,7 +379,7 @@ export class EquipesService {
 
   /** Remove todos os vínculos de aluno, preservando as equipes. */
   async removerTodosMembros(): Promise<void> {
-    await this.repoMembros.removeMany(this._membros().map((membro) => membro.id));
+    await this.repoMembros.removeAll();
     this._membros.set([]);
     this.auditoria.registrar('equipe.membros-removidos-todos', 'Equipe', null, null);
   }

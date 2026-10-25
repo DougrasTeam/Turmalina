@@ -286,18 +286,14 @@ export class ConquistasService {
   }
 
   async limparDesbloqueios(): Promise<void> {
-    for (const desbloqueio of this._desbloqueios()) {
-      await this.repoDesbloqueios.remove(desbloqueio.id);
-    }
+    await this.repoDesbloqueios.removeAll();
     this._desbloqueios.set([]);
   }
 
   async removerTudo(): Promise<void> {
     const alunosAfetados = [...new Set(this._desbloqueios().map((item) => item.alunoId))];
     await this.limparDesbloqueios();
-    for (const conquista of this._conquistas()) {
-      await this.repoConquistas.remove(conquista.id);
-    }
+    await this.repoConquistas.removeAll();
     this._conquistas.set([]);
     localStorage.setItem(MARCADOR_SEMENTE, '1');
     await this.gamificacao.recalcularXpDosAlunos(alunosAfetados);

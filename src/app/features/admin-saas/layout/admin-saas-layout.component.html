@@ -46,6 +46,34 @@
       >
         <span class="material-symbols-outlined" aria-hidden="true">menu</span>
       </button>
+      <div class="saas__temas" aria-label="Preferências de aparência">
+        <button
+          class="btn btn-light btn-sm"
+          type="button"
+          (click)="alternarTemaVisual()"
+          [attr.aria-label]="temaVisual.atual() === 'corp' ? 'Ativar tema lúdico' : 'Ativar tema corporativo'"
+          [attr.aria-pressed]="temaVisual.atual() === 'corp'"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ temaVisual.atual() === 'corp' ? 'work' : 'sports_esports' }}
+          </span>
+          {{ temaVisual.atual() === 'corp' ? 'Corporativo' : 'Lúdico' }}
+        </button>
+        <button
+          class="btn btn-light btn-sm"
+          type="button"
+          (click)="alternarTemaEscuro()"
+          [attr.aria-label]="
+            temaEscuro() ? 'Ativar tema claro' : 'Ativar tema escuro'
+          "
+          [attr.aria-pressed]="temaEscuro()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ temaEscuro() ? 'light_mode' : 'dark_mode' }}
+          </span>
+          {{ temaEscuro() ? 'Claro' : 'Escuro' }}
+        </button>
+      </div>
     </header>
 
     <router-outlet />
