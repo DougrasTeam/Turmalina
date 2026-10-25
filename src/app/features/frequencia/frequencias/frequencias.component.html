@@ -6,36 +6,47 @@
   <header class="page-header">
     <div>
       <h1>Frequência</h1>
-      <p class="tl-text-muted">Registre a chamada por turma e data e acompanhe a frequência dos alunos.</p>
+      <p class="tl-text-muted">
+        Registre a chamada da disciplina em cada aula e acompanhe a frequência dos alunos.
+      </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      @if (frequencias.total() > 0) {
+      @if (frequencias.total() > 0 && auth.temPapel('administrador')) {
         <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodas()">
           <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todas
         </button>
       }
-      <button class="btn btn-primary" type="button" [disabled]="turmas.total() === 0" (click)="abrirNova()">
+      <button class="btn btn-primary" type="button" [disabled]="turmasDisponiveis().length === 0" (click)="abrirNova()">
         <span class="material-symbols-outlined" aria-hidden="true">fact_check</span> Registrar chamada
       </button>
     </div>
   </header>
 
-  @if (turmas.total() === 0) {
+  @if (turmaIdQuery() && disciplinaIdQuery()) {
+    <div class="alert alert-info" role="status">
+      Esta tela mostra somente as chamadas vinculadas à disciplina. Chamadas antigas sem disciplina
+      continuam disponíveis na visão geral de frequência.
+    </div>
+  }
+
+  @if (turmasDisponiveis().length === 0) {
     <div class="alert alert-info" role="status">
       Cadastre turmas e matricule alunos para começar a registrar a chamada.
     </div>
   }
 
-  <div class="page-toolbar">
+  @if (!contextoFixo()) {
+    <div class="page-toolbar">
     <select class="form-select" style="max-width: 280px;" [value]="turmaFiltro()" (change)="turmaFiltro.set(valor($event))">
       <option value="">Todas as turmas</option>
-      @for (turma of turmas.turmas(); track turma.id) {
+      @for (turma of turmasDisponiveis(); track turma.id) {
         <option [value]="turma.id">{{ turma.nome }}</option>
       }
     </select>
-  </div>
+    </div>
+  }
 
-  @if (turmaFiltro() && resumoFiltro(); as resumo) {
+  @if (turmaFiltroEfetivo() && resumoFiltro(); as resumo) {
     <div class="card">
       <div class="card-header">
         <h2>Resumo da turma</h2>
@@ -111,9 +122,13 @@
                 </td>
                 <td>
                   <div class="table-actions">
-                    <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(frequencia)">
-                      <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
-                    </button>
+                    @if (frequencia.disciplinaId) {
+                      <button class="btn btn-sm btn-light" type="button" (click)="abrirEdicao(frequencia)">
+                        <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+                      </button>
+                    } @else {
+                      <span class="form-text">Registro histórico sem disciplina</span>
+                    }
                     <button class="btn btn-sm btn-danger" type="button" aria-label="Excluir chamada" (click)="pedirExclusao(frequencia)">
                       <span class="material-symbols-outlined" aria-hidden="true">delete</span>
                     </button>
@@ -135,15 +150,22 @@
 >
   <form (submit)="salvar($event)">
     <div class="form-grid">
+      @if (contextoFixo()) {
+        <div>
+          <label class="form-label" for="chamada-turma-contexto">Turma *</label>
+          <input id="chamada-turma-contexto" class="form-control" [value]="turmaNome(turmaIdQuery())" disabled />
+        </div>
+      } @else {
       <div>
         <label class="form-label" for="chamada-turma">Turma *</label>
         <select id="chamada-turma" class="form-select" [value]="form().turmaId" (change)="selecionarTurma($event)">
           <option value="">Selecione a turma</option>
-          @for (turma of turmas.turmas(); track turma.id) {
+          @for (turma of turmasDisponiveis(); track turma.id) {
             <option [value]="turma.id">{{ turma.nome }}</option>
           }
         </select>
       </div>
+      }
 
       <div>
         <label class="form-label" for="chamada-data">Data *</label>
@@ -157,21 +179,54 @@
       </div>
 
       <div class="span-2">
-        <label class="form-label" for="chamada-disciplina">Disciplina</label>
+        @if (horariosPrevistos().length > 0) {
+          <div class="alert alert-info" role="status">
+            Aulas previstas para esta data:
+            @for (horario of horariosPrevistos(); track $index; let ultima = $last) {
+              <strong>
+                {{ horario.inicio }}–{{ horario.fim }}
+                {{ disciplinaNome(horario.disciplinaId) }}
+                @if (horario.quantidadeAulas > 1) {
+                  ({{ horario.quantidadeAulas }} aulas)
+                }
+                {{ ultima ? '' : ', ' }}
+              </strong>
+            }
+            @if (!disciplinaIdQuery() && horariosPrevistos().length > 1) {
+              <span> Confirme abaixo a disciplina da aula realizada.</span>
+            }
+          </div>
+        } @else if (!disciplinaIdQuery() && form().turmaId) {
+          <p class="form-text">
+            Não há aulas cadastradas para esta turma neste dia. Selecione a disciplina da aula.
+          </p>
+        }
+        @if (disciplinaIdQuery()) {
+          <label class="form-label" for="chamada-disciplina-fixa">Disciplina da aula *</label>
+          <input
+            id="chamada-disciplina-fixa"
+            class="form-control"
+            [value]="disciplinaNome(disciplinaIdQuery())"
+            readonly
+          />
+        } @else {
+        <label class="form-label" for="chamada-disciplina">Disciplina da aula *</label>
         <select
           id="chamada-disciplina"
           class="form-select"
           [value]="form().disciplinaId"
           (change)="selecionarDisciplina($event)"
+          required
         >
-          <option value="">Geral (por aula)</option>
+          <option value="" disabled>Selecione a disciplina da aula</option>
           @for (disciplina of disciplinasDaTurma(); track disciplina.id) {
             <option [value]="disciplina.id">{{ disciplina.nome }}</option>
           }
         </select>
         <span class="form-text">
-          Deixe "Geral" para frequência única por aula; escolha a disciplina para frequência específica.
+          Selecione a disciplina em que a aula ocorreu.
         </span>
+        }
       </div>
     </div>
 
@@ -231,7 +286,11 @@
 
     <div class="d-flex justify-content-end gap-2 mt-3">
       <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
-      <button class="btn btn-primary" type="submit" [disabled]="!form().turmaId || !form().data">
+      <button
+        class="btn btn-primary"
+        type="submit"
+        [disabled]="!form().turmaId || !form().data || !form().disciplinaId"
+      >
         Salvar chamada
       </button>
     </div>

@@ -1,0 +1,49 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Horários</h1>
+      <p class="tl-text-muted">
+        Monte e ajuste a grade semanal das turmas, com geração automática e arrastar e soltar.
+      </p>
+    </div>
+  </header>
+
+  @if (turmas().length === 0) {
+    <div class="card">
+      <div class="empty-state">
+        <div class="empty-state__icon" aria-hidden="true">
+          <span class="material-symbols-outlined">calendar_view_week</span>
+        </div>
+        <h3>Nenhuma turma ativa</h3>
+        <p>Cadastre uma turma ativa para montar a grade horária.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="page-toolbar">
+      <label class="form-label mb-0" for="horarios-turma">Turma</label>
+      <select
+        id="horarios-turma"
+        class="form-select horarios-select"
+        [value]="turmaSelecionada()?.id ?? ''"
+        (change)="selecionarTurma($event)"
+      >
+        @for (turma of turmas(); track turma.id) {
+          <option [value]="turma.id">
+            {{ turma.nome }}
+            @if (turma.serie) {
+              — {{ turma.serie }}
+            }
+          </option>
+        }
+      </select>
+    </div>
+
+    @if (turmaSelecionada(); as turma) {
+      <app-turma-horarios
+        [turmaId]="turma.id"
+        [disciplinas]="disciplinasDaTurma()"
+        [somenteLeitura]="false"
+      />
+    }
+  }
+</section>

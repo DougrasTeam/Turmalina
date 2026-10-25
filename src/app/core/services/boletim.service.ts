@@ -21,7 +21,11 @@ export class BoletimService {
   private readonly frequencias = inject(FrequenciasService);
   private readonly instituicao = inject(InstituicaoService);
 
-  gerar(alunoId: string, periodoLetivoId: string): Boletim | null {
+  gerar(
+    alunoId: string,
+    periodoLetivoId: string,
+    disciplinaIdsPermitidas?: readonly string[],
+  ): Boletim | null {
     const aluno = this.alunos.alunos().find((item) => item.id === alunoId);
     if (!aluno) return null;
 
@@ -32,11 +36,32 @@ export class BoletimService {
     const frequenciaMinima = this.instituicao.frequenciaMinima();
     const abonaJustificada = this.instituicao.faltaJustificadaAbona();
 
-    const avaliacoesPeriodo = turma ? this.avaliacoes.porTurmaEPeriodo(turma.id, periodoLetivoId) : [];
-    const chamadas = turma ? this.chamadasDoPeriodo(turma.id, periodoLetivoId) : [];
+    const disciplinasPermitidas =
+      disciplinaIdsPermitidas === undefined ? null : new Set(disciplinaIdsPermitidas);
+    const avaliacoesPeriodo = turma
+      ? this.avaliacoes
+          .porTurmaEPeriodo(turma.id, periodoLetivoId)
+          .filter(
+            (avaliacao) =>
+              disciplinasPermitidas === null ||
+              disciplinasPermitidas.has(avaliacao.disciplinaId),
+          )
+      : [];
+    const chamadas = turma
+      ? this.chamadasDoPeriodo(turma.id, periodoLetivoId).filter(
+          (chamada) =>
+            disciplinasPermitidas === null ||
+            chamada.disciplinaId === null ||
+            disciplinasPermitidas.has(chamada.disciplinaId),
+        )
+      : [];
 
     const disciplinas: BoletimDisciplina[] = this.disciplinas
       .porIds(turma?.disciplinaIds ?? [])
+      .filter(
+        (disciplina) =>
+          disciplinasPermitidas === null || disciplinasPermitidas.has(disciplina.id),
+      )
       .map((disciplina) => {
         const avaliacoesDisciplina = avaliacoesPeriodo.filter(
           (avaliacao) => avaliacao.disciplinaId === disciplina.id,
@@ -86,10 +111,14 @@ export class BoletimService {
     };
   }
 
-  gerarPorTurma(turmaId: string, periodoLetivoId: string): Boletim[] {
+  gerarPorTurma(
+    turmaId: string,
+    periodoLetivoId: string,
+    disciplinaIdsPermitidas?: readonly string[],
+  ): Boletim[] {
     return this.alunos
       .porTurma(turmaId)
-      .map((aluno) => this.gerar(aluno.id, periodoLetivoId))
+      .map((aluno) => this.gerar(aluno.id, periodoLetivoId, disciplinaIdsPermitidas))
       .filter((boletim): boletim is Boletim => boletim !== null);
   }
 

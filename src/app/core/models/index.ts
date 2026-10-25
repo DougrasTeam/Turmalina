@@ -56,17 +56,6 @@ export const TURNOS: TurnoOpcao[] = [
   { value: 'integral', label: 'Integral' },
 ];
 
-export const DISCIPLINAS_SUGERIDAS: string[] = [
-  'Matemática',
-  'Português',
-  'Ciências',
-  'História',
-  'Geografia',
-  'Inglês',
-  'Arte',
-  'Educação Física',
-];
-
 const ALFABETO_ID = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 export function createId(): string {
@@ -101,6 +90,7 @@ export * from './evento.model';
 export * from './filtro-eventos.model';
 export * from './filtro-publicacoes.model';
 export * from './frequencia.model';
+export * from './horario-turma.model';
 export * from './gamificacao.model';
 export * from './instituicao.model';
 export * from './matricula.model';

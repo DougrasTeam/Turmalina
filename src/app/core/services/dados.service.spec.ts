@@ -34,6 +34,7 @@ describe('DadosService', () => {
     'turmalina.vinculos-docentes',
     'turmalina.matriculas',
     'turmalina.frequencias',
+    'turmalina.grades-horarias',
     'turmalina.avaliacoes',
     'turmalina.auditoria',
   ];

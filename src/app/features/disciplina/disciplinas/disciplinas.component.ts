@@ -31,6 +31,7 @@ export class DisciplinasComponent {
 
   protected readonly modalAberto = signal(false);
   protected readonly editando = signal<Disciplina | null>(null);
+  protected readonly criandoPadrao = signal(false);
 
   protected readonly exclusaoAberta = signal(false);
   protected readonly disciplinaEmExclusao = signal<Disciplina | null>(null);
@@ -44,6 +45,26 @@ export class DisciplinasComponent {
   protected abrirNovo(): void {
     this.editando.set(null);
     this.modalAberto.set(true);
+  }
+
+  protected async criarDisciplinasPadrao(): Promise<void> {
+    this.criandoPadrao.set(true);
+    try {
+      await this.disciplinas.load();
+      const quantidade = await this.disciplinas.criarDisciplinasPadrao();
+      if (quantidade === 0) {
+        this.toast.mostrar('Todas as disciplinas padrão já estão cadastradas.', 'info');
+        return;
+      }
+      this.toast.mostrar(`${quantidade} disciplina(s) padrão criada(s).`);
+    } catch (erro) {
+      this.toast.mostrar(
+        erro instanceof Error ? erro.message : 'Não foi possível criar as disciplinas padrão.',
+        'warning',
+      );
+    } finally {
+      this.criandoPadrao.set(false);
+    }
   }
 
   protected abrirEdicao(disciplina: Disciplina): void {

@@ -77,6 +77,12 @@ const NAV_EQUIPE_MOBILE: ItemNav[] = [
 const NAV_ADMIN: ItemNav[] = [
   { path: '/instituicao', label: 'Instituição', icon: 'account_balance', funcionalidade: 'instituicao' },
   {
+    path: '/horarios',
+    label: 'Horários',
+    icon: 'calendar_view_week',
+    funcionalidade: 'horarios',
+  },
+  {
     path: '/periodos-letivos',
     label: 'Períodos letivos',
     icon: 'calendar_month',
@@ -184,6 +190,7 @@ export class App {
     { prefixo: '/pontuar', titulo: 'Pontuar' },
     { prefixo: '/instituicao', titulo: 'Instituição' },
     { prefixo: '/periodos-letivos', titulo: 'Períodos letivos' },
+    { prefixo: '/horarios', titulo: 'Horários' },
     { prefixo: '/disciplinas', titulo: 'Disciplinas' },
     { prefixo: '/relatorios', titulo: 'Relatórios' },
     { prefixo: '/gamificacao/acoes', titulo: 'Ações de XP' },

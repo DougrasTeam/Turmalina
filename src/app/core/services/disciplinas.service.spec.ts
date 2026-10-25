@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { AuthRepository } from '../auth/data-access/auth.repository';
 import { MockAuthRepository } from '../auth/data-access/mock-auth.repository';
-import { DadosDisciplina } from '../models/disciplina.model';
+import { DadosDisciplina, DISCIPLINAS_PADRAO } from '../models/disciplina.model';
 import { DisciplinasService } from './disciplinas.service';
 
 function dados(sobrescrever: Partial<DadosDisciplina> = {}): DadosDisciplina {
@@ -29,6 +29,20 @@ describe('DisciplinasService', () => {
   it('semeia disciplinas padrão quando o armazenamento está vazio', async () => {
     await service.load();
     expect(service.total()).toBeGreaterThan(0);
+  });
+
+  it('cria as disciplinas padrão apenas uma vez e com cores diferentes', async () => {
+    await service.load();
+    await service.removerTodas();
+
+    const criadas = await service.criarDisciplinasPadrao();
+
+    expect(criadas).toBe(DISCIPLINAS_PADRAO.length);
+    expect(service.total()).toBe(DISCIPLINAS_PADRAO.length);
+    expect(new Set(service.disciplinas().map((disciplina) => disciplina.cor)).size).toBe(
+      DISCIPLINAS_PADRAO.length,
+    );
+    expect(await service.criarDisciplinasPadrao()).toBe(0);
   });
 
   it('cria e lista uma disciplina', async () => {

@@ -165,8 +165,21 @@ export class AvaliacoesService {
     return mediaDaAvaliacao(avaliacao, this.instituicao.casasDecimaisNota());
   }
 
-  resultadoAluno(alunoId: string, turmaId: string, periodoLetivoId?: string): ResultadoMedia {
-    const escopo = periodoLetivoId ? this.porTurmaEPeriodo(turmaId, periodoLetivoId) : this.porTurma(turmaId);
+  resultadoAluno(
+    alunoId: string,
+    turmaId: string,
+    periodoLetivoId?: string,
+    disciplinaId?: string,
+    avaliacoesPermitidas?: readonly Avaliacao[],
+  ): ResultadoMedia {
+    const avaliacoesDaTurma = (avaliacoesPermitidas ?? this._avaliacoes()).filter(
+      (avaliacao) =>
+        avaliacao.turmaId === turmaId &&
+        (!periodoLetivoId || avaliacao.periodoLetivoId === periodoLetivoId),
+    );
+    const escopo = disciplinaId
+      ? avaliacoesDaTurma.filter((avaliacao) => avaliacao.disciplinaId === disciplinaId)
+      : avaliacoesDaTurma;
     return calcularMediaAluno(escopo, alunoId, this.instituicao.casasDecimaisNota());
   }
 

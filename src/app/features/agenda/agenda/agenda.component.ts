@@ -7,11 +7,11 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ListaEventosComponent } from '../lista-eventos/lista-eventos.component';
 import { EventoFormComponent } from '../evento-form/evento-form.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
 import { EventosService } from '../../../core/services/eventos.service';
-import { ProfessoresService } from '../../../core/services/professores.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
-import { Professor, Turma } from '../../../core/models';
+import { Turma } from '../../../core/models';
 import { Evento } from '../../../core/models/evento.model';
 import {
   FILTRO_EVENTOS_PADRAO,
@@ -34,8 +34,8 @@ export class AgendaComponent {
   private readonly route = inject(ActivatedRoute);
   protected readonly auth = inject(AuthService);
   protected readonly eventos = inject(EventosService);
+  protected readonly contexto = inject(ContextoProfessorService);
   private readonly turmas = inject(TurmasService);
-  private readonly professores = inject(ProfessoresService);
   private readonly toast = inject(ToastService);
 
   private readonly routePai = this.route.parent;
@@ -70,26 +70,10 @@ export class AgendaComponent {
   protected readonly eventoEditando = signal<Evento | null>(null);
   protected readonly eventoExcluindo = signal<Evento | null>(null);
 
-  private readonly professorProprio = computed<Professor | null>(() => {
-    const usuario = this.auth.usuario();
-    if (!usuario || usuario.papel !== 'professor') return null;
-    return (
-      this.professores
-        .professores()
-        .find(
-          (professor) => professor.userId === usuario.id || professor.email === usuario.email,
-        ) ?? null
-    );
-  });
-
   /** Turmas que o usuário pode agendar: todas para admin, as próprias para o professor. */
   protected readonly turmasDisponiveis = computed<Turma[]>(() => {
     if (this.auth.papel() === 'administrador') return this.turmas.turmas();
-    const professor = this.professorProprio();
-    if (!professor) return [];
-    return this.turmas
-      .turmas()
-      .filter((turma) => (turma.professorIds ?? []).includes(professor.id));
+    return this.contexto.turmasDoProfessor();
   });
 
   private readonly turmasPermitidas = computed(
@@ -107,12 +91,21 @@ export class AgendaComponent {
 
   /** Eventos que o usuário pode ver, antes do filtro de visualização. */
   protected readonly eventosVisiveis = computed<Evento[]>(() => {
-    if (this.auth.papel() === 'administrador') return this.eventos.ordenados();
-    const permitidas = this.turmasPermitidas();
-    return this.eventos
-      .ordenados()
-      .filter((evento) => evento.turmaId === null || permitidas.has(evento.turmaId));
+    const eventos =
+      this.auth.papel() === 'administrador'
+        ? this.eventos.ordenados()
+        : this.eventos
+            .ordenados()
+            .filter(
+              (evento) => evento.turmaId === null || this.turmasPermitidas().has(evento.turmaId),
+            );
+    const turmaId = this.turmaIdQuery();
+    return turmaId
+      ? eventos.filter((evento) => evento.turmaId === null || evento.turmaId === turmaId)
+      : eventos;
   });
+
+  protected readonly turmaFixa = computed(() => this.turmaIdQuery() || null);
 
   protected readonly eventosFiltrados = computed<Evento[]>(() =>
     aplicarFiltroEventos(this.eventosVisiveis(), this.filtro()),

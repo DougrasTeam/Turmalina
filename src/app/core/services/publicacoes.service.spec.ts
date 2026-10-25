@@ -23,6 +23,7 @@ function dados(sobrescrever: Partial<DadosPublicacao> = {}): DadosPublicacao {
     conteudo: 'A feira ocorrerá na próxima semana.',
     imagemUrl: null,
     turmaId: 'turma-1',
+    disciplinaId: null,
     publicadaEm: '2026-03-01T10:00:00.000Z',
     expiraEm: null,
     ...sobrescrever,
@@ -66,6 +67,12 @@ describe('PublicacoesService', () => {
     ).toBeRejected();
   });
 
+  it('exige turma para uma publicação disciplinar', async () => {
+    await expectAsync(
+      service.criar(dados({ turmaId: null, disciplinaId: 'disciplina-1' }), autor),
+    ).toBeRejectedWithError('Uma publicação disciplinar precisa estar vinculada a uma turma.');
+  });
+
   it('arquiva e republica mantendo a autoria', async () => {
     const publicacao = await service.criar(dados(), autor);
     await service.arquivar(publicacao.id);
@@ -102,6 +109,28 @@ describe('PublicacoesService', () => {
     expect(ids).toContain(institucional.id);
     expect(ids).not.toContain(expirada.id);
     expect(vigentes.length).toBe(2);
+  });
+
+  it('inclui publicação geral e filtra publicação disciplinar pelo contexto', async () => {
+    const geral = await service.criar(dados({ disciplinaId: null }), autor);
+    const matematica = await service.criar(
+      dados({ disciplinaId: 'matematica', titulo: 'Atividade de matemática' }),
+      autor,
+    );
+    const ciencias = await service.criar(
+      dados({ disciplinaId: 'ciencias', titulo: 'Atividade de ciências' }),
+      autor,
+    );
+
+    const publicacoesDeMatematica = service
+      .vigentesParaTurma('turma-1')
+      .filter((publicacao) =>
+        publicacao.disciplinaId === null || publicacao.disciplinaId === 'matematica',
+      );
+
+    expect(publicacoesDeMatematica.map((publicacao) => publicacao.id)).toContain(geral.id);
+    expect(publicacoesDeMatematica.map((publicacao) => publicacao.id)).toContain(matematica.id);
+    expect(publicacoesDeMatematica.map((publicacao) => publicacao.id)).not.toContain(ciencias.id);
   });
 
   it('remove uma publicação', async () => {

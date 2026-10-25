@@ -20,6 +20,7 @@ const CHAVES = [
   'turmalina.periodos-letivos',
   'turmalina.avaliacoes',
   'turmalina.frequencias',
+  'turmalina.grades-horarias',
   'turmalina.instituicao',
   'turmalina.auditoria',
 ];
@@ -83,22 +84,25 @@ describe('RelatoriosService', () => {
   }
 
   it('monta o relatório de frequência e sinaliza abaixo do limite', async () => {
-    const { turma, aluno, periodo } = await criarCenario();
+    const { matematica, turma, aluno, periodo } = await criarCenario();
     await frequencias.salvar({
       turmaId: turma.id,
       periodoLetivoId: periodo.id,
+      disciplinaId: matematica.id,
       data: '2026-03-10',
       registros: [{ alunoId: aluno.id, status: 'presente', justificativa: null }],
     });
     await frequencias.salvar({
       turmaId: turma.id,
       periodoLetivoId: periodo.id,
+      disciplinaId: matematica.id,
       data: '2026-03-11',
       registros: [{ alunoId: aluno.id, status: 'falta', justificativa: null }],
     });
     await frequencias.salvar({
       turmaId: turma.id,
       periodoLetivoId: periodo.id,
+      disciplinaId: matematica.id,
       data: '2026-03-12',
       registros: [{ alunoId: aluno.id, status: 'falta_justificada', justificativa: 'atestado' }],
     });
@@ -174,6 +178,7 @@ describe('RelatoriosService', () => {
     await frequencias.salvar({
       turmaId: turma.id,
       periodoLetivoId: periodo.id,
+      disciplinaId: matematica.id,
       data: '2026-03-10',
       registros: [{ alunoId: aluno.id, status: 'presente', justificativa: null }],
     });

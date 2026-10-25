@@ -26,38 +26,40 @@
         </div>
       }
 
-      <nav class="disciplina__abas" aria-label="Navegacao da disciplina">
-        <a class="disciplina__aba" routerLink="." routerLinkActive="disciplina__aba--ativa" [routerLinkActiveOptions]="{ exact: true }">
-          <span class="material-symbols-outlined">dashboard</span>
-          Visao geral
-        </a>
-        <a class="disciplina__aba" routerLink="frequencia" routerLinkActive="disciplina__aba--ativa">
-          <span class="material-symbols-outlined">fact_check</span>
-          Frequencia
-        </a>
-        <a class="disciplina__aba" routerLink="avaliacoes" routerLinkActive="disciplina__aba--ativa">
-          <span class="material-symbols-outlined">grading</span>
-          Avaliacoes e notas
-        </a>
-        <a class="disciplina__aba" routerLink="pontuar" routerLinkActive="disciplina__aba--ativa">
-          <span class="material-symbols-outlined">stars</span>
-          Pontuar
-        </a>
-        <a class="disciplina__aba" routerLink="equipes" routerLinkActive="disciplina__aba--ativa">
-          <span class="material-symbols-outlined">groups</span>
-          Equipes
-        </a>
-        <a class="disciplina__aba" routerLink="agenda" routerLinkActive="disciplina__aba--ativa">
-          <span class="material-symbols-outlined">event</span>
-          Agenda
-        </a>
-        <a class="disciplina__aba" routerLink="mural" routerLinkActive="disciplina__aba--ativa">
-          <span class="material-symbols-outlined">campaign</span>
-          Mural
-        </a>
-      </nav>
+      @if (autorizado()) {
+        <nav class="disciplina__abas" aria-label="Navegacao da disciplina">
+          <a class="disciplina__aba" routerLink="." routerLinkActive="disciplina__aba--ativa" [routerLinkActiveOptions]="{ exact: true }">
+            <span class="material-symbols-outlined">dashboard</span>
+            Visao geral
+          </a>
+          <a class="disciplina__aba" routerLink="frequencia" routerLinkActive="disciplina__aba--ativa">
+            <span class="material-symbols-outlined">fact_check</span>
+            Frequencia
+          </a>
+          <a class="disciplina__aba" routerLink="avaliacoes" routerLinkActive="disciplina__aba--ativa">
+            <span class="material-symbols-outlined">grading</span>
+            Avaliacoes e notas
+          </a>
+          <a class="disciplina__aba" routerLink="pontuar" routerLinkActive="disciplina__aba--ativa">
+            <span class="material-symbols-outlined">stars</span>
+            Pontuar
+          </a>
+          <a class="disciplina__aba" routerLink="equipes" routerLinkActive="disciplina__aba--ativa">
+            <span class="material-symbols-outlined">groups</span>
+            Equipes
+          </a>
+          <a class="disciplina__aba" routerLink="agenda" routerLinkActive="disciplina__aba--ativa">
+            <span class="material-symbols-outlined">event</span>
+            Agenda da turma
+          </a>
+          <a class="disciplina__aba" routerLink="mural" routerLinkActive="disciplina__aba--ativa">
+            <span class="material-symbols-outlined">campaign</span>
+            Mural
+          </a>
+        </nav>
 
-      <router-outlet />
+        <router-outlet />
+      }
     </section>
   } @else {
     <section class="page">

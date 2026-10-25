@@ -269,10 +269,15 @@ export class DadosDemoService {
     if (!periodo || this.periodos.periodoEncerrado(periodo.id)) return;
     if (this.frequencias.porTurma(turma.id).length > 0) return;
 
+    const disciplinaId = this.disciplinas
+      .porIds(turma.disciplinaIds)
+      .find((disciplina) => disciplina.ativa)?.id;
+    if (!disciplinaId) return;
+
     await this.frequencias.salvar({
       turmaId: turma.id,
       periodoLetivoId: periodo.id,
-      disciplinaId: null,
+      disciplinaId,
       data: new Date().toISOString().slice(0, 10),
       registros: [{ alunoId: aluno.id, status: 'presente', justificativa: null }],
       observacao: 'Chamada sintética para demonstração.',

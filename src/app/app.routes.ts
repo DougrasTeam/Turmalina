@@ -135,6 +135,13 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'horarios',
+    title: 'Horários — Turmalina',
+    canActivate: rotaAdmin('horarios'),
+    loadComponent: () =>
+      import('./features/horarios/horarios/horarios.component').then((m) => m.HorariosComponent),
+  },
+  {
     path: 'professores',
     title: 'Professores · Turmalina',
     canActivate: rotaEquipe('professores'),

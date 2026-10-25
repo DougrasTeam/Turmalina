@@ -47,14 +47,21 @@ Documento de regras de negócio. Distingue regras **já implementadas** de regra
   Function valida o plano, cria escola, conta de Auth, vínculo de administrador
   e funcionalidades associadas ao plano; em caso de erro, tenta remover os
   registros criados. O fluxo não processa nem confirma pagamento.
-- **RF-010 (frequência):** a chamada registra turma, data e, opcionalmente,
-  disciplina (nulo = frequência geral por aula). Estados: `presente`, `falta`,
-  `falta_justificada`. Não há duas chamadas para o mesmo turma/data/disciplina
-  (o salvamento faz _upsert_). O percentual é
+- **RF-010 (frequência):** cada nova chamada registra turma, data e disciplina
+  da aula. Chamadas gerais antigas (disciplina nula) são preservadas. Estados:
+  `presente`, `falta`, `falta_justificada`. Não há duas chamadas para o mesmo
+  turma/data/disciplina (o salvamento faz _upsert_). O percentual é
   `presenças computáveis ÷ registros válidos × 100`, sem registros = "Sem
   registros" (nunca 0%). A instituição define a **frequência mínima** (%) para
   alertas e se **falta justificada abona** (conta como presença computável).
   Toda chamada é auditada.
+- **Horário semanal da turma:** o administrador monta uma grade visual de
+  segunda a sexta, define o início do primeiro período e a duração padrão da
+  aula, adiciona ou remove linhas de aula e pausas, e atribui disciplina e
+  quantidade de períodos consecutivos diretamente às células. Uma aula dupla
+  ocupa duas células; pausas não podem ser atravessadas. Professores vinculados
+  consultam a grade. A chamada mostra as aulas previstas como referência, sem
+  impedir exceções ou trocas.
 - **RF-011 (avaliações e notas):** a avaliação pertence a turma, disciplina e
   período (etapa e data opcionais) e define nota máxima (padrão 10) e peso
   (padrão 1). Nota em branco é **"não lançada"** e nunca vira zero; nota acima

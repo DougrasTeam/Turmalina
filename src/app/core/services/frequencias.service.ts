@@ -69,7 +69,7 @@ export class FrequenciasService {
     const payload = {
       turmaId: dados.turmaId,
       periodoLetivoId: dados.periodoLetivoId ?? '',
-      disciplinaId: dados.disciplinaId || null,
+      disciplinaId: dados.disciplinaId.trim(),
       data: dados.data,
       registros: dados.registros,
       observacao: dados.observacao ?? null,

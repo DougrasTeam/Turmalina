@@ -9,6 +9,7 @@ import { DisciplinasService } from './disciplinas.service';
 import { EquipesService } from './equipes.service';
 import { EventosService } from './eventos.service';
 import { FrequenciasService } from './frequencias.service';
+import { HorariosTurmaService } from './horarios-turma.service';
 import { GamificacaoService } from './gamificacao.service';
 import { MatriculasService } from './matriculas.service';
 import { MoedasService } from './moedas.service';
@@ -78,6 +79,7 @@ export class DadosService {
   private readonly vinculos = inject(VinculosDocentesService);
   private readonly matriculas = inject(MatriculasService);
   private readonly frequencias = inject(FrequenciasService);
+  private readonly horarios = inject(HorariosTurmaService);
   private readonly avaliacoes = inject(AvaliacoesService);
   private readonly publicacoes = inject(PublicacoesService);
   private readonly comunicados = inject(ComunicadosService);
@@ -273,6 +275,7 @@ export class DadosService {
         await this.alunos.removeTodos();
         break;
       case 'turmas':
+        await this.horarios.removerTodas();
         await this.vinculos.removerTodos();
         await this.avaliacoes.removerTodas();
         await this.frequencias.removerTodas();
@@ -291,6 +294,9 @@ export class DadosService {
         await this.professores.removeTodos();
         break;
       case 'disciplinas':
+        await this.horarios.removerAtribuicoesDeDisciplinas(
+          this.disciplinas.disciplinas().map((disciplina) => disciplina.id),
+        );
         await this.vinculos.removerTodos();
         await this.avaliacoes.removerTodas();
         await this.turmas.limparDisciplinas();
@@ -327,6 +333,7 @@ export class DadosService {
   }
 
   async excluirTudo(): Promise<void> {
+    await this.horarios.removerTodas();
     await this.publicacoes.removerTodas();
     await this.comunicados.removerTodas();
     await this.eventos.removerTodas();

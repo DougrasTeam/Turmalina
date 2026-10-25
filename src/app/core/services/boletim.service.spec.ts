@@ -20,6 +20,7 @@ const CHAVES = [
   'turmalina.periodos-letivos',
   'turmalina.avaliacoes',
   'turmalina.frequencias',
+  'turmalina.grades-horarias',
   'turmalina.instituicao',
   'turmalina.auditoria',
 ];

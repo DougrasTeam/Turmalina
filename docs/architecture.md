@@ -12,7 +12,10 @@ está planejado. Para requisitos completos, ver
 - **Reatividade:** Signals (`signal`, `computed`, `effect`) e `inject()`.
 - **Formulários:** formulários reativos para casos com validação (ex.: login);
   template-driven/signals nos formulários simples existentes.
-- **Sem backend conectado:** dados e autenticação são **mock plugável**.
+- **Backend:** Supabase Auth, Postgres e Storage integrados. O app mantém
+  repositórios de localStorage para demo/testes e usa Supabase quando
+  `usarSupabaseDados` está habilitado. O código local não comprova quais
+  migrations ou Edge Functions já foram aplicadas/publicadas no ambiente remoto.
 
 ## Estrutura atual
 
@@ -20,23 +23,26 @@ está planejado. Para requisitos completos, ver
 src/app/
   core/
     auth/
-      data-access/        AuthRepository (contrato) + MockAuthRepository
+      data-access/        AuthRepository + SupabaseAuthRepository (mock alternativo)
       guards/             autenticacaoGuard, papelGuard(...)
       rota-inicial.ts     Rota inicial por papel
     models/               Modelos de domínio (única pasta models do app)
     services/             Serviços (única pasta services do app)
-    data/                 Repository<T> (contrato), LocalStorageRepository, RepositoryFactory
+    data/                 Repository<T>, LocalStorageRepository, SupabaseRepository,
+                          RepositoryFactory e mapeadores
   features/
     auth/login/           Tela de login
     dashboard/dashboard/  Painel
+    professor/painel/     Indicadores e atalhos do professor
     turma/turmas/         Lista de turmas
     turma/turma-form/     Formulário de turma
-    turma/turma-detalhe/  Detalhe da turma
+    turma/turma-detalhe/  Visão geral e gestão da turma
+    turma/turma-disciplina/ Contexto e rotas aninhadas por disciplina
     professor/professores/  Cadastro de professores
     aluno/alunos/         Lista de alunos
     aluno/aluno-form/     Formulário de aluno
     aluno/aluno-import/   Importação de alunos (CSV)
-    aluno/inicio/         Área do aluno (placeholder explícito)
+    aluno/                Área do aluno (boletim, mural, agenda e gamificação)
     periodo-letivo/instituicao/         Dados da instituição
     periodo-letivo/periodos-letivos/    Lista de períodos letivos
     periodo-letivo/periodo-letivo-form/ Formulário de período letivo
@@ -55,7 +61,12 @@ src/app/
     aluno/agenda/                       Agenda do aluno
     gamificacao/acoes-gamificacao/      Catálogo de ações de XP (admin)
     gamificacao/pontuar/                Pontuar alunos (equipe)
+    gamificacao/equipes/                Equipes, vínculos e placar
+    gamificacao/conquistas/             Conquistas (equipe)
+    gamificacao/moedas/                 Ledger de moedas (equipe)
     aluno/gamificacao/                  XP/nível/histórico do aluno
+    aluno/moedas/                      Saldo e extrato do aluno
+    aluno/conquistas/                  Álbum do aluno
     admin-saas/layout/                  Shell do painel do SaaS (super_admin)
     admin-saas/escolas/                 Escolas e planos (super_admin)
     admin-saas/planos/                  Editor de planos e funcionalidades (super_admin)
@@ -177,7 +188,8 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
 ## Frequência (RF-010)
 
 - `Frequencia` (`core/models/frequencia.model.ts`): turma, período letivo,
-  disciplina opcional (`null` = frequência geral) e `data`; `registros`
+  disciplina obrigatória para novas chamadas (`null` é mantido apenas em
+  registros históricos) e `data`; `registros`
   (`{ alunoId, status, justificativa }`) com `status` em
   `presente|falta|falta_justificada`. `calcularResumoFrequencia` aplica a
   configuração institucional (`frequenciaMinima`, `faltaJustificadaAbona`);
@@ -188,6 +200,16 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   `abaixoDoLimite`. A tela `features/frequencia/frequencias/` (`/frequencia`,
   admin/professor) lista chamadas, filtra por turma e destaca alunos abaixo do
   limite.
+- `HorariosTurmaService` (`core/services/horarios-turma.service.ts`, chave
+  `turmalina.grades-horarias`) persiste uma grade recorrente por turma, com
+  linhas de aula/pausa e células por dia da semana. Cada célula pode ocupar
+  vários períodos consecutivos. A grade define horário inicial e duração de
+  cada aula; a tela da chamada mostra as aulas previstas sem impedir exceções.
+- A migration `0027_horarios_semanais_turma.sql` cria a tabela e aplica RLS:
+  ela foi a primeira versão da grade por horários explícitos. A migration
+  `0028_grade_visual_turma.sql` adiciona a grade matricial configurável;
+  administradores podem alterá-la e professores com acesso à turma podem
+  consultá-la. Os registros da tabela da primeira versão não são apagados.
 - A instituição (`InstituicaoService`) passou a guardar `frequenciaMinima`
   (padrão 75%) e `faltaJustificadaAbona`, editáveis em `/instituicao`.
 
@@ -537,8 +559,9 @@ Componentes não fazem acesso a dados direto: dependem de serviços/contratos.
   `supabase/migrations/0014_perfil_ativo_autorizacao.sql`) exigem perfil
   **ativo**, de modo que um token de acesso ainda válido não concede acesso após
   a exclusão do perfil.
-- `Repository<T>` oferece `createMany`/`removeMany` para escritas em lote; no
-  Supabase elas viram um único `insert`/`delete ... in (...)`.
+- `Repository<T>` oferece `createMany`, `removeMany` e `removeAll` para
+  operações em lote; no Supabase, inserções e exclusões são feitas por
+  requisição e `removeAll` é limitado ao `institution_id` ativo.
 
 ## Ponto de troca de backend
 
@@ -588,9 +611,9 @@ acesso). No Supabase, a estrutura e o RLS estão em
 
 ## Limitações conhecidas
 
-- O modo demo (mock/localStorage) continua disponível; o Supabase é o backend
-  real. O fluxo multi-escola e o bloqueio de escolas inativas só ficam ativos
-  após aplicar `0019_multiplas_escolas.sql` e, em seguida,
+- O modo demo (mock/localStorage) continua disponível; o app está configurado
+  para Supabase. O fluxo multi-escola e o bloqueio de escolas inativas dependem
+  de aplicar `0019_multiplas_escolas.sql` e, em seguida,
   `0020_bloquear_escolas_inativas.sql`,
   `0021_corrigir_rpc_minhas_instituicoes.sql` e
   `0022_indice_unico_perfis_por_escola.sql` e
@@ -598,11 +621,13 @@ acesso). No Supabase, a estrutura e o RLS estão em
   aplicação. A função `admin-usuarios` reutiliza a conta Auth quando o e-mail
   já pertence a um usuário vinculado a outra escola, sem redefinir a senha.
 - UI Kit ainda **não** é uma biblioteca separada (ver ADR 0004).
-- `Repository<T>` é genérico e síncrono por natureza do mock; operações
-  atômicas/transacionais (moedas, resgates) não existem ainda.
-- Módulos acadêmicos concluídos; gamificação em andamento (RF-015, RF-016,
-  RF-017 e RF-020 prontas; RF-018, RF-019, RF-021 e RF-009 pendentes — ver
-  `docs/backlog.md`).
+- `Repository<T>` não oferece transações. O ledger de moedas e as operações de
+  XP estão implementados, mas operações compostas que exigem atomicidade — em
+  especial compra/resgate na loja, ainda pendente — precisam de RPC/transaction
+  no backend.
+- A jornada de professor por turma/disciplina tem componentes e rotas em
+  implementação; confirmar escopo de autorização no backend. RF-018, RF-019 e
+  RF-021 seguem pendentes (ver `docs/backlog.md`).
 
 
 
@@ -617,9 +642,9 @@ Este adendo registra a decisão de UX: o professor abre a turma primeiro em **Vi
 - `Matricula`: vínculo do aluno com turma/período.
 - `Disciplina`: catálogo de matéria.
 - Oferta de disciplina na turma: associação que indica quais matérias aquela turma possui.
-- `VinculoDocente`: associação explícita entre `professorId`, `turmaId` e `disciplinaId`, com status/vigência quando suportados. Deve ser a fonte para descobrir as turmas e disciplinas do professor.
+- `VinculoDocente`: associação explícita entre `professorId`, `turmaId` e `disciplinaId`, com status/vigência quando suportados. É a fonte para autorizar operações por disciplina.
 
-Não duplicar `professorIds` ou listas de disciplinas como fonte paralela de autorização se o repositório já possui entidade de vínculo. Inspecionar o modelo atual e definir uma fonte de verdade.
+No fluxo atual, `turmas.professor_ids` permanece como compatibilidade legada para a visão geral da turma. Não deve conceder acesso a uma disciplina; operações disciplinares exigem vínculo ativo e disciplina ofertada e ativa na turma.
 
 ### Composição de telas
 - **Painel do professor:** turmas vinculadas, disciplina(s) de cada turma e pendências calculadas a partir de dados reais.
@@ -646,9 +671,32 @@ Ao mudar turma, disciplina ou período:
 Não presumir que `BehaviorSubject`, parâmetro de rota, localStorage ou estado do frontend protegem dados. Podem apoiar a navegação, nunca substituir autorização no servidor.
 
 ### Frequência e mural
-- A frequência segue a política da instituição: geral por aula ou vinculada à disciplina. Não criar chamadas duplicadas.
+- Novas chamadas devem estar vinculadas à disciplina da aula; registros gerais
+  antigos são preservados apenas como histórico. Não criar chamadas duplicadas.
 - Distinguir publicações gerais da turma de publicações disciplinares; aplicar permissões separadas.
 - Não alterar esquema/migrações antes de verificar tabelas, vínculos e RLS existentes. Preferir alterações incrementais e compatíveis.
 
 ### Testes técnicos mínimos
 Cobrir professor autorizado e não autorizado para turma-disciplina; isolamento entre duas disciplinas da mesma turma; troca rápida de contexto; tentativa de escrita adulterando IDs no cliente; ausência de dados; e política de frequência/mural conforme configuração.
+
+### Implementação atual e validação pendente
+- O painel e o detalhe da turma reutilizam `ContextoProfessorService`. A
+  designação legada em `turmas.professor_ids` mantém o acesso à visão geral;
+  operações por disciplina exigem vínculo docente ativo.
+- Avaliações, notas e frequências são filtradas pelo contexto da rota. Chamadas
+  novas exigem disciplina. Registros antigos com `disciplina_id` nulo são
+  preservados e permanecem disponíveis na visão geral, mas não aparecem como
+  chamadas de uma disciplina nem podem ser editados sem associação explícita.
+- Publicações do mural podem ser gerais para a turma ou específicas de uma
+  disciplina. A migration `0024_jornada_docente_turma_disciplina.sql` adiciona
+  esse campo e limita as policies RLS de leitura e escrita ao escopo permitido.
+- A migration `0025_corrigir_leitura_frequencias_insert_returning.sql` mantém
+  o mesmo escopo na leitura das chamadas, mas valida diretamente turma e
+  disciplina para permitir que `INSERT ... RETURNING` leia a linha recém-criada.
+- A migration `0026_chamadas_por_disciplina.sql` exige disciplina nas novas
+  chamadas sem apagar registros históricos sem disciplina. Na rota disciplinar,
+  a disciplina da aula é fixa; na tela geral, o usuário deve selecioná-la.
+- O usuário relatou que a migration `0025` foi aplicada e que a chamada passou
+  a funcionar. As migrations `0026` e `0027` ainda precisam ser aplicadas no
+  Supabase; o isolamento e a grade no ambiente de produção não foram verificados
+  diretamente.

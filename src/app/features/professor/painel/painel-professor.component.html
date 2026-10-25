@@ -69,13 +69,55 @@
       </a>
     </div>
 
+    <section class="turmas-docente" aria-labelledby="turmas-docente-titulo">
+      <header class="turmas-docente__header">
+        <div>
+          <h2 id="turmas-docente-titulo">Minhas turmas e disciplinas</h2>
+          <p class="tl-text-muted">Abra a turma para consultar a visão geral ou escolha uma disciplina vinculada.</p>
+        </div>
+      </header>
+      <div class="turmas-docente__lista">
+        @for (turma of turmasDoProfessor(); track turma.id) {
+          <article class="card turma-docente">
+            <div class="card-body">
+              <a class="turma-docente__titulo" [routerLink]="['/turmas', turma.id]">
+                <span class="material-symbols-outlined" aria-hidden="true">school</span>
+                <span>{{ turma.nome }}</span>
+                <span class="material-symbols-outlined turma-docente__abrir" aria-hidden="true">arrow_forward</span>
+              </a>
+              <p class="tl-small tl-text-muted">
+                {{ turma.serie || 'Turma' }} · {{ turma.anoLetivo }}
+              </p>
+              @if (contexto.disciplinasDoProfessorNaTurma(turma.id); as disciplinasVinculadas) {
+                @if (disciplinasVinculadas.length > 0) {
+                  <div class="turma-docente__disciplinas" aria-label="Disciplinas vinculadas">
+                    @for (disciplina of disciplinasVinculadas; track disciplina.id) {
+                      <a
+                        class="badge badge-info turma-docente__disciplina"
+                        [routerLink]="['/turmas', turma.id, 'disciplina', disciplina.id]"
+                      >
+                        {{ disciplina.nome }}
+                        <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                      </a>
+                    }
+                  </div>
+                } @else {
+                  <p class="tl-small tl-text-muted mb-0">Nenhum vínculo ativo por disciplina.</p>
+                }
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
     <div class="kpi-grid">
       <article class="kpi-card">
         <span class="kpi-card__icon" aria-hidden="true"><span class="material-symbols-outlined">groups</span></span>
         <div>
           <div class="kpi-card__value">{{ alunosAtivos() }}</div>
           <div class="kpi-card__label">Alunos ativos na turma</div>
-          <p class="tl-small tl-text-muted">Alunos com cadastro ativo vinculados à turma selecionada.</p>
+          <p class="tl-small tl-text-muted">Alunos ativos da turma selecionada.</p>
         </div>
       </article>
 
@@ -100,7 +142,7 @@
             @if (medias().length === 0) {
               Exibida apenas quando há notas lançadas no período.
             } @else {
-              Média das médias de {{ medias().length }} aluno(s), ponderada quando há pesos.
+              Média das médias nas disciplinas vinculadas de {{ medias().length }} aluno(s).
             }
           </p>
         </div>

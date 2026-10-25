@@ -10,8 +10,8 @@ export interface RegistroPresenca {
 
 /**
  * Chamada (registro de frequência) de uma turma em uma data (RF-010).
- * `disciplinaId` nulo significa frequência global por aula/dia; quando
- * informado, a frequência é específica da disciplina (RF-007).
+ * `disciplinaId` pode ser nulo apenas em chamadas históricas gerais. Novas
+ * chamadas devem sempre estar vinculadas à disciplina da aula.
  */
 export interface Frequencia extends BaseEntity {
   turmaId: string;
@@ -25,7 +25,7 @@ export interface Frequencia extends BaseEntity {
 export interface DadosFrequencia {
   turmaId: string;
   periodoLetivoId?: string;
-  disciplinaId?: string | null;
+  disciplinaId: string;
   data: string;
   registros: RegistroPresenca[];
   observacao?: string | null;
@@ -110,8 +110,11 @@ export function validarFrequencia(
   if (!dados.data) {
     erros.push('Informe a data da chamada.');
   }
+  if (!dados.disciplinaId?.trim()) {
+    erros.push('Selecione a disciplina da aula.');
+  }
 
-  const disciplinaAtual = dados.disciplinaId || null;
+  const disciplinaAtual = dados.disciplinaId?.trim() || null;
   if (dados.turmaId && dados.data) {
     const duplicada = existentes.find(
       (outra) =>

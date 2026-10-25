@@ -85,6 +85,30 @@ describe('AvaliacoesService', () => {
     expect(resultado.formula).toBe('ponderada');
   });
 
+  it('calcula a média somente para a disciplina e conjunto de avaliações autorizados', async () => {
+    const matematica = await service.criar({ ...DADOS, disciplinaId: 'matematica' });
+    await service.criar({ ...DADOS, disciplinaId: 'ciencias', nome: 'Prova de ciências' });
+    await service.lancarNotas(matematica.id, [
+      { alunoId: 'aluno-1', valor: 9, atualizadoEm: '' },
+    ]);
+    const matematicaAtualizada = service.porId(matematica.id);
+
+    if (!matematicaAtualizada) {
+      throw new Error('A avaliação de matemática não foi encontrada.');
+    }
+
+    const resultado = service.resultadoAluno(
+      'aluno-1',
+      'turma-1',
+      'periodo-1',
+      'matematica',
+      [matematicaAtualizada],
+    );
+
+    expect(resultado.valor).toBe(9);
+    expect(resultado.lancadas).toBe(1);
+  });
+
   it('remove todas as avaliações', async () => {
     await service.criar(DADOS);
     await service.removerTodas();

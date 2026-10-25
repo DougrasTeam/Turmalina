@@ -2,15 +2,16 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { Repository } from '../data/repository';
 import { RepositoryFactory } from '../data/repository.factory';
-import { DISCIPLINAS_SUGERIDAS } from '../models';
 import {
   CORES_DISCIPLINA,
+  DISCIPLINAS_PADRAO,
   DadosDisciplina,
   Disciplina,
   gerarCodigoDisciplina,
   validarDisciplina,
 } from '../models/disciplina.model';
 import { AuditoriaService } from './auditoria.service';
+import { HorariosTurmaService } from './horarios-turma.service';
 import { environment } from '../../../environments/environment';
 
 const CARGA_HORARIA_PADRAO = 80;
@@ -23,6 +24,7 @@ export class DisciplinasService {
     () => ({ nome: '', codigo: '', cargaHoraria: CARGA_HORARIA_PADRAO, cor: CORES_DISCIPLINA[0], ativa: true }),
   );
   private readonly auditoria = inject(AuditoriaService);
+  private readonly horarios = inject(HorariosTurmaService);
 
   private readonly _disciplinas = signal<Disciplina[]>([]);
   private carregado = false;
@@ -86,6 +88,48 @@ export class DisciplinasService {
     return disciplina;
   }
 
+  /**
+   * Cria as disciplinas comuns que ainda não existem na escola.
+   *
+   * Cada disciplina recebe uma cor própria da paleta. Disciplinas já
+   * cadastradas, mesmo com nome em outra caixa, são preservadas.
+   */
+  async criarDisciplinasPadrao(): Promise<number> {
+    const nomesExistentes = new Set(
+      this._disciplinas().map((disciplina) => disciplina.nome.trim().toLowerCase()),
+    );
+    const codigosUsados = this._disciplinas().map((disciplina) => disciplina.codigo);
+    const criadas: Disciplina[] = [];
+
+    for (const disciplinaPadrao of DISCIPLINAS_PADRAO) {
+      const nomeNormalizado = disciplinaPadrao.nome.trim().toLowerCase();
+      if (nomesExistentes.has(nomeNormalizado)) continue;
+
+      const codigo = gerarCodigoDisciplina(disciplinaPadrao.nome, codigosUsados);
+      const disciplina = await this.repo.create({
+        nome: disciplinaPadrao.nome,
+        codigo,
+        cargaHoraria: CARGA_HORARIA_PADRAO,
+        cor: disciplinaPadrao.cor,
+        ativa: true,
+      });
+      criadas.push(disciplina);
+      nomesExistentes.add(nomeNormalizado);
+      codigosUsados.push(codigo);
+    }
+
+    if (criadas.length === 0) return 0;
+
+    this._disciplinas.update((lista) => this.ordenar([...lista, ...criadas]));
+    this.auditoria.registrar(
+      'disciplina.padroes-criadas',
+      'Disciplina',
+      null,
+      `${criadas.length} disciplina(s) padrão criada(s)`,
+    );
+    return criadas.length;
+  }
+
   async atualizar(id: string, dados: DadosDisciplina): Promise<Disciplina> {
     const erros = this.validar(dados, id);
     if (erros.length) throw new Error(erros.join('\n'));
@@ -112,6 +156,7 @@ export class DisciplinasService {
 
   async remover(id: string): Promise<void> {
     const disciplina = this.porId(id);
+    await this.horarios.removerAtribuicoesDeDisciplinas([id]);
     await this.repo.remove(id);
     this._disciplinas.update((lista) => lista.filter((item) => item.id !== id));
     if (disciplina) {
@@ -120,6 +165,9 @@ export class DisciplinasService {
   }
 
   async removerTodas(): Promise<void> {
+    await this.horarios.removerAtribuicoesDeDisciplinas(
+      this._disciplinas().map((disciplina) => disciplina.id),
+    );
     for (const disciplina of this._disciplinas()) {
       await this.repo.remove(disciplina.id);
     }
@@ -130,21 +178,19 @@ export class DisciplinasService {
 
   private async semear(): Promise<Disciplina[]> {
     const criadas: Disciplina[] = [];
-    let indice = 0;
-    for (const nome of DISCIPLINAS_SUGERIDAS) {
+    for (const disciplinaPadrao of DISCIPLINAS_PADRAO) {
       const codigo = gerarCodigoDisciplina(
-        nome,
+        disciplinaPadrao.nome,
         criadas.map((disciplina) => disciplina.codigo),
       );
       const disciplina = await this.repo.create({
-        nome,
+        nome: disciplinaPadrao.nome,
         codigo,
         cargaHoraria: CARGA_HORARIA_PADRAO,
-        cor: CORES_DISCIPLINA[indice % CORES_DISCIPLINA.length],
+        cor: disciplinaPadrao.cor,
         ativa: true,
       });
       criadas.push(disciplina);
-      indice++;
     }
     return this.ordenar(criadas);
   }

@@ -23,6 +23,8 @@ export class FeedPublicacoesComponent {
   readonly publicacoes = input<readonly Publicacao[]>([]);
   /** Nome de cada turma por id, usado para exibir o destino da publicação. */
   readonly nomesTurmas = input<Readonly<Record<string, string>>>({});
+  /** Nome de cada disciplina por id, usado para diferenciar o escopo do post. */
+  readonly nomesDisciplinas = input<Readonly<Record<string, string>>>({});
   /** Autor da sessão; quem é o autor pode gerenciar as próprias publicações. */
   readonly autorIdAtual = input<string | null>(null);
   /** Quando `true`, o usuário pode gerenciar todas as publicações (admin). */
@@ -41,7 +43,10 @@ export class FeedPublicacoesComponent {
 
   protected destino(publicacao: Publicacao): string {
     if (publicacao.turmaId === null) return 'Escola toda';
-    return this.nomesTurmas()[publicacao.turmaId] ?? 'Turma';
+    const nomeTurma = this.nomesTurmas()[publicacao.turmaId] ?? 'Turma';
+    if (!publicacao.disciplinaId) return `${nomeTurma} · Turma toda`;
+    const nomeDisciplina = this.nomesDisciplinas()[publicacao.disciplinaId] ?? 'Disciplina';
+    return `${nomeTurma} · ${nomeDisciplina}`;
   }
 
   protected temImagem(publicacao: Publicacao): boolean {

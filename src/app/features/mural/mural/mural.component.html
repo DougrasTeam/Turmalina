@@ -9,6 +9,11 @@
       <p class="tl-text-muted">
         Compartilhe novidades com as suas turmas ou com toda a escola e envie recados individuais.
       </p>
+      @if (disciplinaIdQuery()) {
+        <p class="tl-small tl-text-muted">
+          O feed reúne publicações gerais da turma e desta disciplina. A agenda permanece no escopo da turma.
+        </p>
+      }
     </div>
   </header>
 
@@ -38,6 +43,7 @@
 
   @if (aba() === 'feed') {
     <div class="page-toolbar mural__toolbar">
+      @if (!turmaIdQuery()) {
       <div class="mural__filtros">
         <label class="form-label mb-0" for="mural-filtro">Ver publicações de</label>
         <select
@@ -63,6 +69,7 @@
           </label>
         }
       </div>
+      }
       <span class="page-toolbar__spacer"></span>
       <button class="btn btn-primary" type="button" (click)="abrirNovaPublicacao()">
         <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova publicação
@@ -72,6 +79,7 @@
     <app-feed-publicacoes
       [publicacoes]="publicacoesFiltradas()"
       [nomesTurmas]="nomesTurmas()"
+      [nomesDisciplinas]="nomesDisciplinas()"
       [autorIdAtual]="autorIdAtual()"
       [gerenciarTudo]="gerenciarTudo()"
       vazioTitulo="Nenhuma publicação ainda"
@@ -176,6 +184,8 @@
   [publicacao]="publicacaoEditando()"
   [turmas]="turmasDisponiveis()"
   [permitirInstitucional]="gerenciarTudo()"
+  [turmaFixa]="turmaFixa()"
+  [disciplinaFixa]="disciplinaFixa()"
   (salvo)="onPublicacaoSalva()"
   (fechado)="fecharFormPublicacao()"
 />

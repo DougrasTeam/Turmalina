@@ -5,6 +5,16 @@
       <p class="tl-text-muted">Cadastre as disciplinas da escola e vincule-as às turmas e professores.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+      <button
+        class="btn btn-light"
+        type="button"
+        title="Adiciona as disciplinas comuns que ainda não existem"
+        [disabled]="criandoPadrao()"
+        (click)="criarDisciplinasPadrao()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+        {{ criandoPadrao() ? 'Criando...' : 'Disciplinas padrão' }}
+      </button>
       @if (disciplinas.total() > 0) {
         <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodas()">
           <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todas

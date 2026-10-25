@@ -23,15 +23,28 @@ export class ContextoProfessorService {
   private readonly vinculos = inject(VinculosDocentesService);
   private readonly disciplinas = inject(DisciplinasService);
 
-  /** Professor autenticado, localizado pelo e-mail da conta. */
+  /** Professor autenticado, priorizando o vínculo estável com a conta Auth. */
   readonly professorAtual = computed<Professor | null>(() => {
-    const email = this.auth.usuario()?.email?.trim().toLowerCase();
-    if (!email) return null;
-    return (
-      this.professores
-        .professores()
-        .find((professor) => professor.email.trim().toLowerCase() === email) ?? null
+    const usuario = this.auth.usuario();
+    if (!usuario) return null;
+
+    const professores = this.professores.professores();
+    const professorVinculado = professores.find(
+      (professor) => professor.userId === usuario.id && professor.ativo,
     );
+    if (professorVinculado) return professorVinculado;
+
+    const emailAtual = usuario.email.trim().toLowerCase();
+    if (!emailAtual) return null;
+
+    const professoresLegados = professores.filter(
+      (professor) =>
+        !professor.userId &&
+        professor.ativo &&
+        professor.email.trim().toLowerCase() === emailAtual,
+    );
+
+    return professoresLegados.length === 1 ? professoresLegados[0] : null;
   });
 
   /** Administradores têm visão global; professores ficam restritos à responsabilidade. */
@@ -45,7 +58,10 @@ export class ContextoProfessorService {
     if (!professor) return [];
 
     const turmasVinculadas = new Set(
-      this.vinculos.porProfessor(professor.id).map((vinculo) => vinculo.turmaId),
+      this.vinculos
+        .porProfessor(professor.id)
+        .filter((vinculo) => vinculo.ativo)
+        .map((vinculo) => vinculo.turmaId),
     );
     return this.turmas
       .turmas()
@@ -55,30 +71,28 @@ export class ContextoProfessorService {
   /** Disciplinas em que o professor possui vínculo ativo na turma informada. */
   disciplinasDoProfessorNaTurma(turmaId: string): Disciplina[] {
     const professor = this.professorAtual();
-    if (!professor) return [];
+    const turma = this.turmas.porId(turmaId);
+    if (!professor || !turma) return [];
 
-    const disciplinaIds = new Set(
+    const disciplinasOfertadasAtivas = this.disciplinas
+      .porIds(turma.disciplinaIds)
+      .filter((disciplina) => disciplina.ativa);
+    const disciplinasVinculadas = new Set(
       this.vinculos
         .porTurma(turmaId)
         .filter((vinculo) => vinculo.professorId === professor.id && vinculo.ativo)
         .map((vinculo) => vinculo.disciplinaId),
     );
-    return this.disciplinas.porIds([...disciplinaIds]);
+    return disciplinasOfertadasAtivas.filter((disciplina) =>
+      disciplinasVinculadas.has(disciplina.id),
+    );
   }
 
   /** Indica se o professor possui vínculo ativo na combinação turma–disciplina. */
   possuiVinculoAtivo(turmaId: string, disciplinaId: string): boolean {
-    const professor = this.professorAtual();
-    if (!professor) return false;
-
-    return this.vinculos
-      .porTurma(turmaId)
-      .some(
-        (vinculo) =>
-          vinculo.professorId === professor.id &&
-          vinculo.disciplinaId === disciplinaId &&
-          vinculo.ativo,
-      );
+    return this.disciplinasDoProfessorNaTurma(turmaId).some(
+      (disciplina) => disciplina.id === disciplinaId,
+    );
   }
 
   /** Indica se o professor possui algum vínculo ativo na turma informada. */

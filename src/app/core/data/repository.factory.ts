@@ -26,6 +26,7 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
   'turmalina.disciplinas': { tabela: 'disciplinas', ordenacao: 'nome' },
   'turmalina.professores': { tabela: 'professores', ordenacao: 'nome' },
   'turmalina.turmas': { tabela: 'turmas', ordenacao: 'codigo' },
+  'turmalina.grades-horarias': { tabela: 'grades_horarias_turmas', ordenacao: 'turma_id' },
   'turmalina.alunos': { tabela: 'alunos', ordenacao: 'nome', nulaveis: ['turma_id'] },
   'turmalina.instituicao': { tabela: 'instituicoes', ordenacao: 'criado_em' },
   'turmalina.matriculas': { tabela: 'matriculas', ordenacao: 'criado_em', nulaveis: ['periodo_letivo_id'] },
@@ -33,7 +34,7 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
   'turmalina.publicacoes': {
     tabela: 'publicacoes',
     ordenacao: 'publicada_em',
-    nulaveis: ['turma_id', 'imagem_url'],
+    nulaveis: ['turma_id', 'disciplina_id', 'imagem_url'],
   },
   'turmalina.comunicados': { tabela: 'comunicados', ordenacao: 'criado_em' },
   'turmalina.eventos': { tabela: 'eventos', ordenacao: 'inicio_em', nulaveis: ['turma_id'] },
