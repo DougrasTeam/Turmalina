@@ -22,3 +22,28 @@
   border-color: var(--tl-gray-900, #1f2937);
   box-shadow: 0 0 0 2px #fff inset;
 }
+
+.color-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--tl-border, #d9dee5);
+}
+
+.color-input {
+  width: 2.5rem;
+  height: 2rem;
+  border: 1px solid var(--tl-border, #d9dee5);
+  border-radius: 0.4rem;
+  padding: 0.125rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.color-value {
+  color: var(--tl-text-muted, #6b7280);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}

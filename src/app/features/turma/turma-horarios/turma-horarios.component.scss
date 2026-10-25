@@ -1,0 +1,245 @@
+.grade-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.grade-config {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(12rem, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.grade-config__save {
+  min-height: 2.5rem;
+}
+
+.grade-table-wrapper {
+  overflow-x: auto;
+}
+
+.grade-table {
+  width: 100%;
+  min-width: 55rem;
+  border-collapse: separate;
+  border-spacing: 0.25rem;
+  table-layout: fixed;
+}
+
+.grade-table th,
+.grade-table td {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.375rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.grade-table thead th {
+  background: var(--surface-muted, #f3f4f6);
+  font-weight: 600;
+}
+
+.grade-table__time-heading,
+.grade-table__time {
+  width: 8.5rem;
+}
+
+.grade-table__time {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.grade-table__row-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.grade-table__insert-break,
+.grade-table__remove-row {
+  padding: 0.125rem 0.25rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.grade-table__insert-break:hover,
+.grade-table__remove-row:hover {
+  background: var(--surface-muted, #f3f4f6);
+  color: var(--text-primary, #111827);
+}
+
+.grade-empty-cell {
+  display: grid;
+  width: 100%;
+  min-height: 3.5rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+}
+
+.grade-empty-cell:hover:not(:disabled) {
+  background: var(--surface-muted, #f3f4f6);
+  color: var(--color-primary, #2563eb);
+}
+
+.grade-empty-cell:disabled {
+  cursor: default;
+}
+
+.grade-lesson {
+  display: flex;
+  width: 100%;
+  min-height: 3.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border: 2px solid color-mix(in srgb, var(--cor-disciplina, #2563eb) 55%, white);
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--cor-disciplina, #2563eb) 18%, white);
+  color: var(--text-primary, #111827);
+  cursor: grab;
+}
+
+.grade-lesson strong {
+  color: color-mix(in srgb, var(--cor-disciplina, #2563eb) 60%, black);
+}
+
+.grade-lesson--dragging {
+  opacity: 0.45;
+}
+
+.grade-table__empty-cell--drop {
+  outline: 2px dashed var(--color-primary, #2563eb);
+  outline-offset: -0.25rem;
+  background: color-mix(in srgb, var(--color-primary, #2563eb) 8%, white);
+}
+
+.grade-lesson span {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.75rem;
+}
+
+.grade-lesson:disabled {
+  cursor: default;
+}
+
+.grade-table__break-row th,
+.grade-table__break-row td {
+  background: var(--surface-muted, #f3f4f6);
+}
+
+.grade-table__break-content {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.grade-table__break-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.grade-table__break-duration input {
+  width: 4rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 0.25rem;
+  background: white;
+  color: var(--text-primary, #111827);
+}
+
+.schedule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.generator-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.generator-summary__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.generator-summary__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.generator-summary__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background: var(--surface-muted, #f3f4f6);
+}
+
+.generator-summary__color {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.generator-summary__name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.generator-summary__load {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.8rem;
+}
+
+.generator-summary__lessons {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 700px) {
+  .grade-config {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grade-config__save {
+    grid-column: 1 / -1;
+  }
+
+  .grade-actions {
+    width: 100%;
+  }
+}

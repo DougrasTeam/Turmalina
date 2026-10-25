@@ -9,7 +9,7 @@
       <p class="tl-text-muted">Crie avaliações e lance as notas dos alunos por turma, disciplina e período.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      @if (avaliacoes.total() > 0) {
+      @if (avaliacoes.total() > 0 && auth.temPapel('administrador')) {
         <button class="btn btn-danger" type="button" (click)="abrirExclusaoTodas()">
           <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span> Excluir todas
         </button>
@@ -17,7 +17,7 @@
       <button
         class="btn btn-primary"
         type="button"
-        [disabled]="turmas.total() === 0 || periodos.periodos().length === 0"
+        [disabled]="turmasDisponiveis().length === 0 || periodos.periodos().length === 0"
         (click)="abrirNova()"
       >
         <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova avaliação
@@ -25,19 +25,33 @@
     </div>
   </header>
 
-  @if (turmas.total() === 0 || periodos.periodos().length === 0) {
+  @if (turmasDisponiveis().length === 0 || periodos.periodos().length === 0) {
     <div class="alert alert-info" role="status">
       Cadastre turmas, disciplinas e um período letivo para criar avaliações e lançar notas.
     </div>
   }
 
+  @if (contextoFixo()) {
+    <div class="alert alert-info" role="status">
+      Avaliações e médias limitadas à disciplina selecionada.
+    </div>
+  }
+
   <div class="page-toolbar">
-    <select class="form-select" style="max-width: 260px;" [value]="filtroTurma()" (change)="filtroTurma.set(valor($event))">
-      <option value="">Todas as turmas</option>
-      @for (turma of turmas.turmas(); track turma.id) {
-        <option [value]="turma.id">{{ turma.nome }}</option>
-      }
-    </select>
+    @if (!contextoFixo()) {
+      <select class="form-select" style="max-width: 260px;" [value]="filtroTurma()" (change)="alterarFiltroTurma($event)">
+        <option value="">Todas as turmas</option>
+        @for (turma of turmasDisponiveis(); track turma.id) {
+          <option [value]="turma.id">{{ turma.nome }}</option>
+        }
+      </select>
+      <select class="form-select" style="max-width: 260px;" [value]="filtroDisciplina()" (change)="filtroDisciplina.set(valor($event))">
+        <option value="">Todas as disciplinas</option>
+        @for (disciplina of disciplinasDoFiltro(); track disciplina.id) {
+          <option [value]="disciplina.id">{{ disciplina.nome }}</option>
+        }
+      </select>
+    }
     <select class="form-select" style="max-width: 260px;" [value]="filtroPeriodo()" (change)="filtroPeriodo.set(valor($event))">
       <option value="">Todos os períodos</option>
       @for (periodo of periodos.periodos(); track periodo.id) {
@@ -46,7 +60,7 @@
     </select>
   </div>
 
-  @if (filtroTurma()) {
+  @if (turmaFiltroEfetivo()) {
     <div class="card">
       <div class="card-header">
         <h2>Média por aluno</h2>
@@ -189,17 +203,30 @@
         <input id="av-nome" class="form-control" type="text" placeholder="Ex.: Prova bimestral" [value]="form().nome" (input)="patch('nome', valor($event))" />
       </div>
 
-      <div>
+      @if (contextoFixo()) {
+        <div>
+          <label class="form-label" for="av-turma-contexto">Turma *</label>
+          <input id="av-turma-contexto" class="form-control" [value]="turmas.porId(turmaIdQuery())?.nome ?? 'Turma'" disabled />
+        </div>
+      } @else {
+        <div>
         <label class="form-label" for="av-turma">Turma *</label>
         <select id="av-turma" class="form-select" [value]="form().turmaId" (change)="selecionarTurma($event)">
           <option value="">Selecione a turma</option>
-          @for (turma of turmas.turmas(); track turma.id) {
+          @for (turma of turmasDisponiveis(); track turma.id) {
             <option [value]="turma.id">{{ turma.nome }}</option>
           }
         </select>
       </div>
+      }
 
-      <div>
+      @if (contextoFixo()) {
+        <div>
+          <label class="form-label" for="av-disciplina-contexto">Disciplina *</label>
+          <input id="av-disciplina-contexto" class="form-control" [value]="disciplinas.porId(disciplinaIdQuery())?.nome ?? 'Disciplina'" disabled />
+        </div>
+      } @else {
+        <div>
         <label class="form-label" for="av-disciplina">Disciplina *</label>
         <select id="av-disciplina" class="form-select" [value]="form().disciplinaId" (change)="patchCampo('disciplinaId', valor($event))">
           <option value="">Selecione a disciplina</option>
@@ -208,6 +235,7 @@
           }
         </select>
       </div>
+      }
 
       <div>
         <label class="form-label" for="av-periodo">Período letivo *</label>

@@ -47,6 +47,7 @@ describe('PainelProfessorComponent', () => {
   let periodos: PeriodosLetivosService;
   let avaliacoes: AvaliacoesService;
   let frequencias: FrequenciasService;
+  let vinculos: VinculosDocentesService;
   let instituicao: InstituicaoService;
 
   beforeEach(async () => {
@@ -71,7 +72,7 @@ describe('PainelProfessorComponent', () => {
     avaliacoes = TestBed.inject(AvaliacoesService);
     frequencias = TestBed.inject(FrequenciasService);
     instituicao = TestBed.inject(InstituicaoService);
-    TestBed.inject(VinculosDocentesService);
+    vinculos = TestBed.inject(VinculosDocentesService);
 
     await Promise.all([
       turmas.load(),
@@ -104,6 +105,11 @@ describe('PainelProfessorComponent', () => {
       nome: 'Turma A',
       disciplinaIds: [matematica.id],
       professorIds: [professor.id],
+    });
+    await vinculos.criar({
+      professorId: professor.id,
+      turmaId: turma.id,
+      disciplinaId: matematica.id,
     });
     const aluno = await alunos.create({ nome: 'Ana', email: 'ana@demo', turmaId: turma.id });
     const periodo = await periodos.criar({

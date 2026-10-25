@@ -29,6 +29,7 @@ export class PublicacoesService {
       conteudo: '',
       imagemUrl: null,
       turmaId: null,
+      disciplinaId: null,
       autorId: '',
       autorNome: '',
       publicadaEm: new Date().toISOString(),
@@ -144,6 +145,7 @@ export class PublicacoesService {
       conteudo: sanitizarConteudo(dados.conteudo),
       imagemUrl: dados.imagemUrl || null,
       turmaId: dados.turmaId || null,
+      disciplinaId: dados.disciplinaId || null,
       publicadaEm: dados.publicadaEm || new Date().toISOString(),
       expiraEm: dados.expiraEm || null,
     };

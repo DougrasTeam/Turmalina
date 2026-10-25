@@ -102,6 +102,7 @@ describe('RelatoriosComponent', () => {
     await frequencias.salvar({
       turmaId: turma.id,
       periodoLetivoId: periodo.id,
+      disciplinaId: matematica.id,
       data: '2026-03-10',
       registros: [{ alunoId: aluno.id, status: 'presente', justificativa: null }],
     });

@@ -19,7 +19,7 @@ function chamada(sobrescrever: Partial<Frequencia> = {}): Frequencia {
     atualizadoEm: '2026-01-01T00:00:00.000Z',
     turmaId: 'turma-1',
     periodoLetivoId: 'periodo-1',
-    disciplinaId: null,
+    disciplinaId: 'disc-1',
     data: '2026-03-10',
     registros: [],
     observacao: null,
@@ -61,13 +61,16 @@ describe('frequencia.model', () => {
     const base: DadosFrequencia = {
       turmaId: 'turma-1',
       data: '2026-03-10',
-      disciplinaId: null,
+      disciplinaId: 'disc-1',
       registros: [],
     };
 
-    it('exige turma e data', () => {
+    it('exige turma, data e disciplina', () => {
       const erros = validarFrequencia({ ...base, turmaId: '', data: '' }, []);
       expect(erros.length).toBe(2);
+      expect(validarFrequencia({ ...base, disciplinaId: '' }, [])).toContain(
+        'Selecione a disciplina da aula.',
+      );
     });
 
     it('bloqueia chamada duplicada para a mesma turma/data/disciplina', () => {
@@ -80,9 +83,9 @@ describe('frequencia.model', () => {
       expect(erros.length).toBe(0);
     });
 
-    it('diferencia frequência geral de disciplina específica', () => {
+    it('permite outra disciplina na mesma turma e data', () => {
       const existentes = [chamada({ disciplinaId: 'disc-1' })];
-      const erros = validarFrequencia(base, existentes);
+      const erros = validarFrequencia({ ...base, disciplinaId: 'disc-2' }, existentes);
       expect(erros.length).toBe(0);
     });
   });

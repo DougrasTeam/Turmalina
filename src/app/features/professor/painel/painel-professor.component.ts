@@ -22,7 +22,7 @@ import { InstituicaoService } from '../../../core/services/instituicao.service';
 })
 export class PainelProfessorComponent {
   private readonly auth = inject(AuthService);
-  private readonly contexto = inject(ContextoProfessorService);
+  protected readonly contexto = inject(ContextoProfessorService);
   protected readonly turmas = inject(TurmasService);
   protected readonly alunos = inject(AlunosService);
   protected readonly periodos = inject(PeriodosLetivosService);
@@ -49,7 +49,15 @@ export class PainelProfessorComponent {
   protected readonly periodoSelecionado = computed(() => this.periodos.porId(this.periodoFiltro()) ?? null);
 
   private readonly boletins = computed(() =>
-    this.turmaFiltro() ? this.boletimService.gerarPorTurma(this.turmaFiltro(), this.periodoFiltro()) : [],
+    this.turmaFiltro()
+      ? this.boletimService.gerarPorTurma(
+          this.turmaFiltro(),
+          this.periodoFiltro(),
+          this.contexto
+            .disciplinasDoProfessorNaTurma(this.turmaFiltro())
+            .map((disciplina) => disciplina.id),
+        )
+      : [],
   );
 
   protected readonly alunosAtivos = computed(() =>
@@ -58,9 +66,18 @@ export class PainelProfessorComponent {
 
   protected readonly frequenciaMedia = computed(() => {
     if (!this.turmaFiltro() || !this.periodoFiltro()) return null;
+    const disciplinasPermitidas = new Set(
+      this.contexto
+        .disciplinasDoProfessorNaTurma(this.turmaFiltro())
+        .map((disciplina) => disciplina.id),
+    );
     const registros = this.frequencias
       .porTurma(this.turmaFiltro())
-      .filter((chamada) => chamada.periodoLetivoId === this.periodoFiltro())
+      .filter(
+        (chamada) =>
+          chamada.periodoLetivoId === this.periodoFiltro() &&
+          (chamada.disciplinaId === null || disciplinasPermitidas.has(chamada.disciplinaId)),
+      )
       .flatMap((chamada) => chamada.registros);
     return calcularResumoFrequencia(registros, this.instituicao.faltaJustificadaAbona()).percentual;
   });
@@ -81,7 +98,13 @@ export class PainelProfessorComponent {
   );
 
   private readonly avaliacoesPeriodo = computed(() =>
-    this.turmaFiltro() ? this.avaliacoes.porTurmaEPeriodo(this.turmaFiltro(), this.periodoFiltro()) : [],
+    this.turmaFiltro()
+      ? this.avaliacoes
+          .porTurmaEPeriodo(this.turmaFiltro(), this.periodoFiltro())
+          .filter((avaliacao) =>
+            this.contexto.possuiVinculoAtivo(avaliacao.turmaId, avaliacao.disciplinaId),
+          )
+      : [],
   );
 
   protected readonly semLancamento = computed(() =>
@@ -102,7 +125,12 @@ export class PainelProfessorComponent {
     }
     for (const frequencia of this.frequencias
       .porTurma(this.turmaFiltro())
-      .filter((chamada) => chamada.periodoLetivoId === this.periodoFiltro())) {
+      .filter(
+        (chamada) =>
+          chamada.periodoLetivoId === this.periodoFiltro() &&
+          (chamada.disciplinaId === null ||
+            this.contexto.possuiVinculoAtivo(this.turmaFiltro(), chamada.disciplinaId)),
+      )) {
       eventos.push({ descricao: `Chamada de ${formatarDataFrequencia(frequencia.data)}`, quando: frequencia.atualizadoEm });
     }
     return eventos.sort((primeiro, segundo) => segundo.quando.localeCompare(primeiro.quando)).slice(0, 5);

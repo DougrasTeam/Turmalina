@@ -27,6 +27,22 @@ export const CORES_DISCIPLINA: string[] = [
   '#65a30d',
 ];
 
+export interface DisciplinaPadrao {
+  nome: string;
+  cor: string;
+}
+
+export const DISCIPLINAS_PADRAO: readonly DisciplinaPadrao[] = [
+  { nome: 'Matemática', cor: CORES_DISCIPLINA[0] },
+  { nome: 'Português', cor: CORES_DISCIPLINA[1] },
+  { nome: 'Ciências', cor: CORES_DISCIPLINA[2] },
+  { nome: 'História', cor: CORES_DISCIPLINA[3] },
+  { nome: 'Geografia', cor: CORES_DISCIPLINA[4] },
+  { nome: 'Inglês', cor: CORES_DISCIPLINA[5] },
+  { nome: 'Arte', cor: CORES_DISCIPLINA[6] },
+  { nome: 'Educação Física', cor: CORES_DISCIPLINA[7] },
+];
+
 const PALAVRAS_IGNORADAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 
 export function gerarCodigoDisciplina(nome: string, existentes: string[] = []): string {

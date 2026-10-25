@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
@@ -7,9 +7,11 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
 import { DadosService } from '../../../core/services/dados.service';
 import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { FrequenciasService } from '../../../core/services/frequencias.service';
+import { HorariosTurmaService } from '../../../core/services/horarios-turma.service';
 import { InstituicaoService } from '../../../core/services/instituicao.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -43,15 +45,17 @@ function mensagemErro(erro: unknown): string {
   templateUrl: './frequencias.component.html',
   styleUrl: './frequencias.component.scss',
 })
-export class FrequenciasComponent {
+export class FrequenciasComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   protected readonly turmas = inject(TurmasService);
   protected readonly disciplinas = inject(DisciplinasService);
   protected readonly alunos = inject(AlunosService);
   protected readonly frequencias = inject(FrequenciasService);
+  protected readonly horarios = inject(HorariosTurmaService);
   protected readonly periodos = inject(PeriodosLetivosService);
   protected readonly instituicao = inject(InstituicaoService);
   protected readonly auth = inject(AuthService);
+  protected readonly contexto = inject(ContextoProfessorService);
   private readonly dados = inject(DadosService);
   private readonly toast = inject(ToastService);
 
@@ -90,12 +94,43 @@ export class FrequenciasComponent {
 
   protected readonly form = signal<FormChamada>(this.formVazio());
   protected readonly registros = signal<RegistroPresenca[]>([]);
+  protected readonly horariosPrevistos = computed(() =>
+    this.horarios.aulasParaData(this.form().turmaId, this.form().data),
+  );
+
+  async ngOnInit(): Promise<void> {
+    try {
+      await this.horarios.load();
+    } catch (erro) {
+      this.toast.mostrar(
+        erro instanceof Error ? erro.message : 'Não foi possível carregar os horários da turma.',
+        'warning',
+      );
+    }
+  }
 
   readonly filtradas = computed(() => {
-    const turmaFiltro = this.turmaFiltro();
-    const lista = this.frequencias.frequencias();
-    return turmaFiltro ? lista.filter((frequencia) => frequencia.turmaId === turmaFiltro) : lista;
+    const turmaFiltro = this.turmaFiltroEfetivo();
+    const disciplinaId = this.disciplinaIdQuery();
+    return this.frequencias.frequencias()
+      .filter((frequencia) => !turmaFiltro || frequencia.turmaId === turmaFiltro)
+      .filter(
+        (frequencia) =>
+          !disciplinaId ||
+          frequencia.disciplinaId === disciplinaId,
+      );
   });
+
+  protected readonly turmaFiltroEfetivo = computed(
+    () => this.turmaIdQuery() || this.turmaFiltro(),
+  );
+
+  protected readonly contextoFixo = computed(() => Boolean(this.turmaIdQuery()));
+  protected readonly turmasDisponiveis = computed(() =>
+    this.auth.temPapel('administrador')
+      ? this.turmas.turmas()
+      : this.contexto.turmasDoProfessor(),
+  );
 
   protected readonly alunosDoFormulario = computed(() =>
     [...this.alunos.porTurma(this.form().turmaId)].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
@@ -103,7 +138,14 @@ export class FrequenciasComponent {
 
   protected readonly disciplinasDaTurma = computed(() => {
     const turma = this.turmas.porId(this.form().turmaId);
-    return this.disciplinas.porIds(turma?.disciplinaIds ?? []);
+    const disciplinas = this.disciplinas
+      .porIds(turma?.disciplinaIds ?? [])
+      .filter((disciplina) => disciplina.ativa);
+    if (this.auth.temPapel('administrador')) return disciplinas;
+    const permitidas = new Set(
+      this.contexto.disciplinasDoProfessorNaTurma(this.form().turmaId).map((disciplina) => disciplina.id),
+    );
+    return disciplinas.filter((disciplina) => permitidas.has(disciplina.id));
   });
 
   protected readonly resumoFormulario = computed(() =>
@@ -111,14 +153,19 @@ export class FrequenciasComponent {
   );
 
   protected readonly alunosDoFiltro = computed(() =>
-    this.turmaFiltro()
-      ? [...this.alunos.porTurma(this.turmaFiltro())].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+    this.turmaFiltroEfetivo()
+      ? [...this.alunos.porTurma(this.turmaFiltroEfetivo())].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
       : [],
   );
 
-  protected readonly resumoFiltro = computed(() =>
-    this.turmaFiltro() ? this.frequencias.resumoTurma(this.turmaFiltro()) : null,
-  );
+  protected readonly resumoFiltro = computed(() => {
+    const turmaId = this.turmaFiltroEfetivo();
+    if (!turmaId) return null;
+    const registros = this.filtradas()
+      .filter((frequencia) => frequencia.turmaId === turmaId)
+      .flatMap((frequencia) => frequencia.registros);
+    return calcularResumoFrequencia(registros, this.instituicao.faltaJustificadaAbona());
+  });
 
   protected readonly confirmacaoTudo = computed(() => this.dados.confirmacao('frequencias'));
 
@@ -131,7 +178,7 @@ export class FrequenciasComponent {
   }
 
   protected disciplinaNome(disciplinaId: string | null): string {
-    if (!disciplinaId) return 'Geral (aula)';
+    if (!disciplinaId) return 'Histórica (sem disciplina)';
     return this.disciplinas.porId(disciplinaId)?.nome ?? '—';
   }
 
@@ -144,7 +191,10 @@ export class FrequenciasComponent {
   }
 
   protected resumoDoAluno(alunoId: string): ResumoFrequencia {
-    return this.frequencias.resumoAluno(alunoId);
+    const registros = this.filtradas().flatMap((frequencia) =>
+      frequencia.registros.filter((registro) => registro.alunoId === alunoId),
+    );
+    return calcularResumoFrequencia(registros, this.instituicao.faltaJustificadaAbona());
   }
 
   protected resumoDaChamada(id: string): ResumoFrequencia {
@@ -174,9 +224,11 @@ export class FrequenciasComponent {
 
   protected abrirNova(): void {
     this.editandoId.set(null);
-    const turmaId = this.turmaFiltro() || this.turmas.turmas()[0]?.id || '';
-    this.form.set({ turmaId, data: dataHoje(), disciplinaId: '', observacao: '' });
-    this.carregarRegistros(turmaId, '', dataHoje());
+    const turmaId = this.turmaFiltroEfetivo() || this.turmasDisponiveis()[0]?.id || '';
+    const data = dataHoje();
+    const disciplinaId = this.disciplinaIdQuery() || this.disciplinaSugerida(turmaId, data);
+    this.form.set({ turmaId, data, disciplinaId, observacao: '' });
+    this.carregarRegistros(turmaId, disciplinaId, data);
     this.chamadaAberta.set(true);
   }
 
@@ -194,14 +246,17 @@ export class FrequenciasComponent {
 
   protected selecionarTurma(evento: Event): void {
     const turmaId = this.valor(evento);
-    this.form.update((atual) => ({ ...atual, turmaId }));
-    this.carregarRegistros(turmaId, this.form().disciplinaId, this.form().data);
+    const disciplinaId = this.disciplinaIdQuery() || this.disciplinaSugerida(turmaId, this.form().data);
+    this.form.update((atual) => ({ ...atual, turmaId, disciplinaId }));
+    this.carregarRegistros(turmaId, disciplinaId, this.form().data);
   }
 
   protected selecionarData(evento: Event): void {
     const data = this.valor(evento);
-    this.form.update((atual) => ({ ...atual, data }));
-    this.carregarRegistros(this.form().turmaId, this.form().disciplinaId, data);
+    const disciplinaId =
+      this.disciplinaIdQuery() || this.disciplinaSugerida(this.form().turmaId, data);
+    this.form.update((atual) => ({ ...atual, data, disciplinaId }));
+    this.carregarRegistros(this.form().turmaId, disciplinaId, data);
   }
 
   protected selecionarDisciplina(evento: Event): void {
@@ -235,7 +290,7 @@ export class FrequenciasComponent {
       await this.frequencias.salvar({
         turmaId: this.form().turmaId,
         periodoLetivoId: this.periodos.ativo()?.id ?? '',
-        disciplinaId: this.form().disciplinaId || null,
+        disciplinaId: this.form().disciplinaId,
         data: this.form().data,
         registros: this.registros(),
         observacao: this.form().observacao || null,
@@ -297,6 +352,17 @@ export class FrequenciasComponent {
   }
 
   private formVazio(): FormChamada {
-    return { turmaId: '', data: dataHoje(), disciplinaId: '', observacao: '' };
+    return {
+      turmaId: this.turmaIdQuery(),
+      data: dataHoje(),
+      disciplinaId: this.disciplinaIdQuery(),
+      observacao: '',
+    };
+  }
+
+  private disciplinaSugerida(turmaId: string, data: string): string {
+    const disciplinasPrevistas = this.horarios.aulasParaData(turmaId, data);
+    const disciplinasUnicas = [...new Set(disciplinasPrevistas.map((aula) => aula.disciplinaId))];
+    return disciplinasUnicas.length === 1 ? disciplinasUnicas[0] : '';
   }
 }

@@ -5,10 +5,10 @@
 
 ## Roadmap / Próxima etapa
 
-- **Fase atual:** Fase 2 **concluída** (tema claro/escuro — RF-026 — e auditoria
-  — RF-027); **Fase 3 — Gamificação em andamento** com **RF-015 — Ações e XP**,
-  **RF-016 — Moedas virtuais**, **RF-020 — Conquistas e álbum** e **RF-017 —
-  Equipes** implementadas. Refinamentos de acessibilidade contínuos.
+- **Fase atual:** Fase 3 — Gamificação. RF-015 (Ações e XP), RF-016 (Moedas),
+  RF-017 (Equipes) e RF-020 (Conquistas e álbum) estão implementadas. A Fase 2
+  está concluída no código; acessibilidade continua como trabalho transversal,
+  não como fase ainda em andamento.
 - **Features recém-concluídas:** **Painel do SaaS (`super_admin`)**,
   **RF-023 — Agenda** (US-014), **RF-027 — Auditoria**, **RF-015 — Ações e XP**,
   **RF-016 — Moedas virtuais**, **RF-020 — Conquistas e álbum**, **RF-017 —
@@ -29,7 +29,19 @@
   turma com preview de quantos/total de XP e registro **idempotente** (sem XP
   duplicado por duplo clique/reenvio), **histórico** por aluno/turma com
   **estorno auditado**. XP **nunca** cria/altera nota, frequência ou aprovação.
-- **Próxima feature:** **RF-018 — Indicadores e metas** (continuação da Fase 3).
+- **Próxima etapa recomendada — prontidão e fluxo docente:**
+  1. Fechar a validação operacional do Supabase: confirmar migrations e Edge
+     Functions implantadas, testar isolamento entre escolas, escola inativa,
+     autorização por papel e recuperação antes de usar dados reais.
+  2. **Jornada docente turma → visão geral → disciplina concluída no código:**
+     painel e detalhe mostram o contexto autorizado; avaliações, notas,
+     frequência, mural e indicadores respeitam turma/disciplina e vínculo ativo.
+     A migration `0024_jornada_docente_turma_disciplina.sql` acrescenta as
+     policies RLS correspondentes e o escopo disciplinar das publicações. Ainda
+     é necessário aplicá-la e executar os smoke tests no Supabase antes de
+     considerar o fluxo validado operacionalmente.
+  3. Após aplicar e validar a migration `0024`, iniciar
+     **RF-018 — Indicadores e metas**, continuando a Fase 3.
 - **Fase 3:** gamificação — RF-018 (indicadores/metas), RF-019 (missões),
   RF-021 (loja) e RF-009. RF-017 (equipes) concluída. RF-012 (pontos extras).
 - **Fase 4:** gestão avançada, tela de projeção, performance/PWA.
@@ -88,11 +100,15 @@
   (`ativa|transferida|encerrada`), transferência entre turmas sem perder o
   passado, bloqueio de duplicidade ativa, integração com a tela da turma e
   cadastro do aluno, e histórico visível na lista de alunos.
-- **Frequência (RF-010):** chamada por turma/data com disciplina opcional,
+- **Frequência (RF-010):** chamada por turma/data com disciplina obrigatória,
   estados `presente|falta|falta_justificada`, cálculo de percentual por aluno
   respeitando a frequência mínima e a bonificação de falta justificada
   (configuráveis em Instituição), filtro por turma e alerta de alunos abaixo do
   limite (`/frequencia`, admin/professor).
+- **Horário semanal da turma:** matriz visual de segunda a sexta; administrador
+  define início, duração padrão, períodos e pausas, e cadastra disciplinas nas
+  células com duração em períodos. Professores vinculados consultam a grade; a
+  chamada usa as aulas previstas como sugestão.
 - **Avaliações e notas (RF-011):** avaliações por turma/disciplina/período com
   nota máxima, peso, etapa/data e status (`rascunho|publicada|arquivada`);
   lançamento de notas em lote (nota em branco = "não lançada"), validação de
@@ -236,19 +252,30 @@
   conquistas e álbum (validação, desbloqueio idempotente, reversão, bônus de XP
   e contagem por conquista), equipes (validação, vínculos com vigência,
   transferência, placar por critério e cascatas de exclusão) e catálogo de ações
-  de auditoria).
+  de auditoria). Esse total é histórico e precisa ser recontado após executar a
+  suíte completa; o runner Karma não inicia neste ambiente sem ChromeHeadless.
 
 ## Pendente (próximas fases — ver especificação §16)
 
-- **Fase 2 (em andamento):** refinamentos de acessibilidade da RF-026
-  (navegação por teclado, foco visível, contraste e tema escuro nos componentes).
+- **Prontidão operacional (bloqueia dados reais):** confirmar migrations
+  `0019`–`0023`, Edge Functions e configurações no projeto Supabase correto;
+  executar smoke tests com pelo menos duas escolas e contas de papéis
+  diferentes. O repositório não comprova o estado do ambiente remoto.
+- **Fluxo docente por turma e disciplina:** concluir a tarefa detalhada abaixo,
+  verificando vínculos, contexto, RLS, indicadores e troca entre disciplinas.
 - **Fase 3:** gamificação — RF-018 (indicadores/metas),
   RF-019 (missões), RF-021 (loja e resgates transacionais) e RF-009
   (placar/perfil individual); RF-012 (pontos extras acadêmicos).
+- **Fase 2 concluída:** manter acessibilidade como requisito transversal em
+  novas telas e corrigir pontos detectados por testes de teclado/contraste.
 - **Fase 4:** gestão avançada, projeção, performance/PWA.
 - **UI Kit:** extrair biblioteca Angular `turmalina-ui` (ADR 0004).
 - **Backend:** reforce/verifique RLS e políticas por instituição no Supabase
   contra dados reais; pondere RPCs/views de agregação para relatórios.
+- **Comercial (se a meta for SaaS pago):** contratação atualmente cria escola,
+  associa plano e conta administrativa, mas não processa pagamento. Planejar
+  cobrança, ciclo de assinatura, inadimplência e cancelamento antes de vender
+  planos como pagos.
 
 ## Bloqueado
 
@@ -261,7 +288,10 @@
 ## Riscos e dívidas técnicas
 
 - **Sem atomicidade:** `Repository<T>` não oferece transações (necessário para
-  moedas/resgates e para operações compostas no futuro).
+  resgates e operações compostas). Importação em lote e exclusões em cascata
+  gravam em mais de uma tabela/operação; falhas parciais podem deixar dados
+  incompletos. Para garantir all-or-nothing, usar RPC transacional no backend e
+  testar falhas intermediárias.
 - **Modelos de domínio em transição:** tipos principais (turma, professor,
   aluno) seguem em `core/models/index.ts`; os mais novos já vivem em arquivos
   próprios (`disciplina.model.ts`, `vinculo-docente.model.ts`,
@@ -269,26 +299,43 @@
 - **Validação e estado de deploy do Supabase:** migrations `0019` a `0023`
   implementam vínculos multi-escola e bloqueio de escolas inativas via
   `auth_institution()`, correção da RPC `minhas_instituicoes` e unicidade de
-  vínculos perfil/escola e vínculos acadêmicos por escola. Aplicar na ordem no
-  projeto Supabase e validar troca de escola, inativação durante sessão aberta
-  e isolamento entre tenants. O
-  frontend ainda usa autenticação legada de perfil único até aplicar a 0019.
-  Publicação das Edge Functions `admin-usuarios` e `contratar-plano` também
-  depende de configuração/deploy manual no Supabase; sem isso, criação de
-  contas e contratação pública não funcionam.
+  vínculos perfil/escola e vínculos acadêmicos por escola. O estado aplicado no
+  ambiente remoto não é verificável pelo código local. Confirmar a ordem no
+  projeto correto e testar troca de escola, inativação durante sessão aberta e
+  isolamento entre tenants. A autenticação atual já tem seleção de escola; não
+  presumir que o backend remoto está atualizado. Confirmar também a publicação
+  e configuração das Edge Functions `admin-usuarios` e `contratar-plano`.
+- **Identidade do professor:** `ContextoProfessorService` localiza o cadastro
+  pelo e-mail, embora o modelo já tenha `userId`. Preferir o vínculo estável do
+  Auth (`userId`) e manter fallback legado explícito e temporário; testar
+  alteração de e-mail e vínculos multi-escola.
+- **Operações destrutivas e recuperação:** `reset-dados` e exclusões em massa
+  exigem teste de escopo/isolamento, confirmação clara e procedimento de backup
+  e restauração documentado antes do uso com dados reais.
+- **Qualidade contínua:** `package.json` não define scripts de lint ou
+  type-check; a suíte Karma requer ChromeHeadless. Configurar build, testes e
+  validação de migrations em CI antes de aumentar o volume de funcionalidades.
 - **UI Kit não extraído:** não cumpre ainda o critério de compilar isoladamente.
 - **Dados de demonstração** sintéticos; não usar com dados reais de pessoas.
 
 
 ---
 
-## Nova tarefa de produto — Navegação docente por turma → visão geral → disciplina
+## Próxima tarefa funcional — Fechar o fluxo docente por turma → visão geral → disciplina
 
 **Objetivo:** ajustar a experiência do professor sem refazer funcionalidades existentes desnecessariamente.
 
+**Estado observado no código:** existem painel de professor,
+`ContextoProfessorService`, detalhe da turma, rota de disciplina aninhada e
+visão geral por turma/disciplina. O painel atual seleciona uma turma por vez; a
+jornada integrada e a validação de permissões no backend continuam pendentes.
+Esta tarefa deve fechar as lacunas, não recriar as telas. A autorização visível
+no frontend não substitui RLS.
+
 ### Escopo
-- [ ] Inspecionar telas, rotas, modelos, serviços, vínculos docentes e políticas RLS existentes.
-- [ ] Atualizar o painel do professor para listar turmas vinculadas e as disciplinas que ele leciona em cada uma.
+- [x] Inspecionar painel, rotas, modelos, serviços e vínculos existentes.
+- [ ] Inspecionar e validar políticas RLS no Supabase remoto (não verificado nesta revisão).
+- [ ] Atualizar o painel do professor para tornar claras as turmas vinculadas e as disciplinas que ele leciona em cada uma.
 - [ ] Fazer o clique na turma abrir a visão geral da turma como padrão.
 - [ ] Na visão geral, apresentar dados coletivos autorizados, equipe docente, disciplinas ofertadas e indicadores agregados confiáveis.
 - [ ] Criar/ajustar a lista de disciplinas da turma, sinalizando as disciplinas acessíveis ao professor atual.

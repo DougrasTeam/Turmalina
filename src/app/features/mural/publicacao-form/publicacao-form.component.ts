@@ -14,7 +14,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { MidiaService } from '../../../core/services/midia.service';
 import { PublicacoesService } from '../../../core/services/publicacoes.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { Turma } from '../../../core/models';
+import { DisciplinasService } from '../../../core/services/disciplinas.service';
+import { Disciplina, Turma } from '../../../core/models';
 import {
   CONTEUDO_PUBLICACAO_MAX,
   DadosPublicacao,
@@ -46,11 +47,14 @@ export class PublicacaoFormComponent implements OnDestroy {
   readonly permitirInstitucional = input(true);
   /** Quando definido, a publicação fica restrita a esta turma (destino fixo). */
   readonly turmaFixa = input<string | null>(null);
+  /** Quando definido junto de `turmaFixa`, a publicação fica disciplinar. */
+  readonly disciplinaFixa = input<string | null>(null);
 
   readonly salvo = output<void>();
   readonly fechado = output<void>();
 
   private readonly publicacoes = inject(PublicacoesService);
+  private readonly disciplinas = inject(DisciplinasService);
   private readonly midia = inject(MidiaService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
@@ -75,6 +79,15 @@ export class PublicacaoFormComponent implements OnDestroy {
     const turmaId = this.turmaFixa();
     if (!turmaId) return '';
     return this.turmas().find((turma) => turma.id === turmaId)?.nome ?? 'Turma';
+  });
+  protected readonly disciplinaDaPublicacao = computed(() => {
+    const publicacaoAtual = this.publicacao();
+    return publicacaoAtual ? publicacaoAtual.disciplinaId ?? null : this.disciplinaFixa();
+  });
+
+  protected readonly nomeDisciplinaFixa = computed<Disciplina | undefined>(() => {
+    const disciplinaId = this.disciplinaDaPublicacao();
+    return disciplinaId ? this.disciplinas.porId(disciplinaId) : undefined;
   });
 
   /** Imagem a exibir no formulário: pré-visualização local ou a já publicada. */
@@ -198,12 +211,16 @@ export class PublicacaoFormComponent implements OnDestroy {
   }
 
   private paraDados(form: PublicacaoFormData): DadosPublicacao {
+    const publicacaoAtual = this.publicacao();
     return {
       titulo: form.titulo,
       conteudo: form.conteudo,
       imagemUrl: form.imagemUrl || null,
       turmaId: this.turmaFixa() ?? (form.turmaId || null),
-      publicadaEm: this.publicacao()?.publicadaEm ?? new Date().toISOString(),
+      disciplinaId: publicacaoAtual
+        ? publicacaoAtual.disciplinaId ?? null
+        : this.disciplinaFixa(),
+      publicadaEm: publicacaoAtual?.publicadaEm ?? new Date().toISOString(),
       expiraEm: form.expiraEm || null,
     };
   }

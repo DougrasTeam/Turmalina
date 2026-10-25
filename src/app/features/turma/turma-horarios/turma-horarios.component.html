@@ -1,0 +1,420 @@
+<section class="card">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span>
+      <span class="material-symbols-outlined" aria-hidden="true">calendar_view_week</span>
+      Grade semanal da turma
+    </span>
+    @if (!somenteLeitura()) {
+      <div class="grade-actions">
+        <button
+          class="btn btn-sm btn-light"
+          type="button"
+          [disabled]="salvandoGrade() || disciplinasAtivas().length === 0"
+          (click)="abrirGerador()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+          Gerar grade automática
+        </button>
+        <button
+          class="btn btn-sm btn-light"
+          type="button"
+          [disabled]="salvandoGrade() || !temAulasNaGrade()"
+          (click)="abrirLimpeza()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
+          Limpar horário
+        </button>
+        <button
+          class="btn btn-sm btn-light"
+          type="button"
+          [disabled]="salvandoGrade()"
+          (click)="adicionarIntervaloNoFim()"
+        >
+          Adicionar intervalo no final
+        </button>
+        <button
+          class="btn btn-sm btn-primary"
+          type="button"
+          [disabled]="salvandoGrade()"
+          (click)="adicionarAulaNaGrade()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Adicionar linha de aula
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="card-body">
+    @if (carregando()) {
+      <p class="tl-text-muted mb-0" role="status">Carregando grade...</p>
+    } @else if (erroCarregamento()) {
+      <div class="alert alert-danger mb-0" role="alert">{{ erroCarregamento() }}</div>
+    } @else {
+      <div class="grade-config">
+        <div>
+          <label class="form-label" for="grade-inicio">Início da primeira aula</label>
+          <input
+            id="grade-inicio"
+            class="form-control"
+            type="time"
+            [value]="inicioAulas()"
+            [disabled]="somenteLeitura()"
+            (change)="atualizarInicio($event)"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="grade-duracao">Duração de cada aula (minutos)</label>
+          <input
+            id="grade-duracao"
+            class="form-control"
+            type="number"
+            min="1"
+            max="240"
+            [value]="minutosPorAula()"
+            [disabled]="somenteLeitura()"
+            (change)="atualizarDuracao($event)"
+          />
+        </div>
+        @if (!somenteLeitura()) {
+          <button
+            class="btn btn-light grade-config__save"
+            type="button"
+            [disabled]="salvandoGrade() || grade().linhas.length === 0"
+            (click)="salvarConfiguracao()"
+          >
+            {{ salvandoGrade() ? 'Salvando...' : 'Salvar configuração' }}
+          </button>
+        }
+      </div>
+
+      @if (grade().linhas.length === 0) {
+        <p class="tl-text-muted mb-0">
+          @if (somenteLeitura()) {
+            Ainda não há grade cadastrada para esta turma.
+          } @else {
+            Adicione linhas de aula para começar a montar a grade.
+          }
+        </p>
+      } @else {
+        <div class="grade-table-wrapper">
+          <table class="grade-table">
+            <thead>
+              <tr>
+                <th scope="col" class="grade-table__time-heading">Horário</th>
+                @for (dia of diasSemana; track dia.value) {
+                  <th scope="col">{{ dia.label }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (linhaCalculada of linhasCalculadas(); track linhaCalculada.linha.id) {
+                @if (linhaCalculada.linha.tipo === 'intervalo') {
+                  <tr class="grade-table__break-row">
+                    <th scope="row">
+                      <span>{{ linhaCalculada.inicio }}–{{ linhaCalculada.fim }}</span>
+                    </th>
+                    <td colspan="5">
+                      <div class="grade-table__break-content">
+                        <span class="material-symbols-outlined" aria-hidden="true">coffee</span>
+                        <strong>{{ linhaCalculada.linha.rotulo || 'Intervalo' }}</strong>
+                        @if (!somenteLeitura()) {
+                          <label class="grade-table__break-duration">
+                            <span>Duração</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="240"
+                              [value]="linhaCalculada.linha.duracaoMinutos"
+                              [attr.aria-label]="'Duração de ' + linhaCalculada.linha.rotulo"
+                              (change)="atualizarDuracaoIntervalo(linhaCalculada.linha.id, $event)"
+                            />
+                            <span>min</span>
+                          </label>
+                          <button
+                            class="btn btn-sm btn-light"
+                            type="button"
+                            [disabled]="salvandoGrade()"
+                            (click)="salvarConfiguracao()"
+                          >
+                            Salvar pausa
+                          </button>
+                          <button
+                            class="btn btn-sm btn-danger"
+                            type="button"
+                            (click)="removerLinha(linhaCalculada.linha.id)"
+                          >
+                            Remover
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                  <tr>
+                    <th scope="row" class="grade-table__time">
+                      <span>{{ linhaCalculada.inicio }}–{{ linhaCalculada.fim }}</span>
+                      @if (!somenteLeitura()) {
+                        <div class="grade-table__row-actions">
+                          <button
+                            class="grade-table__insert-break"
+                            type="button"
+                            [disabled]="salvandoGrade()"
+                            (click)="inserirIntervaloDepois(linhaCalculada.linha.id)"
+                          >
+                            + Pausa
+                          </button>
+                          <button
+                            class="grade-table__remove-row"
+                            type="button"
+                            aria-label="Remover linha de aula"
+                            [disabled]="salvandoGrade()"
+                            (click)="removerLinha(linhaCalculada.linha.id)"
+                          >
+                            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                          </button>
+                        </div>
+                      }
+                    </th>
+                    @for (dia of diasSemana; track dia.value) {
+                      @if (aulaNaCelula(dia.value, linhaCalculada.linha.id); as aula) {
+                        <td
+                          class="grade-table__lesson-cell"
+                          [attr.rowspan]="aula.quantidadeAulas"
+                        >
+                          <button
+                            class="grade-lesson"
+                            type="button"
+                            [style.--cor-disciplina]="corDisciplina(aula.disciplinaId)"
+                            [class.grade-lesson--dragging]="
+                              arrastando()?.diaSemana === dia.value &&
+                              arrastando()?.linhaInicioId === linhaCalculada.linha.id
+                            "
+                            [attr.draggable]="!somenteLeitura()"
+                            [disabled]="somenteLeitura()"
+                            (dragstart)="iniciarArrasto($event, dia.value, linhaCalculada.linha.id)"
+                            (dragend)="finalizarArrasto()"
+                            (click)="abrirAula(dia.value, linhaCalculada.linha.id)"
+                          >
+                            <strong>{{ nomeDisciplina(aula.disciplinaId) }}</strong>
+                            <span>
+                              {{ linhaCalculada.inicio }}–{{ fimAula(aula) }}
+                            </span>
+                            @if (aula.quantidadeAulas > 1) {
+                              <span>{{ aula.quantidadeAulas }} aulas</span>
+                            }
+                          </button>
+                        </td>
+                      } @else if (!celulaOcupada(dia.value, linhaCalculada.linha.id)) {
+                        <td
+                          class="grade-table__empty-cell"
+                          [class.grade-table__empty-cell--drop]="arrastando() !== null"
+                          (dragover)="permitirSoltar($event)"
+                          (dragenter)="permitirSoltar($event)"
+                          (drop)="soltarAula($event, dia.value, linhaCalculada.linha.id)"
+                        >
+                          <button
+                            class="grade-empty-cell"
+                            type="button"
+                            [disabled]="somenteLeitura()"
+                            [attr.aria-label]="'Adicionar aula ' + dia.label + ' às ' + linhaCalculada.inicio"
+                            (click)="abrirAula(dia.value, linhaCalculada.linha.id)"
+                          >
+                            @if (somenteLeitura()) {
+                              <span>—</span>
+                            } @else {
+                              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                            }
+                          </button>
+                        </td>
+                      }
+                    }
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </div>
+</section>
+
+<app-modal
+  [open]="modalAberto()"
+  [title]="'Aula de ' + nomeDiaSelecionado()"
+  (close)="fecharModal()"
+>
+  <form class="schedule-form" (submit)="salvarAula($event)">
+    <div>
+      <label class="form-label" for="grade-disciplina">Disciplina *</label>
+      <select
+        id="grade-disciplina"
+        class="form-select"
+        [value]="formularioAula().disciplinaId"
+        (change)="atualizarDisciplinaAula($event)"
+        required
+      >
+        @for (disciplina of disciplinasAtivas(); track disciplina.id) {
+          <option [value]="disciplina.id">{{ disciplina.nome }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label class="form-label" for="grade-quantidade">Quantidade de aulas consecutivas *</label>
+      <select
+        id="grade-quantidade"
+        class="form-select"
+        [value]="formularioAula().quantidadeAulas"
+        (change)="atualizarQuantidadeAulas($event)"
+        required
+      >
+        @for (quantidade of opcoesQuantidadeAulas(); track quantidade) {
+          <option [value]="quantidade">
+            {{ quantidade }} {{ quantidade === 1 ? 'aula' : 'aulas' }}
+          </option>
+        }
+      </select>
+      <span class="form-text">
+        Cada aula dura {{ grade().minutosPorAula }} minutos. A quantidade não pode atravessar uma pausa.
+      </span>
+    </div>
+
+    <div class="modal-actions">
+      @if (aulaNaCelula(diaSelecionado(), linhaSelecionadaId())) {
+        <button
+          class="btn btn-danger me-auto"
+          type="button"
+          [disabled]="salvandoAula()"
+          (click)="removerAula()"
+        >
+          Remover aula
+        </button>
+      }
+      <button class="btn btn-light" type="button" (click)="fecharModal()">Cancelar</button>
+      <button
+        class="btn btn-primary"
+        type="submit"
+        [disabled]="salvandoAula() || !formularioAula().disciplinaId"
+      >
+        {{ salvandoAula() ? 'Salvando...' : 'Salvar aula' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal
+  [open]="modalGeradorAberto()"
+  title="Gerar grade automática"
+  (close)="fecharGerador()"
+>
+  <p class="form-text">
+    A carga horária de cada disciplina será dividida pelas semanas letivas e pela duração da aula.
+    A grade atual tem {{ aulasPorDia() }} aulas por dia e será substituída.
+  </p>
+
+  <div class="schedule-form">
+    <div>
+      <label class="form-label" for="gerador-semanas">Semanas letivas *</label>
+      <input
+        id="gerador-semanas"
+        class="form-control"
+        type="number"
+        min="1"
+        max="60"
+        [value]="semanasLetivas()"
+        (change)="atualizarSemanasLetivas($event)"
+      />
+    </div>
+    <div>
+      <label class="form-label" for="gerador-maximo">
+        Máximo de aulas da mesma disciplina por dia *
+      </label>
+      <input
+        id="gerador-maximo"
+        class="form-control"
+        type="number"
+        min="1"
+        [max]="aulasPorDia()"
+        [value]="maximoAulasPorDisciplinaPorDia()"
+        (change)="atualizarMaximoAulasPorDisciplinaPorDia($event)"
+      />
+      <span class="form-text">
+        Ex.: matemática pode ter no máximo 3 aulas no mesmo dia, mesmo com carga horária alta.
+      </span>
+    </div>
+  </div>
+
+  <div class="generator-summary">
+    <h3 class="generator-summary__title">Distribuição semanal</h3>
+    @if (resumoSemanal().length === 0) {
+      <p class="tl-text-muted mb-0">Nenhuma disciplina ativa para distribuir.</p>
+    } @else {
+      <ul class="generator-summary__list">
+        @for (disciplina of resumoSemanal(); track disciplina.disciplinaId) {
+          <li class="generator-summary__item">
+            <span
+              class="generator-summary__color"
+              [style.background-color]="corDisciplina(disciplina.disciplinaId)"
+              aria-hidden="true"
+            ></span>
+            <span class="generator-summary__name">{{ nomeDisciplina(disciplina.disciplinaId) }}</span>
+            <span class="generator-summary__load">{{ disciplina.cargaHoraria }}h</span>
+            <strong class="generator-summary__lessons">
+              {{ disciplina.aulasSemanais }}
+              {{ disciplina.aulasSemanais === 1 ? 'aula/semana' : 'aulas/semana' }}
+            </strong>
+          </li>
+        }
+      </ul>
+      <p class="tl-text-muted mb-0">
+        {{ aulasPorDia() }} aulas por dia ({{ totalVagas() }} vagas por semana).
+        Demanda total: {{ totalDemandaSemanal() }} aulas por semana.
+      </p>
+      @if (excedeVagas()) {
+        <div class="alert alert-warning mb-0" role="alert">
+          A demanda excede as vagas. O gerador reduzirá a distribuição proporcionalmente.
+        </div>
+      }
+    }
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn btn-light" type="button" (click)="fecharGerador()">Cancelar</button>
+    <button
+      class="btn btn-primary"
+      type="button"
+      [disabled]="
+        salvandoGrade() || totalDemandaSemanal() === 0
+      "
+      (click)="gerarGradeAutomatica()"
+    >
+      {{ salvandoGrade() ? 'Gerando...' : 'Gerar e salvar' }}
+    </button>
+  </div>
+</app-modal>
+
+<app-modal
+  [open]="modalLimpezaAberto()"
+  title="Limpar horário"
+  (close)="fecharLimpeza()"
+>
+  <p>
+    Todas as aulas da grade serão removidas. As linhas de aula, os intervalos e o
+    horário de início serão mantidos.
+  </p>
+  <div class="modal-actions">
+    <button class="btn btn-light" type="button" (click)="fecharLimpeza()">
+      Cancelar
+    </button>
+    <button
+      class="btn btn-danger"
+      type="button"
+      [disabled]="salvandoGrade()"
+      (click)="confirmarLimpeza()"
+    >
+      {{ salvandoGrade() ? 'Limpando...' : 'Limpar horário' }}
+    </button>
+  </div>
+</app-modal>

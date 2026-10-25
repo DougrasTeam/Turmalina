@@ -10,11 +10,12 @@ import { ComunicadoFormComponent } from '../comunicado-form/comunicado-form.comp
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ComunicadosService } from '../../../core/services/comunicados.service';
-import { ProfessoresService } from '../../../core/services/professores.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
+import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { PublicacoesService } from '../../../core/services/publicacoes.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
-import { Aluno, Professor, Turma } from '../../../core/models';
+import { Aluno, Turma } from '../../../core/models';
 import {
   FILTRO_PUBLICACOES_PADRAO,
   FiltroPublicacoes,
@@ -43,11 +44,12 @@ type Aba = 'feed' | 'recados';
 export class MuralComponent {
   private readonly route = inject(ActivatedRoute);
   protected readonly auth = inject(AuthService);
+  protected readonly contexto = inject(ContextoProfessorService);
   protected readonly publicacoes = inject(PublicacoesService);
   protected readonly comunicados = inject(ComunicadosService);
+  protected readonly disciplinas = inject(DisciplinasService);
   protected readonly turmas = inject(TurmasService);
   protected readonly alunos = inject(AlunosService);
-  private readonly professores = inject(ProfessoresService);
   private readonly toast = inject(ToastService);
 
   private readonly routePai = this.route.parent;
@@ -90,26 +92,10 @@ export class MuralComponent {
   protected readonly autorIdAtual = computed(() => this.auth.usuario()?.id ?? null);
   protected readonly gerenciarTudo = computed(() => this.auth.papel() === 'administrador');
 
-  private readonly professorProprio = computed<Professor | null>(() => {
-    const usuario = this.auth.usuario();
-    if (!usuario || usuario.papel !== 'professor') return null;
-    return (
-      this.professores
-        .professores()
-        .find(
-          (professor) => professor.userId === usuario.id || professor.email === usuario.email,
-        ) ?? null
-    );
-  });
-
   /** Turmas que o usuário pode publicar: todas para admin, as próprias para o professor. */
   protected readonly turmasDisponiveis = computed<Turma[]>(() => {
     if (this.auth.papel() === 'administrador') return this.turmas.turmas();
-    const professor = this.professorProprio();
-    if (!professor) return [];
-    return this.turmas
-      .turmas()
-      .filter((turma) => (turma.professorIds ?? []).includes(professor.id));
+    return this.contexto.turmasDoProfessor();
   });
 
   private readonly turmasPermitidas = computed(
@@ -125,14 +111,41 @@ export class MuralComponent {
     return mapa;
   });
 
+  protected readonly nomesDisciplinas = computed<Record<string, string>>(() => {
+    const mapa: Record<string, string> = {};
+    for (const disciplina of this.disciplinas.disciplinas()) {
+      mapa[disciplina.id] = disciplina.nome;
+    }
+    return mapa;
+  });
+
   /** Publicações que o usuário pode ver, antes do filtro de visualização. */
   protected readonly publicacoesVisiveis = computed<Publicacao[]>(() => {
-    if (this.auth.papel() === 'administrador') return this.publicacoes.ordenadas();
-    const permitidas = this.turmasPermitidas();
-    return this.publicacoes
-      .ordenadas()
-      .filter((publicacao) => publicacao.turmaId === null || permitidas.has(publicacao.turmaId));
+    const turmaId = this.turmaIdQuery();
+    const disciplinaId = this.disciplinaIdQuery();
+    const publicacoes = this.publicacoes.ordenadas();
+    const publicacoesPermitidas =
+      this.auth.papel() === 'administrador'
+        ? publicacoes
+        : publicacoes.filter(
+            (publicacao) =>
+              publicacao.turmaId === null || this.turmasPermitidas().has(publicacao.turmaId),
+          );
+
+    if (!turmaId) return publicacoesPermitidas;
+
+    return publicacoesPermitidas.filter(
+      (publicacao) =>
+        publicacao.turmaId === null ||
+        (publicacao.turmaId === turmaId &&
+          (!disciplinaId ||
+            !publicacao.disciplinaId ||
+            publicacao.disciplinaId === disciplinaId)),
+    );
   });
+
+  protected readonly turmaFixa = computed(() => this.turmaIdQuery() || null);
+  protected readonly disciplinaFixa = computed(() => this.disciplinaIdQuery() || null);
 
   protected readonly publicacoesFiltradas = computed<Publicacao[]>(() =>
     aplicarFiltroPublicacoes(this.publicacoesVisiveis(), this.filtro(), this.autorIdAtual()),
@@ -146,9 +159,14 @@ export class MuralComponent {
   });
 
   protected readonly alunosDisponiveis = computed<Aluno[]>(() => {
-    const lista =
+    const alunos =
       this.auth.papel() === 'administrador' ? this.alunos.alunos() : this.alunosDaEquipe();
-    return [...lista].sort((a, b) => a.nome.localeCompare(b.nome));
+    const turmaId = this.turmaIdQuery();
+    return [...alunos]
+      .filter((aluno) => !turmaId || aluno.turmaId === turmaId)
+      .sort((primeiroAluno, segundoAluno) =>
+        primeiroAluno.nome.localeCompare(segundoAluno.nome),
+      );
   });
 
   protected readonly alunoSelecionado = computed<Aluno | null>(

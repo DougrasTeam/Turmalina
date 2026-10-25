@@ -39,7 +39,7 @@
       </div>
 
       <div class="span-2">
-        <label class="form-label">Cor</label>
+        <label class="form-label" for="disciplina-cor">Cor</label>
         <div class="color-picker">
           @for (cor of cores; track cor) {
             <button
@@ -51,6 +51,17 @@
               (click)="selecionarCor(cor)"
             ></button>
           }
+          <div class="color-custom">
+            <input
+              id="disciplina-cor"
+              type="color"
+              class="color-input"
+              [value]="form().cor"
+              title="Escolher uma cor personalizada"
+              (input)="patch('cor', valor($event))"
+            />
+            <span class="color-value">{{ form().cor }}</span>
+          </div>
         </div>
       </div>
 

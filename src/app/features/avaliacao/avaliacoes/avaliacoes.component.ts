@@ -7,6 +7,8 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmarTextoComponent } from '../../../shared/confirmar-texto/confirmar-texto.component';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AvaliacoesService } from '../../../core/services/avaliacoes.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
 import { DadosService } from '../../../core/services/dados.service';
 import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { InstituicaoService } from '../../../core/services/instituicao.service';
@@ -66,6 +68,8 @@ export class AvaliacoesComponent {
   protected readonly turmas = inject(TurmasService);
   protected readonly disciplinas = inject(DisciplinasService);
   protected readonly alunos = inject(AlunosService);
+  protected readonly auth = inject(AuthService);
+  protected readonly contexto = inject(ContextoProfessorService);
   protected readonly avaliacoes = inject(AvaliacoesService);
   protected readonly periodos = inject(PeriodosLetivosService);
   protected readonly instituicao = inject(InstituicaoService);
@@ -100,7 +104,20 @@ export class AvaliacoesComponent {
   protected readonly statusOpcoes = STATUS_AVALIACAO;
 
   protected readonly filtroTurma = signal('');
+  protected readonly filtroDisciplina = signal('');
   protected readonly filtroPeriodo = signal('');
+  protected readonly contextoFixo = computed(() => Boolean(this.turmaIdQuery()));
+  protected readonly turmaFiltroEfetivo = computed(
+    () => this.turmaIdQuery() || this.filtroTurma(),
+  );
+  protected readonly disciplinaFiltroEfetivo = computed(
+    () => this.disciplinaIdQuery() || this.filtroDisciplina(),
+  );
+  protected readonly turmasDisponiveis = computed(() =>
+    this.auth.temPapel('administrador')
+      ? this.turmas.turmas()
+      : this.contexto.turmasDoProfessor(),
+  );
 
   protected readonly formAberta = signal(false);
   protected readonly editandoId = signal<string | null>(null);
@@ -115,17 +132,40 @@ export class AvaliacoesComponent {
   protected readonly excluirTudoAberto = signal(false);
 
   protected readonly filtradas = computed(() => {
-    const turmaId = this.filtroTurma();
+    const turmaId = this.turmaFiltroEfetivo();
+    const disciplinaId = this.disciplinaFiltroEfetivo();
     const periodoId = this.filtroPeriodo();
-    return this.avaliacoes
-      .avaliacoes()
+    return this.avaliacoesPermitidas()
       .filter((avaliacao) => !turmaId || avaliacao.turmaId === turmaId)
+      .filter((avaliacao) => !disciplinaId || avaliacao.disciplinaId === disciplinaId)
       .filter((avaliacao) => !periodoId || avaliacao.periodoLetivoId === periodoId);
   });
 
   protected readonly disciplinasDaTurma = computed(() => {
     const turma = this.turmas.porId(this.form().turmaId);
-    return this.disciplinas.porIds(turma?.disciplinaIds ?? []);
+    const disciplinas = this.disciplinas.porIds(turma?.disciplinaIds ?? []);
+    if (this.auth.temPapel('administrador')) return disciplinas;
+    const permitidas = new Set(
+      this.contexto.disciplinasDoProfessorNaTurma(this.form().turmaId).map((disciplina) => disciplina.id),
+    );
+    return disciplinas.filter((disciplina) => permitidas.has(disciplina.id));
+  });
+
+  protected readonly disciplinasDoFiltro = computed(() => {
+    const turmas = this.filtroTurma()
+      ? this.turmasDisponiveis().filter((turma) => turma.id === this.filtroTurma())
+      : this.turmasDisponiveis();
+    const disciplinasPorId = new Map(
+      turmas.flatMap((turma) => {
+        const disciplinas = this.auth.temPapel('administrador')
+          ? this.disciplinas.porIds(turma.disciplinaIds)
+          : this.contexto.disciplinasDoProfessorNaTurma(turma.id);
+        return disciplinas.map((disciplina) => [disciplina.id, disciplina] as const);
+      }),
+    );
+    return [...disciplinasPorId.values()].sort((primeira, segunda) =>
+      primeira.nome.localeCompare(segunda.nome, 'pt-BR'),
+    );
   });
 
   protected readonly etapasDoPeriodo = computed(
@@ -139,8 +179,8 @@ export class AvaliacoesComponent {
   );
 
   protected readonly alunosDoResumo = computed(() =>
-    this.filtroTurma()
-      ? [...this.alunos.porTurma(this.filtroTurma())].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+    this.turmaFiltroEfetivo()
+      ? [...this.alunos.porTurma(this.turmaFiltroEfetivo())].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
       : [],
   );
 
@@ -165,8 +205,17 @@ export class AvaliacoesComponent {
 
   protected selecionarTurma(evento: Event): void {
     const turmaId = this.valor(evento);
-    const primeiraDisciplina = this.disciplinas.porIds(this.turmas.porId(turmaId)?.disciplinaIds ?? [])[0]?.id ?? '';
+    const disciplinasDaTurma = this.auth.temPapel('administrador')
+      ? this.disciplinas.porIds(this.turmas.porId(turmaId)?.disciplinaIds ?? [])
+      : this.contexto.disciplinasDoProfessorNaTurma(turmaId);
+    const primeiraDisciplina = disciplinasDaTurma[0]?.id ?? '';
     this.form.update((atual) => ({ ...atual, turmaId, disciplinaId: primeiraDisciplina }));
+    this.filtroDisciplina.set('');
+  }
+
+  protected alterarFiltroTurma(evento: Event): void {
+    this.filtroTurma.set(this.valor(evento));
+    this.filtroDisciplina.set('');
   }
 
   protected patchCampo(campo: 'disciplinaId' | 'periodoLetivoId' | 'etapaId', texto: string): void {
@@ -323,6 +372,7 @@ export class AvaliacoesComponent {
   }
 
   protected async excluirTodas(): Promise<void> {
+    if (!this.auth.temPapel('administrador')) return;
     await this.dados.excluir('avaliacoes');
     this.toast.mostrar('Todas as avaliações foram excluídas.', 'info');
     this.excluirTudoAberto.set(false);
@@ -369,8 +419,21 @@ export class AvaliacoesComponent {
   }
 
   protected resultadoAluno(alunoId: string): ResultadoMedia {
-    return this.avaliacoes.resultadoAluno(alunoId, this.filtroTurma(), this.filtroPeriodo() || undefined);
+    return this.avaliacoes.resultadoAluno(
+      alunoId,
+      this.turmaFiltroEfetivo(),
+      this.filtroPeriodo() || undefined,
+      this.disciplinaFiltroEfetivo() || undefined,
+      this.avaliacoesPermitidas(),
+    );
   }
+
+  private readonly avaliacoesPermitidas = computed(() => {
+    if (this.auth.temPapel('administrador')) return this.avaliacoes.avaliacoes();
+    return this.avaliacoes.avaliacoes().filter((avaliacao) =>
+      this.contexto.possuiVinculoAtivo(avaliacao.turmaId, avaliacao.disciplinaId),
+    );
+  });
 
   protected mediaAluno(alunoId: string): string {
     return formatarNota(this.resultadoAluno(alunoId).valor, this.instituicao.casasDecimaisNota());
@@ -385,8 +448,13 @@ export class AvaliacoesComponent {
   }
 
   private formVazio(): FormAvaliacao {
-    const turmaId = this.turmas.turmas()[0]?.id ?? '';
-    const disciplinaId = this.disciplinas.porIds(this.turmas.porId(turmaId)?.disciplinaIds ?? [])[0]?.id ?? '';
+    const turmaId = this.turmaIdQuery() || this.turmasDisponiveis()[0]?.id || '';
+    const disciplinaId =
+      this.disciplinaIdQuery() ||
+      (this.auth.temPapel('administrador')
+        ? this.disciplinas.porIds(this.turmas.porId(turmaId)?.disciplinaIds ?? [])[0]?.id
+        : this.contexto.disciplinasDoProfessorNaTurma(turmaId)[0]?.id) ||
+      '';
     const periodoLetivoId = this.periodos.ativo()?.id ?? this.periodos.periodos()[0]?.id ?? '';
     return {
       nome: '',

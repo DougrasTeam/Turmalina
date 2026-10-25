@@ -10,7 +10,8 @@ import { ExportacaoService, nomeArquivoCsv } from '../../../core/services/export
 import { GestaoUsuariosService } from '../../../core/services/gestao-usuarios.service';
 import { ProfessoresService } from '../../../core/services/professores.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { CredenciaisContaUsuario, DISCIPLINAS_SUGERIDAS, Professor } from '../../../core/models';
+import { CredenciaisContaUsuario, Professor } from '../../../core/models';
+import { DISCIPLINAS_PADRAO } from '../../../core/models/disciplina.model';
 
 interface ProfessorForm {
   nome: string;
@@ -38,7 +39,9 @@ export class ProfessoresComponent {
   /** O professor apenas consulta; criar, editar e excluir são do administrador. */
   protected readonly somenteLeitura = computed(() => !this.auth.temPapel('administrador'));
 
-  protected readonly sugestoes = DISCIPLINAS_SUGERIDAS;
+  protected readonly sugestoes = DISCIPLINAS_PADRAO.map(
+    (disciplinaPadrao) => disciplinaPadrao.nome,
+  );
   protected readonly busca = signal('');
   protected readonly novaDisciplina = signal('');
   protected readonly modalAberto = signal(false);

@@ -12,3 +12,62 @@
 .kpi-card p {
   margin: 0.25rem 0 0;
 }
+
+.turmas-docente {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.turmas-docente__header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.turmas-docente__header p {
+  margin: 0.25rem 0 0;
+}
+
+.turmas-docente__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0.75rem;
+}
+
+.turma-docente {
+  margin: 0;
+}
+
+.turma-docente__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--tl-ink, #25223c);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--tl-primary, #5b3df5);
+  }
+}
+
+.turma-docente__abrir {
+  margin-left: auto;
+  font-size: 1.1rem;
+}
+
+.turma-docente__disciplinas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.turma-docente__disciplina {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
+
+  .material-symbols-outlined {
+    font-size: 0.95rem;
+  }
+}

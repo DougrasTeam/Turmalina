@@ -15,6 +15,7 @@ function criarPublicacao(parcial: Partial<Publicacao>): Publicacao {
     conteudo: 'Conteúdo',
     imagemUrl: null,
     turmaId: null,
+    disciplinaId: null,
     autorId: 'autor-a',
     autorNome: 'Autor A',
     publicadaEm: '2026-01-01T10:00:00.000Z',

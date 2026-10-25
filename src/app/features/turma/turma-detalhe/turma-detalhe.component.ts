@@ -7,6 +7,7 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { AlunoFormComponent } from '../../aluno/aluno-form/aluno-form.component';
 import { AlunoImportComponent, ResumoImport } from '../../aluno/aluno-import/aluno-import.component';
 import { TurmaFormComponent } from '../turma-form/turma-form.component';
+import { TurmaHorariosComponent } from '../turma-horarios/turma-horarios.component';
 import { FeedPublicacoesComponent } from '../../mural/feed-publicacoes/feed-publicacoes.component';
 import { PublicacaoFormComponent } from '../../mural/publicacao-form/publicacao-form.component';
 import { AlunosService } from '../../../core/services/alunos.service';
@@ -31,6 +32,7 @@ import { VinculoDocente } from '../../../core/models/vinculo-docente.model';
     RouterLink,
     ModalComponent,
     TurmaFormComponent,
+    TurmaHorariosComponent,
     AlunoFormComponent,
     AlunoImportComponent,
     FeedPublicacoesComponent,
@@ -61,11 +63,18 @@ export class TurmaDetalheComponent {
   protected readonly turma = computed(() => this.turmas.porId(this.turmaId()));
 
   readonly professoresDaTurma = computed<Professor[]>(() => {
-    const t = this.turma();
-    if (!t) return [];
-    return t.professorIds
-      .map((id) => this.professores.porId(id))
-      .filter((p): p is Professor => Boolean(p));
+    const turma = this.turma();
+    if (!turma) return [];
+    const vinculosAtivos = this.vinculos
+      .porTurma(turma.id)
+      .filter((vinculo) => vinculo.ativo);
+    const professorIds = new Set([
+      ...turma.professorIds,
+      ...vinculosAtivos.map((vinculo) => vinculo.professorId),
+    ]);
+    return [...professorIds]
+      .map((professorId) => this.professores.porId(professorId))
+      .filter((professor): professor is Professor => Boolean(professor?.ativo));
   });
 
   readonly alunosDaTurma = computed(() => this.alunos.porTurma(this.turmaId()));
@@ -76,10 +85,23 @@ export class TurmaDetalheComponent {
     return this.disciplinas.porIds(t.disciplinaIds);
   });
 
+  protected readonly nomesDisciplinas = computed<Record<string, string>>(() => {
+    const mapa: Record<string, string> = {};
+    for (const disciplina of this.disciplinas.disciplinas()) {
+      mapa[disciplina.id] = disciplina.nome;
+    }
+    return mapa;
+  });
+
   readonly vinculosDaTurma = computed<VinculoDocente[]>(() => this.vinculos.porTurma(this.turmaId()));
 
   protected readonly publicacoesDaTurma = computed<Publicacao[]>(() =>
-    this.publicacoes.ordenadas().filter((publicacao) => publicacao.turmaId === this.turmaId()),
+    this.publicacoes
+      .ordenadas()
+      .filter(
+        (publicacao) =>
+          publicacao.turmaId === this.turmaId() && !publicacao.disciplinaId,
+      ),
   );
 
   protected readonly autorIdAtual = computed(() => this.auth.usuario()?.id ?? null);

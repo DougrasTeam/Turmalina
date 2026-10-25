@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 
-import { Aluno, Professor, Turma } from '../../../core/models';
+import { Aluno, Turma } from '../../../core/models';
 import {
   LinhaHistoricoXp,
   criarChaveIdempotencia,
@@ -12,8 +12,8 @@ import {
 import { formatarDataHoraAuditoria } from '../../../core/models/auditoria.model';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
 import { GamificacaoService } from '../../../core/services/gamificacao.service';
-import { ProfessoresService } from '../../../core/services/professores.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TurmasService } from '../../../core/services/turmas.service';
 
@@ -32,7 +32,7 @@ export class PontuarComponent {
   private readonly auth = inject(AuthService);
   private readonly alunos = inject(AlunosService);
   protected readonly gamificacao = inject(GamificacaoService);
-  private readonly professores = inject(ProfessoresService);
+  private readonly contexto = inject(ContextoProfessorService);
   private readonly turmas = inject(TurmasService);
   private readonly toast = inject(ToastService);
 
@@ -68,29 +68,13 @@ export class PontuarComponent {
   protected readonly selecionados = signal<Set<string>>(new Set());
   protected readonly salvando = signal(false);
 
-  private readonly professorProprio = computed<Professor | null>(() => {
-    const usuario = this.auth.usuario();
-    if (!usuario || usuario.papel !== 'professor') return null;
-    return (
-      this.professores
-        .professores()
-        .find(
-          (professor) => professor.userId === usuario.id || professor.email === usuario.email,
-        ) ?? null
-    );
-  });
-
   protected readonly turmasDisponiveis = computed<Turma[]>(() => {
     if (this.auth.papel() === 'administrador') return this.turmas.turmas();
-    const professor = this.professorProprio();
-    if (!professor) return [];
-    return this.turmas
-      .turmas()
-      .filter((turma) => (turma.professorIds ?? []).includes(professor.id));
+    return this.contexto.turmasDoProfessor();
   });
 
   protected readonly turmaEfetiva = computed(() => {
-    const selecionada = this.turmaId();
+    const selecionada = this.turmaIdQuery() || this.turmaId();
     const disponiveis = this.turmasDisponiveis();
     if (disponiveis.some((turma) => turma.id === selecionada)) return selecionada;
     return disponiveis[0]?.id ?? '';

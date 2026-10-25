@@ -28,7 +28,14 @@
             [value]="nomeTurmaFixa()"
             disabled
           />
-          <p class="form-text">Esta publicação será enviada para esta turma.</p>
+          @if (disciplinaDaPublicacao()) {
+            <p class="form-text">
+              Esta publicação será enviada para {{ nomeTurmaFixa() }} ·
+              {{ nomeDisciplinaFixa()?.nome ?? 'a disciplina selecionada' }}.
+            </p>
+          } @else {
+            <p class="form-text">Esta publicação será enviada para toda a turma.</p>
+          }
         </div>
       } @else {
         <div class="span-2">

@@ -9,11 +9,17 @@
       <p class="tl-text-muted">
         Organize aulas, avaliações, entregas, atividades e avisos da sua turma ou de toda a escola.
       </p>
+      @if (turmaIdQuery() && disciplinaIdQuery()) {
+        <p class="tl-small tl-text-muted">
+          A agenda é compartilhada por toda a turma e não é específica de uma disciplina.
+        </p>
+      }
     </div>
   </header>
 
   <div class="page-toolbar agenda__toolbar">
     <div class="agenda__filtros">
+      @if (!turmaIdQuery()) {
       <label class="form-label mb-0" for="agenda-escopo">Ver eventos de</label>
       <select
         id="agenda-escopo"
@@ -27,6 +33,7 @@
           <option [value]="turma.id">{{ turma.nome }}</option>
         }
       </select>
+      }
 
       <label class="form-label mb-0" for="agenda-periodo">Período</label>
       <select
@@ -63,6 +70,7 @@
   [evento]="eventoEditando()"
   [turmas]="turmasDisponiveis()"
   [permitirInstitucional]="auth.papel() === 'administrador'"
+  [turmaFixa]="turmaFixa()"
   (salvo)="onEventoSalvo()"
   (fechado)="fecharForm()"
 />

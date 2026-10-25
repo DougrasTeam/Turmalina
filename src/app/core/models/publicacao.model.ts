@@ -10,6 +10,8 @@ export interface Publicacao extends BaseEntity {
   imagemUrl: string | null;
   /** Turma destinatária; `null` indica publicação para toda a instituição. */
   turmaId: string | null;
+  /** Disciplina destinatária; `null` indica publicação geral para a turma. */
+  disciplinaId: string | null;
   autorId: string;
   autorNome: string;
   /** Data e hora de publicação em ISO 8601. */
@@ -24,6 +26,7 @@ export interface DadosPublicacao {
   conteudo: string;
   imagemUrl: string | null;
   turmaId: string | null;
+  disciplinaId: string | null;
   publicadaEm: string;
   expiraEm: string | null;
 }
@@ -91,6 +94,9 @@ export function validarPublicacao(dados: DadosPublicacao): string[] {
   if (conteudo.length > CONTEUDO_PUBLICACAO_MAX) {
     erros.push(`O conteúdo deve ter até ${CONTEUDO_PUBLICACAO_MAX} caracteres.`);
   }
+  if (dados.disciplinaId && !dados.turmaId) {
+    erros.push('Uma publicação disciplinar precisa estar vinculada a uma turma.');
+  }
   if (dados.publicadaEm && dados.expiraEm && dados.expiraEm < dados.publicadaEm.slice(0, 10)) {
     erros.push('A data de expiração não pode ser anterior à data de publicação.');
   }
@@ -99,9 +105,15 @@ export function validarPublicacao(dados: DadosPublicacao): string[] {
 }
 
 /** Indica se a publicação alcança a turma informada (`null` = todas as turmas). */
-export function alcancePublicacao(publicacao: Publicacao, turmaId: string | null): boolean {
+export function alcancePublicacao(
+  publicacao: Publicacao,
+  turmaId: string | null,
+  disciplinaId?: string | null,
+): boolean {
   if (publicacao.turmaId === null) return true;
-  return publicacao.turmaId === turmaId;
+  if (publicacao.turmaId !== turmaId) return false;
+  if (disciplinaId === undefined) return true;
+  return !publicacao.disciplinaId || publicacao.disciplinaId === disciplinaId;
 }
 
 /** Uma publicação está vigente quando está publicada e dentro da validade. */
