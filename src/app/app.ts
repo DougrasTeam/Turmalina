@@ -24,6 +24,7 @@ import { VinculosDocentesService } from './core/services/vinculos-docentes.servi
 import { InstituicaoService } from './core/services/instituicao.service';
 import { PeriodosLetivosService } from './core/services/periodos-letivos.service';
 import { AuditoriaService } from './core/services/auditoria.service';
+import { TemaVisualService } from './core/services/tema-visual.service';
 
 interface ItemNav {
   path: string;
@@ -113,6 +114,7 @@ const NAV_ALUNO: ItemNav[] = [
 export class App {
   protected readonly toasts = inject(ToastService);
   protected readonly auth = inject(AuthService);
+  protected readonly temaVisual = inject(TemaVisualService);
   private readonly funcionalidades = inject(FuncionalidadesService);
 
   private readonly turmas = inject(TurmasService);
@@ -346,5 +348,9 @@ export class App {
       html.setAttribute('data-tl-theme', 'dark');
       localStorage.setItem('tl-theme', 'dark');
     }
+  }
+
+  alternarTemaVisual(): void {
+    this.temaVisual.alternar();
   }
 }

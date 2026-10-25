@@ -81,6 +81,11 @@ export class LocalStorageRepository<T extends BaseEntity> implements Repository<
     );
   }
 
+  async removeAll(): Promise<void> {
+    const atual = this.institutionId();
+    this.escrever(this.ler().filter((item) => item.institutionId !== atual));
+  }
+
   async saveAll(items: T[]): Promise<void> {
     this.escrever(items);
   }

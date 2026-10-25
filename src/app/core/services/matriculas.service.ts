@@ -109,9 +109,7 @@ export class MatriculasService {
   }
 
   async removerTodas(): Promise<void> {
-    for (const matricula of this._matriculas()) {
-      await this.repo.remove(matricula.id);
-    }
+    await this.repo.removeAll();
     this._matriculas.set([]);
     this.auditoria.registrar('matricula.excluidas-todas', 'Matricula', null, null);
   }

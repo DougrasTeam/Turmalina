@@ -77,9 +77,7 @@ export class ComunicadosService {
   }
 
   async removerTodas(): Promise<void> {
-    for (const comunicado of this._comunicados()) {
-      await this.repo.remove(comunicado.id);
-    }
+    await this.repo.removeAll();
     this._comunicados.set([]);
     this.auditoria.registrar('comunicado.removidos-todos', 'Comunicado', null, null);
   }

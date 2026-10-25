@@ -160,6 +160,15 @@ export class SupabaseRepository<T extends BaseEntity> implements Repository<T> {
     if (error) throw new Error(error.message);
   }
 
+  async removeAll(): Promise<void> {
+    const cliente = await this.cliente();
+    const { error } = await cliente
+      .from(this.tabela)
+      .delete()
+      .eq('institution_id', this.tenant.atual());
+    if (error) throw new Error(error.message);
+  }
+
   async saveAll(items: T[]): Promise<void> {
     if (!items.length) return;
     const cliente = await this.cliente();

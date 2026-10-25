@@ -49,6 +49,13 @@ export class TurmasService {
     return turma;
   }
 
+  async createMuitas(inputs: Partial<Turma>[]): Promise<Turma[]> {
+    if (inputs.length === 0) return [];
+    const novas = await this.repo.createMany(inputs);
+    this._turmas.update((lista) => [...lista, ...novas.map((turma) => this.normalizar(turma))]);
+    return novas;
+  }
+
   async update(id: string, patch: Partial<Turma>): Promise<Turma> {
     const turma = await this.repo.update(id, patch);
     this._turmas.update((lista) => lista.map((t) => (t.id === id ? turma : t)));
@@ -61,9 +68,7 @@ export class TurmasService {
   }
 
   async removeTodos(): Promise<void> {
-    for (const turma of this._turmas()) {
-      await this.repo.remove(turma.id);
-    }
+    await this.repo.removeAll();
     this._turmas.set([]);
   }
 

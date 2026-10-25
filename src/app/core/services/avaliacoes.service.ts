@@ -142,9 +142,7 @@ export class AvaliacoesService {
   }
 
   async removerTodas(): Promise<void> {
-    for (const avaliacao of this._avaliacoes()) {
-      await this.repo.remove(avaliacao.id);
-    }
+    await this.repo.removeAll();
     this._avaliacoes.set([]);
     this.auditoria.registrar('avaliacao.excluidas-todas', 'Avaliacao', null, null);
   }

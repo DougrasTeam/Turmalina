@@ -294,9 +294,7 @@ export class GamificacaoService {
   }
 
   async removerTodosEventos(): Promise<void> {
-    for (const evento of this._eventos()) {
-      await this.repoEventos.remove(evento.id);
-    }
+    await this.repoEventos.removeAll();
     this._eventos.set([]);
     this.auditoria.registrar('xp.removidos-todos', 'EventoXp', null, null);
   }

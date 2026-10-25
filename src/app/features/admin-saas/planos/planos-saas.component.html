@@ -17,35 +17,49 @@
   } @else {
     <div class="planos">
       @for (plano of planos.planos(); track plano.id) {
-        <article class="card plano">
-          <div class="plano__cabecalho">
-            <h2 class="plano__nome">{{ plano.nome }}</h2>
-            <span
-              class="badge"
-              [class.badge-success]="plano.ativo"
-              [class.badge-neutral]="!plano.ativo"
-            >
-              {{ plano.ativo ? 'Ativo' : 'Inativo' }}
+        <article class="card plano" [class.plano--inativo]="!plano.ativo">
+          <header class="plano__cabecalho">
+            <div class="plano__identidade">
+              <span class="plano__icone" aria-hidden="true">
+                <span class="material-symbols-outlined">sell</span>
+              </span>
+              <div>
+                <h2 class="plano__nome">{{ plano.nome }}</h2>
+                <span
+                  class="badge"
+                  [class.badge-success]="plano.ativo"
+                  [class.badge-neutral]="!plano.ativo"
+                >
+                  {{ plano.ativo ? 'Disponível' : 'Inativo' }}
+                </span>
+              </div>
+            </div>
+          </header>
+
+          <p class="plano__descricao">{{ plano.descricao || 'Sem descrição para este plano.' }}</p>
+
+          <div class="plano__preco">
+            <strong>{{ formatarPreco(plano.precoMensal) }}</strong>
+            <span>/ mês</span>
+          </div>
+
+          <div class="plano__resumo">
+            <span class="material-symbols-outlined" aria-hidden="true">extension</span>
+            <span>
+              {{ contagem(plano) }} de {{ totalFuncionalidades() }} funcionalidades incluídas
             </span>
           </div>
 
-          <p class="tl-small tl-text-muted">{{ plano.descricao || 'Sem descrição.' }}</p>
-
-          <div class="plano__meta">
-            <strong>{{ formatarPreco(plano.precoMensal) }}/mês</strong>
-            <span class="tl-small tl-text-muted">
-              {{ contagem(plano) }} de {{ totalFuncionalidades() }} funcionalidades
-            </span>
-          </div>
-
-          <div class="plano__acoes">
-            <button class="btn btn-ghost" type="button" (click)="editar(plano)">
-              <span class="material-symbols-outlined" aria-hidden="true">edit</span> Editar
+          <footer class="plano__acoes">
+            <button class="btn btn-light" type="button" (click)="editar(plano)">
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              Editar plano
             </button>
             <button class="btn btn-danger" type="button" (click)="remover(plano)">
-              <span class="material-symbols-outlined" aria-hidden="true">delete</span> Remover
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+              Remover
             </button>
-          </div>
+          </footer>
         </article>
       }
     </div>
@@ -57,7 +71,12 @@
     <div class="modal card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
       <header class="modal__cabecalho">
         <h2>{{ atual.id ? 'Editar plano' : 'Novo plano' }}</h2>
-        <button class="btn btn-ghost" type="button" aria-label="Fechar" (click)="fechar()">
+        <button
+          class="btn btn-light btn-icon"
+          type="button"
+          aria-label="Fechar"
+          (click)="fechar()"
+        >
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </header>
@@ -67,7 +86,7 @@
           <label class="campo">
             <span>Nome</span>
             <input
-              class="input"
+              class="form-control"
               type="text"
               [value]="atual.nome"
               (input)="atualizarNome($any($event.target).value)"
@@ -77,7 +96,7 @@
           <label class="campo">
             <span>Preço mensal (R$)</span>
             <input
-              class="input"
+              class="form-control"
               type="number"
               min="0"
               step="0.01"
@@ -89,7 +108,7 @@
           <label class="campo campo--largo">
             <span>Descrição</span>
             <textarea
-              class="input"
+              class="form-control"
               rows="2"
               [value]="atual.descricao"
               (input)="atualizarDescricao($any($event.target).value)"
@@ -138,7 +157,7 @@
       </div>
 
       <footer class="modal__rodape">
-        <button class="btn btn-ghost" type="button" (click)="fechar()">Cancelar</button>
+        <button class="btn btn-light" type="button" (click)="fechar()">Cancelar</button>
         <button class="btn btn-primary" type="button" [disabled]="salvando()" (click)="salvar()">
           {{ salvando() ? 'Salvando…' : 'Salvar plano' }}
         </button>

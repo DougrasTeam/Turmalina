@@ -149,39 +149,51 @@ export class AlunoImportComponent {
     this.importando.set(true);
 
     try {
-      const turmasCriadas = new Map<string, string>();
+      const turmasPorNome = new Map<string, string>();
+      const nomesNovasTurmas = new Map<string, string>();
       const padrao = this.turmaPadrao();
-      const entradas: Partial<Aluno>[] = [];
 
       for (const linha of res.linhas) {
-        const nome = (linha[mapa.nome] ?? '').trim();
-        if (!nome) continue;
-
-        let turmaId = padrao;
+        if (!(linha[mapa.nome] ?? '').trim()) continue;
         const nomeTurma = this.celula(linha, mapa.turma).trim();
-        if (nomeTurma) {
-          const chave = nomeTurma.toLowerCase();
-          const existente = turmasCriadas.get(chave) ?? this.turmas.porNome(nomeTurma)?.id;
-          if (existente) {
-            turmaId = existente;
-            turmasCriadas.set(chave, existente);
+        const chaveTurma = nomeTurma.toLowerCase();
+        if (nomeTurma && !turmasPorNome.has(chaveTurma)) {
+          const turmaExistente = this.turmas.porNome(nomeTurma);
+          if (turmaExistente) {
+            turmasPorNome.set(chaveTurma, turmaExistente.id);
           } else {
-            const nova = await this.turmas.create({ nome: nomeTurma });
-            turmasCriadas.set(chave, nova.id);
-            turmaId = nova.id;
+            nomesNovasTurmas.set(chaveTurma, nomeTurma);
           }
         }
-
-        entradas.push({
-          nome,
-          email: this.celula(linha, mapa.email).trim(),
-          matricula: this.celula(linha, mapa.matricula).trim(),
-          turmaId,
-          dataNascimento: this.normalizarData(this.celula(linha, mapa.dataNascimento)),
-          responsavel: this.celula(linha, mapa.responsavel).trim(),
-          telefoneResponsavel: this.celula(linha, mapa.telefoneResponsavel).trim(),
-        });
       }
+
+      const turmasNovas = await this.turmas.createMuitas(
+        [...nomesNovasTurmas.values()].map((nome) => ({ nome })),
+      );
+      [...nomesNovasTurmas.keys()].forEach((chaveTurma, indice) => {
+        turmasPorNome.set(chaveTurma, turmasNovas[indice].id);
+      });
+
+      const entradas: Partial<Aluno>[] = res.linhas.flatMap((linha) => {
+        const nome = (linha[mapa.nome] ?? '').trim();
+        if (!nome) return [];
+
+        const nomeTurma = this.celula(linha, mapa.turma).trim();
+        const chaveTurma = nomeTurma.toLowerCase();
+        const turmaId = nomeTurma ? turmasPorNome.get(chaveTurma) ?? padrao : padrao;
+
+        return [
+          {
+            nome,
+            email: this.celula(linha, mapa.email).trim(),
+            matricula: this.celula(linha, mapa.matricula).trim(),
+            turmaId,
+            dataNascimento: this.normalizarData(this.celula(linha, mapa.dataNascimento)),
+            responsavel: this.celula(linha, mapa.responsavel).trim(),
+            telefoneResponsavel: this.celula(linha, mapa.telefoneResponsavel).trim(),
+          },
+        ];
+      });
 
       if (entradas.length === 0) {
         this.toast.mostrar('Nenhuma linha válida encontrada.', 'warning');
@@ -193,9 +205,14 @@ export class AlunoImportComponent {
         'aluno.importado',
         'Aluno',
         null,
-        `${criados.length} aluno(s), ${turmasCriadas.size} turma(s)`,
+        `${criados.length} aluno(s), ${turmasNovas.length} turma(s)`,
       );
-      this.importado.emit({ criados: criados.length, turmasCriadas: turmasCriadas.size });
+      this.importado.emit({ criados: criados.length, turmasCriadas: turmasNovas.length });
+    } catch (erro) {
+      this.toast.mostrar(
+        erro instanceof Error ? erro.message : 'Não foi possível importar os alunos.',
+        'danger',
+      );
     } finally {
       this.importando.set(false);
     }

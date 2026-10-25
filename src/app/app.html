@@ -110,6 +110,18 @@
             {{ usuario.nome }}
           </span>
         }
+        <button
+          class="btn btn-light btn-sm"
+          type="button"
+          (click)="alternarTemaVisual()"
+          [attr.aria-label]="temaVisual.atual() === 'corp' ? 'Ativar tema lúdico' : 'Ativar tema corporativo'"
+          [attr.aria-pressed]="temaVisual.atual() === 'corp'"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ temaVisual.atual() === 'corp' ? 'work' : 'sports_esports' }}
+          </span>
+          {{ temaVisual.atual() === 'corp' ? 'Corporativo' : 'Lúdico' }}
+        </button>
         <button class="btn btn-light btn-sm ms-2" type="button" (click)="themeToggle()" aria-label="Alternar tema">
           <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
         </button>

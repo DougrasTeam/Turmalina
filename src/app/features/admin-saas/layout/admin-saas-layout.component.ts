@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { TemaVisualService } from '../../../core/services/tema-visual.service';
 
 interface ItemNavSaas {
   path: string;
@@ -24,11 +26,14 @@ const NAV_SAAS: ItemNavSaas[] = [
 })
 export class AdminSaasLayoutComponent {
   protected readonly auth = inject(AuthService);
+  protected readonly temaVisual = inject(TemaVisualService);
   protected readonly itens = NAV_SAAS;
 
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
 
   protected readonly sidebarOpen = signal(false);
+  protected readonly temaEscuro = signal(this.carregarPreferenciaTemaEscuro());
 
   protected toggleSidebar(): void {
     this.sidebarOpen.update((aberto) => !aberto);
@@ -38,8 +43,31 @@ export class AdminSaasLayoutComponent {
     this.sidebarOpen.set(false);
   }
 
+  protected alternarTemaVisual(): void {
+    this.temaVisual.alternar();
+  }
+
+  protected alternarTemaEscuro(): void {
+    const ativarTemaEscuro = !this.temaEscuro();
+    const elementoHtml = document.documentElement;
+
+    if (ativarTemaEscuro) {
+      elementoHtml.setAttribute('data-tl-theme', 'dark');
+    } else {
+      elementoHtml.removeAttribute('data-tl-theme');
+    }
+
+    localStorage.setItem('tl-theme', ativarTemaEscuro ? 'dark' : 'light');
+    this.temaEscuro.set(ativarTemaEscuro);
+  }
+
   async sair(): Promise<void> {
     await this.auth.sair();
     await this.router.navigateByUrl('/login');
+  }
+
+  private carregarPreferenciaTemaEscuro(): boolean {
+    if (!isPlatformBrowser(this.platformId)) return false;
+    return document.documentElement.getAttribute('data-tl-theme') === 'dark';
   }
 }
