@@ -170,9 +170,9 @@ export class AlunoImportComponent {
       const turmasNovas = await this.turmas.createMuitas(
         [...nomesNovasTurmas.values()].map((nome) => ({ nome })),
       );
-      [...nomesNovasTurmas.keys()].forEach((chaveTurma, indice) => {
-        turmasPorNome.set(chaveTurma, turmasNovas[indice].id);
-      });
+      for (const turmaNova of turmasNovas) {
+        turmasPorNome.set(turmaNova.nome.trim().toLowerCase(), turmaNova.id);
+      }
 
       const entradas: Partial<Aluno>[] = res.linhas.flatMap((linha) => {
         const nome = (linha[mapa.nome] ?? '').trim();
