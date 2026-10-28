@@ -27,6 +27,7 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
   'turmalina.professores': { tabela: 'professores', ordenacao: 'nome' },
   'turmalina.turmas': { tabela: 'turmas', ordenacao: 'codigo' },
   'turmalina.grades-horarias': { tabela: 'grades_horarias_turmas', ordenacao: 'turma_id' },
+  'turmalina.padroes-horario': { tabela: 'padroes_horarios_escola', ordenacao: 'criado_em' },
   'turmalina.alunos': { tabela: 'alunos', ordenacao: 'nome', nulaveis: ['turma_id'] },
   'turmalina.instituicao': { tabela: 'instituicoes', ordenacao: 'criado_em' },
   'turmalina.matriculas': { tabela: 'matriculas', ordenacao: 'criado_em', nulaveis: ['periodo_letivo_id'] },
@@ -38,11 +39,15 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
   },
   'turmalina.comunicados': { tabela: 'comunicados', ordenacao: 'criado_em' },
   'turmalina.eventos': { tabela: 'eventos', ordenacao: 'inicio_em', nulaveis: ['turma_id'] },
-  'turmalina.acoes-gamificacao': { tabela: 'acoes_gamificacao', ordenacao: 'nome' },
+  'turmalina.acoes-gamificacao': {
+    tabela: 'acoes_gamificacao',
+    ordenacao: 'nome',
+    nulaveis: ['turma_id', 'disciplina_id'],
+  },
   'turmalina.eventos-xp': {
     tabela: 'eventos_xp',
     ordenacao: 'criado_em',
-    nulaveis: ['turma_id', 'acao_id', 'estorno_de'],
+    nulaveis: ['turma_id', 'disciplina_id', 'acao_id', 'estorno_de'],
   },
   'turmalina.moedas': {
     tabela: 'movimentacoes_moedas',
@@ -64,6 +69,22 @@ const TABELAS: Record<string, OpcoesTabelaSupabase> = {
     tabela: 'equipe_membros',
     ordenacao: 'criado_em',
     nulaveis: ['periodo_letivo_id', 'fim_em', 'autor_id'],
+  },
+  'turmalina.metas': { tabela: 'metas', ordenacao: 'nome' },
+  'turmalina.metas-aluno': {
+    tabela: 'metas_aluno',
+    ordenacao: 'criado_em',
+    nulaveis: ['autor_id'],
+  },
+  'turmalina.missoes': {
+    tabela: 'missoes',
+    ordenacao: 'nome',
+    nulaveis: ['inicio_em', 'fim_em'],
+  },
+  'turmalina.missoes-aluno': {
+    tabela: 'missoes_aluno',
+    ordenacao: 'criado_em',
+    nulaveis: ['autor_id'],
   },
   'turmalina.auditoria': { tabela: 'eventos_auditoria', ordenacao: 'criado_em' },
 };

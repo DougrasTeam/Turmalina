@@ -9,12 +9,20 @@ export const VALOR_XP_MAXIMO = 100;
 /** Maior magnitude aceita em uma ação negativa (desconto de XP). */
 export const VALOR_XP_NEGATIVO_MAXIMO = 50;
 
+/** Contexto obrigatório das ações, eventos e recompensas de gamificação. */
+export interface ContextoGamificacao {
+  turmaId: string;
+  disciplinaId: string;
+}
+
 export interface AcaoGamificacao extends BaseEntity {
   nome: string;
   icone: string;
   valorXp: number;
   indicador: string;
   ativa: boolean;
+  turmaId: string;
+  disciplinaId: string;
 }
 
 export interface DadosAcaoGamificacao {
@@ -23,13 +31,21 @@ export interface DadosAcaoGamificacao {
   valorXp: number;
   indicador: string;
   ativa: boolean;
+  turmaId: string;
+  disciplinaId: string;
 }
+
+/** Modelo de ação padrão sem contexto; o contexto é aplicado ao criar. */
+export type DadosAcaoPadrao = Omit<DadosAcaoGamificacao, 'turmaId' | 'disciplinaId'>;
 
 export interface EventoXp extends BaseEntity {
   alunoId: string;
   turmaId: string | null;
+  disciplinaId: string | null;
   acaoId: string | null;
   acaoNome: string;
+  /** Indicador da ação no momento do lançamento; usado pelas metas. */
+  indicador: string;
   deltaXp: number;
   origem: string;
   autorId: string;
@@ -41,8 +57,10 @@ export interface EventoXp extends BaseEntity {
 export interface DadosEventoXp {
   alunoId: string;
   turmaId: string | null;
+  disciplinaId: string | null;
   acaoId: string | null;
   acaoNome: string;
+  indicador: string;
   deltaXp: number;
   origem: string;
   autorId: string;
@@ -74,7 +92,7 @@ export const ICONES_ACAO: OpcaoIconeAcao[] = [
   { valor: 'psychiatry', rotulo: 'Esforço' },
 ];
 
-export const ACOES_GAMIFICACAO_PADRAO: DadosAcaoGamificacao[] = [
+export const ACOES_GAMIFICACAO_PADRAO: DadosAcaoPadrao[] = [
   {
     nome: 'Participação em aula',
     icone: 'star',
@@ -122,6 +140,8 @@ export function validarAcaoGamificacao(
   const indicador = dados.indicador.trim();
   const valorXp = Number(dados.valorXp);
 
+  if (!dados.turmaId.trim()) erros.push('Selecione a turma da ação.');
+  if (!dados.disciplinaId.trim()) erros.push('Selecione a disciplina da ação.');
   if (!nome) erros.push('Informe o nome da ação.');
   if (nome.length > 60) erros.push('O nome da ação deve ter no máximo 60 caracteres.');
   if (!indicador) erros.push('Informe o indicador associado à ação.');
@@ -140,9 +160,15 @@ export function validarAcaoGamificacao(
   }
 
   const nomeDuplicado = existentes.some(
-    (acao) => acao.id !== idAtual && acao.nome.trim().toLowerCase() === nome.toLowerCase(),
+    (acao) =>
+      acao.id !== idAtual &&
+      acao.turmaId === dados.turmaId &&
+      acao.disciplinaId === dados.disciplinaId &&
+      acao.nome.trim().toLowerCase() === nome.toLowerCase(),
   );
-  if (nome && nomeDuplicado) erros.push('Já existe uma ação com este nome.');
+  if (nome && nomeDuplicado) {
+    erros.push('Já existe uma ação com este nome nesta turma e disciplina.');
+  }
 
   return erros;
 }

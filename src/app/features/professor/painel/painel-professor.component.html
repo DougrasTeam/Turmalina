@@ -271,14 +271,63 @@
     </div>
 
     <div class="card">
-      <div class="card-header">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <span><span class="material-symbols-outlined">emoji_events</span> Missões e metas</span>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-light" routerLink="/gamificacao/metas">Metas</a>
+          <a class="btn btn-sm btn-light" routerLink="/gamificacao/missoes">Missões</a>
+        </div>
       </div>
       <div class="card-body">
-        <p class="tl-text-muted mb-0">
-          Missões e metas pendentes de validação aparecerão aqui quando a gamificação for
-          habilitada (fase futura).
-        </p>
+        <div class="row">
+          <div class="col">
+            <h3 class="painel-gamificacao__titulo">Metas para conceder</h3>
+            @if (metasPendentes().length === 0) {
+              <p class="tl-text-muted mb-0">
+                Nenhum aluno atingiu o critério de uma meta ativa no momento.
+              </p>
+            } @else {
+              <ul class="list-group">
+                @for (item of metasPendentes(); track item.meta.id) {
+                  <li class="list-group-item">
+                    <div class="w-100" style="min-width: 0;">
+                      <strong>{{ item.meta.nome }}</strong>
+                      <div class="tl-small tl-text-muted">
+                        {{ nomeDisciplina(item.meta.disciplinaId) }} ·
+                        {{ item.progressos.length }} aluno(s) elegível(is)
+                      </div>
+                    </div>
+                    <a class="btn btn-sm btn-light" routerLink="/gamificacao/metas">Conceder</a>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="col">
+            <h3 class="painel-gamificacao__titulo">Missões em andamento</h3>
+            @if (missoesPendentes().length === 0) {
+              <p class="tl-text-muted mb-0">
+                Nenhuma missão publicada com conclusões pendentes nesta turma.
+              </p>
+            } @else {
+              <ul class="list-group">
+                @for (item of missoesPendentes(); track item.missao.id) {
+                  <li class="list-group-item">
+                    <div class="w-100" style="min-width: 0;">
+                      <strong>{{ item.missao.nome }}</strong>
+                      <div class="tl-small tl-text-muted">
+                        {{ nomeDisciplina(item.missao.disciplinaId) }} ·
+                        {{ item.concluidos }}/{{ alunosAtivos() }} aluno(s) concluíram
+                      </div>
+                    </div>
+                    <a class="btn btn-sm btn-light" routerLink="/gamificacao/missoes">Abrir</a>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
       </div>
     </div>
   }

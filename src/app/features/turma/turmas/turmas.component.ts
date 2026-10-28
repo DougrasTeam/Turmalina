@@ -16,6 +16,17 @@ import { TurmasService } from '../../../core/services/turmas.service';
 import { VinculosDocentesService } from '../../../core/services/vinculos-docentes.service';
 import { Turma, Turno, labelTurno } from '../../../core/models';
 
+type ColunaOrdenacao =
+  | 'nome'
+  | 'serie'
+  | 'turno'
+  | 'anoLetivo'
+  | 'professores'
+  | 'alunos'
+  | 'status';
+
+type DirecaoOrdenacao = 'asc' | 'desc';
+
 @Component({
   selector: 'app-turmas',
   imports: [ModalComponent, ConfirmarTextoComponent, TurmaFormComponent, RouterLink],
@@ -35,6 +46,8 @@ export class TurmasComponent {
   private readonly auditoria = inject(AuditoriaService);
 
   protected readonly busca = signal('');
+  protected readonly colunaOrdenada = signal<ColunaOrdenacao>('nome');
+  protected readonly direcaoOrdenacao = signal<DirecaoOrdenacao>('asc');
   protected readonly modalAberto = signal(false);
   protected readonly editando = signal<Turma | null>(null);
   protected readonly excluindo = signal<Turma | null>(null);
@@ -51,12 +64,86 @@ export class TurmasComponent {
   readonly filtradas = computed(() => {
     const termo = this.busca().trim().toLowerCase();
     const lista = this.contexto.turmasDoProfessor();
+    const encontradas = !termo
+      ? lista
+      : lista.filter((turma) =>
+          [turma.nome, turma.serie, turma.codigo].some((campo) =>
+            campo.toLowerCase().includes(termo),
+          ),
+        );
 
-    if (!termo) return lista;
-    return lista.filter((t) =>
-      [t.nome, t.serie, t.codigo].some((campo) => campo.toLowerCase().includes(termo)),
-    );
+    return this.ordenarTurmas(encontradas);
   });
+
+  protected ordenarPor(coluna: ColunaOrdenacao): void {
+    if (this.colunaOrdenada() === coluna) {
+      this.direcaoOrdenacao.update((direcao) =>
+        direcao === 'asc' ? 'desc' : 'asc',
+      );
+      return;
+    }
+
+    this.colunaOrdenada.set(coluna);
+    this.direcaoOrdenacao.set('asc');
+  }
+
+  protected indicarOrdenacao(
+    coluna: ColunaOrdenacao,
+  ): 'ascending' | 'descending' | 'none' {
+    if (this.colunaOrdenada() !== coluna) return 'none';
+    return this.direcaoOrdenacao() === 'asc' ? 'ascending' : 'descending';
+  }
+
+  protected iconeOrdenacao(coluna: ColunaOrdenacao): string {
+    if (this.colunaOrdenada() !== coluna) return 'unfold_more';
+    return this.direcaoOrdenacao() === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  private ordenarTurmas(turmas: readonly Turma[]): Turma[] {
+    const coluna = this.colunaOrdenada();
+    const fator = this.direcaoOrdenacao() === 'asc' ? 1 : -1;
+
+    return [...turmas].sort((turmaA, turmaB) => {
+      const comparacao = this.compararTurmas(turmaA, turmaB, coluna);
+      if (comparacao !== 0) return comparacao * fator;
+      return this.compararTexto(turmaA.nome, turmaB.nome);
+    });
+  }
+
+  private compararTurmas(
+    turmaA: Turma,
+    turmaB: Turma,
+    coluna: ColunaOrdenacao,
+  ): number {
+    switch (coluna) {
+      case 'nome':
+        return this.compararTexto(turmaA.nome, turmaB.nome);
+      case 'serie':
+        return this.compararTexto(turmaA.serie, turmaB.serie);
+      case 'turno':
+        return this.compararTexto(labelTurno(turmaA.turno), labelTurno(turmaB.turno));
+      case 'anoLetivo':
+        return turmaA.anoLetivo - turmaB.anoLetivo;
+      case 'professores':
+        return this.compararTexto(
+          this.professoresDa(turmaA),
+          this.professoresDa(turmaB),
+        );
+      case 'alunos':
+        return (
+          this.alunos.contarPorTurma(turmaA.id) -
+          this.alunos.contarPorTurma(turmaB.id)
+        );
+      case 'status':
+        return Number(turmaA.ativa) - Number(turmaB.ativa);
+      default:
+        return 0;
+    }
+  }
+
+  private compararTexto(valorA: string, valorB: string): number {
+    return valorA.localeCompare(valorB, 'pt-BR', { sensitivity: 'base' });
+  }
 
   protected valor(evento: Event): string {
     return (evento.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;

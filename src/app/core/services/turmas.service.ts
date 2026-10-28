@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Turma } from '../models';
+import { Turma, gerarCodigoTurma } from '../models';
 import { Repository } from '../data/repository';
 import { RepositoryFactory } from '../data/repository.factory';
 
@@ -44,14 +44,19 @@ export class TurmasService {
   }
 
   async create(input: Partial<Turma>): Promise<Turma> {
-    const turma = await this.repo.create(input);
+    const codigosEmUso = this.codigosEmUso();
+    const turma = await this.repo.create(this.comCodigoUnico(input, codigosEmUso));
     this._turmas.update((lista) => [...lista, turma]);
     return turma;
   }
 
   async createMuitas(inputs: Partial<Turma>[]): Promise<Turma[]> {
     if (inputs.length === 0) return [];
-    const novas = await this.repo.createMany(inputs);
+
+    const codigosEmUso = this.codigosEmUso();
+    const inputsComCodigo = inputs.map((input) => this.comCodigoUnico(input, codigosEmUso));
+
+    const novas = await this.repo.createMany(inputsComCodigo);
     this._turmas.update((lista) => [...lista, ...novas.map((turma) => this.normalizar(turma))]);
     return novas;
   }
@@ -102,5 +107,32 @@ export class TurmasService {
       professorIds: turma.professorIds ?? [],
       disciplinaIds: turma.disciplinaIds ?? [],
     };
+  }
+
+  private codigosEmUso(): Set<string> {
+    const codigos = this._turmas()
+      .map((turma) => turma.codigo.trim())
+      .filter((codigo) => codigo.length > 0);
+
+    return new Set(codigos);
+  }
+
+  private comCodigoUnico(input: Partial<Turma>, codigosEmUso: Set<string>): Partial<Turma> {
+    const codigoInformado = (input.codigo ?? '').trim();
+    if (codigoInformado) {
+      return { ...input, codigo: codigoInformado };
+    }
+
+    return { ...input, codigo: this.gerarCodigoUnico(codigosEmUso) };
+  }
+
+  private gerarCodigoUnico(codigosEmUso: Set<string>): string {
+    let codigo = gerarCodigoTurma();
+    while (codigosEmUso.has(codigo)) {
+      codigo = gerarCodigoTurma();
+    }
+
+    codigosEmUso.add(codigo);
+    return codigo;
   }
 }

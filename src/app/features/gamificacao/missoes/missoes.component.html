@@ -1,0 +1,428 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Missões</h1>
+      <p class="tl-text-muted">
+        Crie desafios individuais ou coletivos por turma, acompanhe as conclusões e conceda as
+        recompensas em XP e moedas.
+      </p>
+    </div>
+  </header>
+
+  @if (contexto.turmasDisponiveis().length === 0) {
+    <div class="card">
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">school</span>
+        <h3>Nenhuma turma ativa</h3>
+        <p>É necessário ter uma turma vinculada para criar missões.</p>
+      </div>
+    </div>
+  } @else {
+    <app-gamificacao-contexto (contextoAlterado)="aoAlterarContexto()" />
+
+    @if (!contexto.contextoAtivo()) {
+      <div class="card">
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">
+            menu_book
+          </span>
+          <h3>Nenhuma disciplina disponível</h3>
+          <p>Selecione uma turma com disciplina vinculada para criar missões.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="page-toolbar">
+        <span class="tl-small tl-text-muted">
+          {{ linhas().length }} missão(ões) em {{ turmaAtual()?.nome }} /
+          {{ contexto.disciplinaAtual()?.nome }}
+        </span>
+        <span class="page-toolbar__spacer"></span>
+        <button class="btn btn-primary" type="button" [disabled]="!turmaId()" (click)="abrirNova()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Nova missão
+        </button>
+      </div>
+
+      <div class="card">
+        @if (linhas().length === 0) {
+          <div class="empty-state">
+            <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">map</span>
+            <h3>Nenhuma missão cadastrada</h3>
+            <p>Crie a primeira missão para engajar a turma.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Missão</th>
+                  <th>Tipo</th>
+                  <th>Período</th>
+                  <th>Recompensa</th>
+                  <th>Conclusões</th>
+                  <th>Situação</th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (linha of linhas(); track linha.missao.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ linha.missao.nome }}</strong>
+                      @if (linha.missao.descricao) {
+                        <p class="missoes__descricao">{{ linha.missao.descricao }}</p>
+                      }
+                    </td>
+                    <td>
+                      <span class="badge badge-info">{{ rotuloTipo(linha.missao) }}</span>
+                    </td>
+                    <td class="missoes__periodo">{{ formatarPeriodo(linha.missao) }}</td>
+                    <td>{{ formatarRecompensas(linha.missao) }}</td>
+                    <td class="missoes__progresso">
+                      <div class="progress" aria-hidden="true">
+                        <div
+                          class="progress-bar progress-bar-success"
+                          [style.--progress]="linha.percentual + '%'"
+                        ></div>
+                      </div>
+                      <span class="tl-small tl-text-muted">
+                        {{ linha.concluidos }} de {{ linha.totalAlunos }} aluno(s)
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="'badge ' + classeSituacao(linha)">
+                        {{ rotuloSituacaoMissao(linha.situacao) }}
+                      </span>
+                    </td>
+                    <td class="text-end missoes__botoes">
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        title="Conclusões"
+                        [disabled]="!podeConcluir(linha.missao)"
+                        (click)="abrirConclusao(linha.missao)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+                      </button>
+                      @if (linha.missao.status === 'rascunho') {
+                        <button
+                          class="btn btn-light btn-sm"
+                          type="button"
+                          title="Publicar"
+                          (click)="publicar(linha.missao)"
+                        >
+                          <span class="material-symbols-outlined" aria-hidden="true">publish</span>
+                        </button>
+                      }
+                      @if (linha.missao.status === 'publicada') {
+                        <button
+                          class="btn btn-light btn-sm"
+                          type="button"
+                          title="Encerrar"
+                          (click)="encerrar(linha.missao)"
+                        >
+                          <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+                        </button>
+                      }
+                      @if (linha.missao.status === 'encerrada') {
+                        <button
+                          class="btn btn-light btn-sm"
+                          type="button"
+                          title="Arquivar"
+                          (click)="arquivar(linha.missao)"
+                        >
+                          <span class="material-symbols-outlined" aria-hidden="true">archive</span>
+                        </button>
+                      }
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        title="Editar"
+                        (click)="editar(linha.missao)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                      </button>
+                      <button
+                        class="btn btn-danger btn-sm"
+                        type="button"
+                        title="Excluir"
+                        (click)="pedirExclusao(linha.missao)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <app-modal
+    [open]="modalAberto()"
+    [title]="editando() ? 'Editar missão' : 'Nova missão'"
+    (close)="fecharFormulario()"
+  >
+    @if (erros().length) {
+      <div class="alert alert-danger" role="alert">
+        @for (erro of erros(); track erro) {
+          <p class="mb-0">{{ erro }}</p>
+        }
+      </div>
+    }
+
+    <div class="missoes__campos">
+      <label class="form-label" for="missao-nome">
+        Nome
+        <input
+          id="missao-nome"
+          class="form-control"
+          type="text"
+          maxlength="80"
+          placeholder="Ex.: Semana da leitura"
+          [value]="formulario().nome"
+          (input)="alterarNome($event)"
+        />
+      </label>
+
+      <p class="tl-small tl-text-muted missoes__contexto">
+        Contexto: {{ turmaAtual()?.nome }} / {{ contexto.disciplinaAtual()?.nome }}
+      </p>
+
+      <label class="form-label missoes__campo-largo" for="missao-descricao">
+        Descrição
+        <textarea
+          id="missao-descricao"
+          class="form-control"
+          rows="2"
+          maxlength="240"
+          placeholder="Resumo do desafio."
+          [value]="formulario().descricao"
+          (input)="alterarDescricao($event)"
+        ></textarea>
+      </label>
+
+      <label class="form-label missoes__campo-largo" for="missao-instrucoes">
+        Instruções
+        <textarea
+          id="missao-instrucoes"
+          class="form-control"
+          rows="3"
+          maxlength="500"
+          placeholder="Orientações para os alunos cumprirem a missão."
+          [value]="formulario().instrucoes"
+          (input)="alterarInstrucoes($event)"
+        ></textarea>
+      </label>
+
+      <label class="form-label" for="missao-tipo">
+        Tipo
+        <select
+          id="missao-tipo"
+          class="form-select"
+          [value]="formulario().tipo"
+          (change)="alterarTipo($event)"
+        >
+          @for (tipo of tipos; track tipo.valor) {
+            <option [value]="tipo.valor">{{ tipo.rotulo }}</option>
+          }
+        </select>
+        <span class="tl-small tl-text-muted">{{ descricaoTipo(formulario().tipo) }}</span>
+      </label>
+
+      <label class="form-label" for="missao-indicador">
+        Indicador (opcional)
+        <select
+          id="missao-indicador"
+          class="form-select"
+          [value]="formulario().indicador"
+          (change)="alterarIndicador($event)"
+        >
+          <option value="">Não vincular</option>
+          @for (indicador of indicadores(); track indicador) {
+            <option [value]="indicador">{{ rotuloIndicador(indicador) }}</option>
+          }
+        </select>
+        <span class="tl-small tl-text-muted">
+          Com XP maior que zero, a conclusão também conta para metas deste indicador.
+        </span>
+      </label>
+
+      <label class="form-label" for="missao-xp">
+        Recompensa em XP
+        <input
+          id="missao-xp"
+          class="form-control"
+          type="number"
+          step="1"
+          min="0"
+          max="100"
+          [value]="formulario().xpRecompensa"
+          (input)="alterarXp($event)"
+        />
+      </label>
+
+      <label class="form-label" for="missao-moedas">
+        Recompensa em moedas
+        <input
+          id="missao-moedas"
+          class="form-control"
+          type="number"
+          step="1"
+          min="0"
+          max="1000"
+          [value]="formulario().moedasRecompensa"
+          (input)="alterarMoedas($event)"
+        />
+      </label>
+
+      <label class="form-label" for="missao-status">
+        Status
+        <select
+          id="missao-status"
+          class="form-select"
+          [value]="formulario().status"
+          (change)="alterarStatusDoFormulario($event)"
+        >
+          @for (status of statusDisponiveis; track status.valor) {
+            <option [value]="status.valor">{{ status.rotulo }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="missoes__datas">
+        <label class="form-label" for="missao-inicio">
+          Início
+          <input
+            id="missao-inicio"
+            class="form-control"
+            type="date"
+            [value]="formulario().inicioEm ?? ''"
+            (input)="alterarInicio($event)"
+          />
+        </label>
+
+        <label class="form-label" for="missao-fim">
+          Fim
+          <input
+            id="missao-fim"
+            class="form-control"
+            type="date"
+            [value]="formulario().fimEm ?? ''"
+            (input)="alterarFim($event)"
+          />
+        </label>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fecharFormulario()">Cancelar</button>
+      <button class="btn btn-primary" type="button" [disabled]="salvando()" (click)="salvar()">
+        <span class="material-symbols-outlined" aria-hidden="true">save</span>
+        {{ salvando() ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    [open]="missaoParaConcluir() !== null"
+    [title]="'Conclusões: ' + (missaoParaConcluir()?.nome ?? '')"
+    (close)="fecharConclusao()"
+  >
+    @if (missaoParaConcluir(); as missao) {
+      <div class="missoes__resumo">
+        <p class="tl-text-muted">
+          {{ missao.descricao || 'Sem descrição.' }}
+          <span [class]="'badge ' + classeSituacaoDaMissao(missao)">
+            {{ rotuloSituacaoMissao(missoes.situacao(missao)) }}
+          </span>
+        </p>
+        @if (missao.instrucoes) {
+          <p class="tl-small tl-text-muted">{{ missao.instrucoes }}</p>
+        }
+        <p class="tl-small">
+          Recompensa: <strong>{{ formatarRecompensas(missao) }}</strong> ·
+          {{ rotuloTipo(missao) }} · {{ formatarPeriodo(missao) }}
+        </p>
+      </div>
+
+      @if (missao.tipo === 'turma') {
+        <div class="missoes__acao-coletiva">
+          <p class="tl-small tl-text-muted">
+            A missão é coletiva: conclua para todos os alunos ativos da turma de uma vez.
+          </p>
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            [disabled]="processandoAlunoId() !== ''"
+            (click)="concluirParaTurma()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">done_all</span>
+            {{ estaProcessando('turma') ? 'Concluindo...' : 'Concluir para toda a turma' }}
+          </button>
+        </div>
+      }
+
+      @if (alunosDaMissaoSelecionada().length === 0) {
+        <p class="tl-small tl-text-muted mb-0">Nenhum aluno ativo nesta turma.</p>
+      } @else {
+        <ul class="missoes__lista">
+          @for (aluno of alunosDaMissaoSelecionada(); track aluno.id) {
+            <li class="missoes__aluno">
+              <span>{{ aluno.nome }}</span>
+
+              @if (alunoConcluiu(aluno.id)) {
+                <span class="badge badge-success">Concluída</span>
+                <button
+                  class="btn btn-light btn-sm"
+                  type="button"
+                  title="Revogar conclusão"
+                  [disabled]="processandoAlunoId() !== ''"
+                  (click)="revogar(aluno.id)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">undo</span>
+                </button>
+              } @else {
+                <span class="badge badge-neutral">Pendente</span>
+                <button
+                  class="btn btn-primary btn-sm"
+                  type="button"
+                  [disabled]="processandoAlunoId() !== '' || !podeConcluir(missao)"
+                  (click)="concluirAluno(aluno.id)"
+                >
+                  {{ estaProcessando(aluno.id) ? 'Concluindo...' : 'Concluir' }}
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      @if (missoes.conclusoesDaMissao(missao.id).length > 0) {
+        <h3 class="missoes__subtitulo">Histórico de conclusões</h3>
+        <ul class="missoes__historico">
+          @for (conclusao of missoes.conclusoesDaMissao(missao.id); track conclusao.id) {
+            <li>
+              <span>{{ nomeDoAluno(conclusao.alunoId) }}</span>
+              <span class="tl-small tl-text-muted">
+                {{ formatarDataHora(conclusao.criadoEm) }} · {{ conclusao.autorNome || 'Sistema' }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </app-modal>
+
+  <app-confirmar-texto
+    [open]="exclusaoAberta()"
+    titulo="Excluir missão"
+    [mensagem]="'Excluir a missão \'' + (missaoEmExclusao()?.nome ?? '') + '\'?'"
+    [detalhes]="['As conclusões vinculadas serão revogadas e as recompensas estornadas.']"
+    (confirmado)="confirmarExclusao()"
+    (fechado)="cancelarExclusao()"
+  />
+</section>

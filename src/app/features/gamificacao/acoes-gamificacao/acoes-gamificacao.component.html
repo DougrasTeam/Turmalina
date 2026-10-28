@@ -3,183 +3,215 @@
     <div>
       <h1>Ações de XP</h1>
       <p class="tl-text-muted">
-        Defina as ações que a equipe pode aplicar aos alunos. Ações positivas somam XP; ações
-        negativas descontam, respeitando o limite configurado.
+        Defina as ações que a equipe pode aplicar aos alunos por turma e disciplina. Ações positivas
+        somam XP; ações negativas descontam, respeitando o limite configurado.
       </p>
     </div>
   </header>
 
-  <div class="page-toolbar">
-    <span class="tl-small tl-text-muted">
-      {{ gamificacao.acoes().length }} ação(ões) cadastrada(s)
-    </span>
-    <span class="page-toolbar__spacer"></span>
-    <button class="btn btn-primary" type="button" (click)="abrirNovaAcao()">
-      <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova ação
-    </button>
-  </div>
-
-  @if (formAberto()) {
-    <article class="card acoes__form">
-      <h2 class="acoes__form-titulo">
-        {{ editando() ? 'Editar ação de XP' : 'Nova ação de XP' }}
-      </h2>
-
-      @if (erros().length) {
-        <div class="alert alert-danger" role="alert">
-          @for (erro of erros(); track erro) {
-            <p class="mb-0">{{ erro }}</p>
-          }
-        </div>
-      }
-
-      <div class="acoes__campos">
-        <label class="form-label" for="acao-nome">
-          Nome
-          <input
-            id="acao-nome"
-            class="form-control"
-            type="text"
-            maxlength="60"
-            placeholder="Ex.: Participação em aula"
-            [value]="formulario().nome"
-            (input)="alterarNome($event)"
-          />
-        </label>
-
-        <label class="form-label" for="acao-icone">
-          Ícone
-          <select
-            id="acao-icone"
-            class="form-select"
-            [value]="formulario().icone"
-            (change)="alterarIcone($event)"
-          >
-            @for (icone of icones; track icone.valor) {
-              <option [value]="icone.valor">{{ icone.rotulo }}</option>
-            }
-          </select>
-        </label>
-
-        <label class="form-label" for="acao-indicador">
-          Indicador associado
-          <input
-            id="acao-indicador"
-            class="form-control"
-            type="text"
-            maxlength="40"
-            placeholder="Ex.: participacao"
-            [value]="formulario().indicador"
-            (input)="alterarIndicador($event)"
-          />
-        </label>
-
-        <label class="form-label" for="acao-valor">
-          Valor em XP
-          <input
-            id="acao-valor"
-            class="form-control"
-            type="number"
-            step="1"
-            min="-50"
-            max="100"
-            [value]="formulario().valorXp"
-            (input)="alterarValorXp($event)"
-          />
-          <span class="tl-small tl-text-muted">Use valores negativos para descontar XP.</span>
-        </label>
-      </div>
-
-      <label class="acoes__ativa">
-        <input
-          type="checkbox"
-          [checked]="formulario().ativa"
-          (change)="alterarAtiva($event)"
-        />
-        Ação ativa para lançamentos
-      </label>
-
-      <div class="d-flex justify-content-end gap-2 mt-3">
-        <button class="btn btn-light" type="button" (click)="fecharForm()">Cancelar</button>
-        <button class="btn btn-primary" type="button" (click)="salvar()">
-          <span class="material-symbols-outlined" aria-hidden="true">save</span> Salvar
-        </button>
-      </div>
-    </article>
-  }
-
-  <div class="card">
-    @if (gamificacao.acoes().length === 0) {
+  @if (contexto.turmasDisponiveis().length === 0) {
+    <div class="card">
       <div class="empty-state">
-        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">stars</span>
-        <h3>Nenhuma ação de XP cadastrada</h3>
-        <p>Crie a primeira ação para que a equipe possa pontuar os alunos.</p>
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">school</span>
+        <h3>Nenhuma turma disponível</h3>
+        <p>É necessário ter uma turma vinculada para gerenciar ações de XP.</p>
+      </div>
+    </div>
+  } @else {
+    <app-gamificacao-contexto (contextoAlterado)="fecharForm()" />
+
+    @if (!contextoAtivo()) {
+      <div class="card">
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">
+            menu_book
+          </span>
+          <h3>Nenhuma disciplina disponível</h3>
+          <p>Selecione uma turma com disciplina vinculada para gerenciar as ações de XP.</p>
+        </div>
       </div>
     } @else {
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Ação</th>
-              <th>Indicador</th>
-              <th>XP</th>
-              <th>Status</th>
-              <th class="text-end">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (acao of gamificacao.acoes(); track acao.id) {
-              <tr>
-                <td>
-                  <span class="material-symbols-outlined acoes__icone" aria-hidden="true">
-                    {{ acao.icone }}
-                  </span>
-                  <strong>{{ acao.nome }}</strong>
-                </td>
-                <td>{{ acao.indicador }}</td>
-                <td>
-                  <span [class]="'badge ' + (acao.valorXp > 0 ? 'badge-success' : 'badge-warning')">
-                    {{ formatarValorXp(acao.valorXp) }}
-                  </span>
-                </td>
-                <td>
-                  <span [class]="'badge ' + (acao.ativa ? 'badge-success' : 'badge-neutral')">
-                    {{ acao.ativa ? 'Ativa' : 'Inativa' }}
-                  </span>
-                </td>
-                <td class="text-end acoes__botoes">
-                  <button
-                    class="btn btn-light btn-sm"
-                    type="button"
-                    title="Editar"
-                    (click)="editar(acao)"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                  </button>
-                  <button
-                    class="btn btn-light btn-sm"
-                    type="button"
-                    [title]="acao.ativa ? 'Desativar' : 'Ativar'"
-                    (click)="alternar(acao)"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">
-                      {{ acao.ativa ? 'toggle_on' : 'toggle_off' }}
-                    </span>
-                  </button>
-                  <button
-                    class="btn btn-danger btn-sm"
-                    type="button"
-                    title="Excluir"
-                    (click)="remover(acao)"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="page-toolbar">
+        <span class="tl-small tl-text-muted">
+          {{ acoesDoContexto().length }} ação(ões) em {{ contexto.turmaAtual()?.nome }} /
+          {{ contexto.disciplinaAtual()?.nome }}
+        </span>
+        <span class="page-toolbar__spacer"></span>
+        <button class="btn btn-primary" type="button" (click)="abrirNovaAcao()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span> Nova ação
+        </button>
+      </div>
+
+      @if (formAberto()) {
+        <article class="card acoes__form">
+          <h2 class="acoes__form-titulo">
+            {{ editando() ? 'Editar ação de XP' : 'Nova ação de XP' }}
+          </h2>
+          <p class="tl-small tl-text-muted">
+            Contexto: {{ contexto.turmaAtual()?.nome }} / {{ contexto.disciplinaAtual()?.nome }}
+          </p>
+
+          @if (erros().length) {
+            <div class="alert alert-danger" role="alert">
+              @for (erro of erros(); track erro) {
+                <p class="mb-0">{{ erro }}</p>
+              }
+            </div>
+          }
+
+          <div class="acoes__campos">
+            <label class="form-label" for="acao-nome">
+              Nome
+              <input
+                id="acao-nome"
+                class="form-control"
+                type="text"
+                maxlength="60"
+                placeholder="Ex.: Participação em aula"
+                [value]="formulario().nome"
+                (input)="alterarNome($event)"
+              />
+            </label>
+
+            <label class="form-label" for="acao-icone">
+              Ícone
+              <select
+                id="acao-icone"
+                class="form-select"
+                [value]="formulario().icone"
+                (change)="alterarIcone($event)"
+              >
+                @for (icone of icones; track icone.valor) {
+                  <option [value]="icone.valor">{{ icone.rotulo }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="form-label" for="acao-indicador">
+              Indicador associado
+              <input
+                id="acao-indicador"
+                class="form-control"
+                type="text"
+                maxlength="40"
+                placeholder="Ex.: participacao"
+                [value]="formulario().indicador"
+                (input)="alterarIndicador($event)"
+              />
+            </label>
+
+            <label class="form-label" for="acao-valor">
+              Valor em XP
+              <input
+                id="acao-valor"
+                class="form-control"
+                type="number"
+                step="1"
+                min="-50"
+                max="100"
+                [value]="formulario().valorXp"
+                (input)="alterarValorXp($event)"
+              />
+              <span class="tl-small tl-text-muted">Use valores negativos para descontar XP.</span>
+            </label>
+          </div>
+
+          <label class="acoes__ativa">
+            <input type="checkbox" [checked]="formulario().ativa" (change)="alterarAtiva($event)" />
+            Ação ativa para lançamentos
+          </label>
+
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button class="btn btn-light" type="button" (click)="fecharForm()">Cancelar</button>
+            <button class="btn btn-primary" type="button" (click)="salvar()">
+              <span class="material-symbols-outlined" aria-hidden="true">save</span> Salvar
+            </button>
+          </div>
+        </article>
+      }
+
+      <div class="card">
+        @if (acoesDoContexto().length === 0) {
+          <div class="empty-state">
+            <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">
+              stars
+            </span>
+            <h3>Nenhuma ação de XP neste contexto</h3>
+            <p>Crie uma ação ou use o catálogo padrão para começar.</p>
+            <button class="btn btn-light" type="button" (click)="criarAcoesPadrao()">
+              <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+              Criar ações padrão
+            </button>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Ação</th>
+                  <th>Indicador</th>
+                  <th>XP</th>
+                  <th>Status</th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (acao of acoesDoContexto(); track acao.id) {
+                  <tr>
+                    <td>
+                      <span class="material-symbols-outlined acoes__icone" aria-hidden="true">
+                        {{ acao.icone }}
+                      </span>
+                      <strong>{{ acao.nome }}</strong>
+                    </td>
+                    <td>{{ acao.indicador }}</td>
+                    <td>
+                      <span
+                        [class]="'badge ' + (acao.valorXp > 0 ? 'badge-success' : 'badge-warning')"
+                      >
+                        {{ formatarValorXp(acao.valorXp) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="'badge ' + (acao.ativa ? 'badge-success' : 'badge-neutral')">
+                        {{ acao.ativa ? 'Ativa' : 'Inativa' }}
+                      </span>
+                    </td>
+                    <td class="text-end acoes__botoes">
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        title="Editar"
+                        (click)="editar(acao)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                      </button>
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        [title]="acao.ativa ? 'Desativar' : 'Ativar'"
+                        (click)="alternar(acao)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">
+                          {{ acao.ativa ? 'toggle_on' : 'toggle_off' }}
+                        </span>
+                      </button>
+                      <button
+                        class="btn btn-danger btn-sm"
+                        type="button"
+                        title="Excluir"
+                        (click)="remover(acao)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     }
-  </div>
+  }
 </section>

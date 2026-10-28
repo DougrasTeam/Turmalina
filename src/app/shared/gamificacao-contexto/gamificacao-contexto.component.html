@@ -1,0 +1,33 @@
+<div class="gamificacao-contexto" role="group" aria-label="Contexto de gamificação">
+  <label class="gamificacao-contexto__campo" for="gamificacao-contexto-turma">
+    <span class="form-label">Turma</span>
+    <select
+      id="gamificacao-contexto-turma"
+      class="form-select"
+      [value]="contexto.turmaId()"
+      (change)="alterarTurma($event)"
+    >
+      @for (turma of contexto.turmasDisponiveis(); track turma.id) {
+        <option [value]="turma.id">{{ turma.nome }}</option>
+      }
+    </select>
+  </label>
+
+  <label class="gamificacao-contexto__campo" for="gamificacao-contexto-disciplina">
+    <span class="form-label">Disciplina</span>
+    <select
+      id="gamificacao-contexto-disciplina"
+      class="form-select"
+      [value]="contexto.disciplinaId()"
+      [disabled]="contexto.disciplinasDisponiveis().length === 0"
+      (change)="alterarDisciplina($event)"
+    >
+      @if (contexto.disciplinasDisponiveis().length === 0) {
+        <option value="">Sem disciplina disponível</option>
+      }
+      @for (disciplina of contexto.disciplinasDisponiveis(); track disciplina.id) {
+        <option [value]="disciplina.id">{{ disciplina.nome }}</option>
+      }
+    </select>
+  </label>
+</div>

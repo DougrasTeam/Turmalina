@@ -1,0 +1,152 @@
+<section class="card padrao-horario">
+  <div class="card-header">
+    <div>
+      <span>
+        <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+        Padrão de horário da escola
+      </span>
+      <p class="padrao-horario__descricao tl-text-muted mb-0">
+        Defina uma vez a estrutura da manhã e da tarde. Ela será reutilizada nas turmas
+        conforme o turno, sem precisar montar as linhas novamente.
+      </p>
+    </div>
+  </div>
+
+  <div class="card-body">
+    @if (carregando()) {
+      <p class="tl-text-muted mb-0" role="status">Carregando padrão...</p>
+    } @else {
+      <form class="padrao-horario__form" (submit)="salvar($event)">
+        <div class="padrao-horario__periodos">
+          <fieldset class="padrao-horario__periodo">
+            <legend>Manhã</legend>
+
+            <div class="padrao-horario__campos">
+              <div>
+                <label class="form-label" for="padrao-inicio-manha">Início da manhã</label>
+                <input
+                  id="padrao-inicio-manha"
+                  class="form-control"
+                  type="time"
+                  [value]="formulario().inicioManha"
+                  (change)="atualizarInicioManha($event)"
+                />
+              </div>
+
+              <div>
+                <label class="form-label" for="padrao-aulas-manha">Aulas na manhã</label>
+                <input
+                  id="padrao-aulas-manha"
+                  class="form-control"
+                  type="number"
+                  min="1"
+                  max="15"
+                  [value]="formulario().aulasManha"
+                  (change)="atualizarAulasManha($event)"
+                />
+              </div>
+            </div>
+
+            <p class="padrao-horario__fim mb-0">
+              <span class="tl-text-muted">Término previsto</span>
+              <strong>{{ fimManha() }}</strong>
+            </p>
+          </fieldset>
+
+          <fieldset class="padrao-horario__periodo">
+            <legend>Tarde</legend>
+
+            <div class="padrao-horario__campos">
+              <div>
+                <label class="form-label" for="padrao-inicio-tarde">Início da tarde</label>
+                <input
+                  id="padrao-inicio-tarde"
+                  class="form-control"
+                  type="time"
+                  [value]="formulario().inicioTarde"
+                  (change)="atualizarInicioTarde($event)"
+                />
+              </div>
+
+              <div>
+                <label class="form-label" for="padrao-aulas-tarde">Aulas na tarde</label>
+                <input
+                  id="padrao-aulas-tarde"
+                  class="form-control"
+                  type="number"
+                  min="1"
+                  max="15"
+                  [value]="formulario().aulasTarde"
+                  (change)="atualizarAulasTarde($event)"
+                />
+              </div>
+            </div>
+
+            <p class="padrao-horario__fim mb-0">
+              <span class="tl-text-muted">Término previsto</span>
+              <strong>{{ fimTarde() }}</strong>
+            </p>
+          </fieldset>
+        </div>
+
+        <div class="padrao-horario__regras">
+          <div>
+            <label class="form-label" for="padrao-duracao-aula">
+              Duração de cada aula (minutos)
+            </label>
+            <input
+              id="padrao-duracao-aula"
+              class="form-control"
+              type="number"
+              min="1"
+              max="240"
+              [value]="formulario().minutosPorAula"
+              (change)="atualizarMinutosPorAula($event)"
+            />
+          </div>
+
+          <div>
+            <label class="form-label" for="padrao-duracao-intervalo">
+              Duração do intervalo
+            </label>
+            <select
+              id="padrao-duracao-intervalo"
+              class="form-select"
+              [value]="formulario().minutosIntervalo"
+              (change)="atualizarMinutosIntervalo($event)"
+            >
+              @for (minutos of opcoesIntervalo; track minutos) {
+                <option [value]="minutos">{{ minutos }} minutos</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label" for="padrao-intervalo-apos">
+              Intervalo após quantas aulas
+            </label>
+            <input
+              id="padrao-intervalo-apos"
+              class="form-control"
+              type="number"
+              min="1"
+              max="15"
+              [value]="formulario().intervaloAposAulas"
+              (change)="atualizarIntervaloAposAulas($event)"
+            />
+          </div>
+        </div>
+
+        <div class="padrao-horario__acoes">
+          <p class="form-text mb-0">
+            O intervalo entra depois da aula informada. No turno integral, o intervalo entre
+            manhã e tarde é calculado automaticamente.
+          </p>
+          <button class="btn btn-primary" type="submit" [disabled]="salvando()">
+            {{ salvando() ? 'Salvando...' : 'Salvar padrão' }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</section>

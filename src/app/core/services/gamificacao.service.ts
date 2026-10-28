@@ -6,7 +6,9 @@ import { Usuario } from '../models/usuario.model';
 import {
   ACOES_GAMIFICACAO_PADRAO,
   AcaoGamificacao,
+  ContextoGamificacao,
   DadosAcaoGamificacao,
+  DadosEventoXp,
   EventoXp,
   criarChaveIdempotencia,
   formatarDeltaXp,
@@ -15,11 +17,8 @@ import {
 } from '../models/gamificacao.model';
 import { AlunosService } from './alunos.service';
 import { AuditoriaService } from './auditoria.service';
-import { AuthService } from './auth.service';
+import { ContextoGamificacaoService } from './contexto-gamificacao.service';
 import { MoedasService } from './moedas.service';
-import { environment } from '../../../environments/environment';
-
-const MARCADOR_SEMENTE = 'turmalina.gamificacao.inicializado';
 
 /**
  * Gamificação: catálogo de ações e lançamentos de XP (RF-015).
@@ -27,6 +26,10 @@ const MARCADOR_SEMENTE = 'turmalina.gamificacao.inicializado';
  * O XP é sempre consequência de um lançamento registrado. O saldo do aluno é
  * recalculado a partir do histórico, e correções acontecem por estorno — nunca
  * por exclusão silenciosa. O XP não interfere em notas, frequência ou aprovação.
+ *
+ * Ações e eventos pertencem a um contexto de turma + disciplina. O XP geral do
+ * aluno continua armazenado em `Aluno.xp`, enquanto o XP por contexto é derivado
+ * dos eventos.
  */
 @Injectable({ providedIn: 'root' })
 export class GamificacaoService {
@@ -38,14 +41,18 @@ export class GamificacaoService {
     valorXp: 0,
     indicador: 'geral',
     ativa: true,
+    turmaId: '',
+    disciplinaId: '',
   }));
   private readonly repoEventos: Repository<EventoXp> = inject(RepositoryFactory).create<EventoXp>(
     'turmalina.eventos-xp',
     () => ({
       alunoId: '',
       turmaId: null,
+      disciplinaId: null,
       acaoId: null,
       acaoNome: '',
+      indicador: '',
       deltaXp: 0,
       origem: 'manual',
       autorId: '',
@@ -56,8 +63,8 @@ export class GamificacaoService {
   );
   private readonly alunos = inject(AlunosService);
   private readonly auditoria = inject(AuditoriaService);
+  private readonly contextoGamificacao = inject(ContextoGamificacaoService);
   private readonly moedas = inject(MoedasService);
-  private readonly auth = inject(AuthService);
 
   private readonly _acoes = signal<AcaoGamificacao[]>([]);
   private readonly _eventos = signal<EventoXp[]>([]);
@@ -76,27 +83,23 @@ export class GamificacaoService {
     await this.moedas.load();
     const [acoes, eventos] = await Promise.all([this.repoAcoes.list(), this.repoEventos.list()]);
 
-    // O catálogo de ações é lido e semeado apenas pela equipe (RLS:
-    // `acoes_gamificacao_leitura`/`_escrita` exigem `eh_equipe`). Para o aluno o
-    // catálogo chega vazio e não pode ser criado; o XP dele vem de `eventos_xp`.
-    const podeAdministrarCatalogo = this.auth.temPapel('administrador', 'professor');
-    const jaInicializado = localStorage.getItem(MARCADOR_SEMENTE) === '1';
-
-    if (!podeAdministrarCatalogo) {
-      this._acoes.set([]);
-    } else if (environment.usarSupabaseDados || acoes.length || jaInicializado) {
-      this._acoes.set(this.ordenarAcoes(acoes));
-    } else {
-      this._acoes.set(await this.semearAcoes());
-      localStorage.setItem(MARCADOR_SEMENTE, '1');
-    }
-
+    this._acoes.set(this.ordenarAcoes(acoes));
     this._eventos.set(this.ordenarEventos(eventos));
     this.carregado = true;
   }
 
   porId(id: string): AcaoGamificacao | undefined {
     return this._acoes().find((acao) => acao.id === id);
+  }
+
+  acoesDoContexto(turmaId: string, disciplinaId: string): AcaoGamificacao[] {
+    return this._acoes().filter(
+      (acao) => acao.turmaId === turmaId && acao.disciplinaId === disciplinaId,
+    );
+  }
+
+  acoesAtivasDoContexto(turmaId: string, disciplinaId: string): AcaoGamificacao[] {
+    return this.acoesDoContexto(turmaId, disciplinaId).filter((acao) => acao.ativa);
   }
 
   validar(dados: DadosAcaoGamificacao, idAtual?: string): string[] {
@@ -109,6 +112,39 @@ export class GamificacaoService {
     this._acoes.update((lista) => this.ordenarAcoes([...lista, acao]));
     this.auditoria.registrar('acao.criada', 'AcaoGamificacao', acao.id, acao.nome);
     return acao;
+  }
+
+  async criarAcoesPadraoNoContexto(
+    turmaId: string,
+    disciplinaId: string,
+  ): Promise<AcaoGamificacao[]> {
+    if (!turmaId || !disciplinaId) {
+      throw new Error('Selecione a turma e a disciplina para criar as ações padrão.');
+    }
+
+    const existentes = this.acoesDoContexto(turmaId, disciplinaId);
+    if (existentes.length) return existentes;
+
+    const criadas: AcaoGamificacao[] = [];
+    for (const modelo of ACOES_GAMIFICACAO_PADRAO) {
+      const dados: DadosAcaoGamificacao = {
+        ...modelo,
+        turmaId,
+        disciplinaId,
+      };
+      this.garantirAcaoValida(dados);
+      const acao = await this.repoAcoes.create(this.normalizarAcao(dados));
+      this._acoes.update((lista) => this.ordenarAcoes([...lista, acao]));
+      criadas.push(acao);
+    }
+
+    this.auditoria.registrar(
+      'acao.padroes-criadas',
+      'AcaoGamificacao',
+      null,
+      `${criadas.length} ação(ões) criada(s) para a turma ${turmaId} e disciplina ${disciplinaId}.`,
+    );
+    return criadas;
   }
 
   async atualizarAcao(id: string, dados: DadosAcaoGamificacao): Promise<AcaoGamificacao> {
@@ -148,7 +184,6 @@ export class GamificacaoService {
       await this.repoAcoes.remove(acao.id);
     }
     this._acoes.set([]);
-    localStorage.setItem(MARCADOR_SEMENTE, '1');
     this.auditoria.registrar('acao.excluidas-todas', 'AcaoGamificacao', null, null);
   }
 
@@ -170,17 +205,42 @@ export class GamificacaoService {
     if (!acao) throw new Error('Ação de gamificação não encontrada.');
     if (!acao.ativa) throw new Error('Esta ação está desativada e não pode ser aplicada.');
 
+    let turmaEvento = acao.turmaId;
+    let disciplinaEvento = acao.disciplinaId;
+
+    const isAcaoGlobal = !acao.turmaId && !acao.disciplinaId;
+    if (isAcaoGlobal) {
+      const contexto = this.contextoGamificacao.contexto();
+      if (!contexto?.turmaId || !contexto?.disciplinaId) {
+        throw new Error('Selecione a turma e a disciplina para pontuar com esta ação.');
+      }
+      turmaEvento = contexto.turmaId;
+      disciplinaEvento = contexto.disciplinaId;
+    } else if (!acao.turmaId || !acao.disciplinaId) {
+      throw new Error('A ação não possui turma e disciplina configuradas.');
+    }
+
     const idsUnicos = [...new Set(alunoIds)];
     if (!idsUnicos.length) throw new Error('Selecione ao menos um aluno.');
 
     const alunosPorId = new Map(this.alunos.alunos().map((aluno) => [aluno.id, aluno]));
+    const alunosSelecionados = idsUnicos
+      .map((alunoId) => alunosPorId.get(alunoId))
+      .filter((aluno) => aluno !== undefined);
+
+    if (alunosSelecionados.length !== idsUnicos.length) {
+      throw new Error('Um ou mais alunos selecionados não foram encontrados.');
+    }
+
+    const alunoForaDaTurma = alunosSelecionados.some((aluno) => aluno.turmaId !== turmaEvento);
+    if (alunoForaDaTurma) {
+      throw new Error('Todos os alunos selecionados devem pertencer à turma da ação.');
+    }
+
     const criados: EventoXp[] = [];
 
-    for (const alunoId of idsUnicos) {
-      const aluno = alunosPorId.get(alunoId);
-      if (!aluno) continue;
-
-      const idempotencyKey = `${chaveLote}:${alunoId}`;
+    for (const aluno of alunosSelecionados) {
+      const idempotencyKey = `${chaveLote}:${aluno.id}`;
       const jaRegistrado = this._eventos().some(
         (evento) => evento.idempotencyKey === idempotencyKey,
       );
@@ -188,9 +248,11 @@ export class GamificacaoService {
 
       const evento = await this.repoEventos.create({
         alunoId: aluno.id,
-        turmaId: aluno.turmaId || null,
+        turmaId: acao.turmaId,
+        disciplinaId: acao.disciplinaId,
         acaoId: acao.id,
         acaoNome: acao.nome,
+        indicador: acao.indicador,
         deltaXp: acao.valorXp,
         origem: 'manual',
         autorId: autor.id,
@@ -227,8 +289,10 @@ export class GamificacaoService {
     const estorno = await this.repoEventos.create({
       alunoId: original.alunoId,
       turmaId: original.turmaId,
+      disciplinaId: original.disciplinaId,
       acaoId: original.acaoId,
       acaoNome: original.acaoNome,
+      indicador: original.indicador,
       deltaXp: -original.deltaXp,
       origem: 'estorno',
       autorId: autor.id,
@@ -249,15 +313,49 @@ export class GamificacaoService {
   }
 
   eventosDoAluno(alunoId: string): EventoXp[] {
+    return this.ordenarEventos(this._eventos().filter((evento) => evento.alunoId === alunoId));
+  }
+
+  eventosDoAlunoNoContexto(alunoId: string, turmaId: string, disciplinaId: string): EventoXp[] {
     return this.ordenarEventos(
-      this._eventos().filter((evento) => evento.alunoId === alunoId),
+      this._eventos().filter(
+        (evento) =>
+          evento.alunoId === alunoId &&
+          evento.turmaId === turmaId &&
+          evento.disciplinaId === disciplinaId,
+      ),
     );
   }
 
   eventosDaTurma(turmaId: string): EventoXp[] {
+    return this.ordenarEventos(this._eventos().filter((evento) => evento.turmaId === turmaId));
+  }
+
+  eventosDaTurmaEDisciplina(turmaId: string, disciplinaId: string): EventoXp[] {
     return this.ordenarEventos(
-      this._eventos().filter((evento) => evento.turmaId === turmaId),
+      this._eventos().filter(
+        (evento) => evento.turmaId === turmaId && evento.disciplinaId === disciplinaId,
+      ),
     );
+  }
+
+  xpDoAlunoNoContexto(alunoId: string, turmaId: string, disciplinaId: string): number {
+    return this.eventosDoAlunoNoContexto(alunoId, turmaId, disciplinaId).reduce(
+      (total, evento) => total + evento.deltaXp,
+      0,
+    );
+  }
+
+  xpPorAlunoNoContexto(turmaId: string, disciplinaId: string): Map<string, number> {
+    const xpPorAluno = new Map<string, number>();
+    const eventos = this.eventosDaTurmaEDisciplina(turmaId, disciplinaId);
+
+    for (const evento of eventos) {
+      const xpAtual = xpPorAluno.get(evento.alunoId) ?? 0;
+      xpPorAluno.set(evento.alunoId, xpAtual + evento.deltaXp);
+    }
+
+    return xpPorAluno;
   }
 
   estaEstornado(eventoId: string): boolean {
@@ -318,6 +416,8 @@ export class GamificacaoService {
       valorXp: Number(dados.valorXp),
       indicador: dados.indicador.trim(),
       ativa: dados.ativa,
+      turmaId: dados.turmaId.trim(),
+      disciplinaId: dados.disciplinaId.trim(),
     };
   }
 
@@ -352,6 +452,9 @@ export class GamificacaoService {
    * Lança um bônus de XP originado por outro recurso (por exemplo, uma conquista
    * desbloqueada). O bônus entra no histórico como qualquer outro lançamento e
    * é idempotente pela chave informada.
+   *
+   * Metas e missões informam o contexto da disciplina; conquistas permanecem
+   * como bônus geral da turma.
    */
   async registrarBonus(
     alunoId: string,
@@ -359,6 +462,8 @@ export class GamificacaoService {
     descricao: string,
     autor: Usuario,
     chaveIdempotencia: string,
+    indicador = '',
+    contexto?: ContextoGamificacao,
   ): Promise<EventoXp | null> {
     await this.load();
     if (deltaXp === 0) return null;
@@ -366,32 +471,39 @@ export class GamificacaoService {
     const aluno = this.alunos.alunos().find((item) => item.id === alunoId);
     if (!aluno) return null;
 
+    if (contexto && aluno.turmaId !== contexto.turmaId) {
+      throw new Error('O aluno não pertence à turma do contexto informado.');
+    }
+
     const jaRegistrado = this._eventos().some(
       (evento) => evento.idempotencyKey === chaveIdempotencia,
     );
     if (jaRegistrado) return null;
 
-    const evento = await this.repoEventos.create({
+    const evento: DadosEventoXp = {
       alunoId,
-      turmaId: aluno.turmaId || null,
+      turmaId: contexto?.turmaId ?? aluno.turmaId ?? null,
+      disciplinaId: contexto?.disciplinaId ?? null,
       acaoId: null,
       acaoNome: descricao,
+      indicador,
       deltaXp,
       origem: 'sistema',
       autorId: autor.id,
       autorNome: autor.nome,
       idempotencyKey: chaveIdempotencia,
       estornoDe: null,
-    });
-    this._eventos.update((lista) => this.ordenarEventos([...lista, evento]));
+    };
+    const criado = await this.repoEventos.create(evento);
+    this._eventos.update((lista) => this.ordenarEventos([...lista, criado]));
     await this.ajustarXpDoAluno(alunoId, deltaXp);
     this.auditoria.registrar(
       'xp.concedido',
       'EventoXp',
-      evento.id,
+      criado.id,
       `${descricao} (${formatarDeltaXp(deltaXp)} XP).`,
     );
-    return evento;
+    return criado;
   }
 
   /**
@@ -412,16 +524,10 @@ export class GamificacaoService {
       await this.repoEventos.remove(evento.id);
     }
     this._eventos.update((lista) =>
-      lista.filter((evento) => evento.idempotencyKey === null || !chaves.has(evento.idempotencyKey)),
+      lista.filter(
+        (evento) => evento.idempotencyKey === null || !chaves.has(evento.idempotencyKey),
+      ),
     );
-  }
-
-  private async semearAcoes(): Promise<AcaoGamificacao[]> {
-    const criadas: AcaoGamificacao[] = [];
-    for (const dados of ACOES_GAMIFICACAO_PADRAO) {
-      criadas.push(await this.repoAcoes.create(dados));
-    }
-    return this.ordenarAcoes(criadas);
   }
 
   private ordenarAcoes(lista: AcaoGamificacao[]): AcaoGamificacao[] {

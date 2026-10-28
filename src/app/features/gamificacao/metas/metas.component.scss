@@ -1,0 +1,113 @@
+.metas__descricao {
+  max-width: 22rem;
+  margin: 0.2rem 0 0;
+  color: var(--tl-text-muted, #666666);
+  font-size: 0.82rem;
+}
+
+.metas__progresso {
+  min-width: 11rem;
+
+  .progress {
+    margin-bottom: 0.3rem;
+  }
+}
+
+.metas__botoes {
+  white-space: nowrap;
+}
+
+.metas__campos {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metas__campo-largo,
+.metas__contexto {
+  grid-column: 1 / -1;
+}
+
+.metas__contexto {
+  margin: 0;
+}
+
+.metas__ativa {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.metas__concessao-topo {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0 0.5rem;
+}
+
+.metas__lista {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 22rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.metas__aluno {
+  display: grid;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.6rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.metas__aluno-info {
+  display: grid;
+  gap: 0.25rem;
+
+  .progress {
+    margin-top: 0.15rem;
+  }
+}
+
+.metas__subtitulo {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.metas__historico {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--tl-border, #e5e5ef);
+  }
+}
+
+@media (max-width: 720px) {
+  .metas__campos {
+    grid-template-columns: 1fr;
+  }
+
+  .metas__aluno {
+    grid-template-columns: 1fr auto;
+  }
+
+  .metas__aluno .badge {
+    grid-column: 1 / -1;
+  }
+}

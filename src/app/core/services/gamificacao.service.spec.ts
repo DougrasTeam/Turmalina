@@ -3,11 +3,13 @@ import { TestBed } from '@angular/core/testing';
 
 import { AuthRepository } from '../auth/data-access/auth.repository';
 import { MockAuthRepository } from '../auth/data-access/mock-auth.repository';
-import { EMAIL_ALUNO_DEMO, EMAIL_PROFESSOR_DEMO } from '../auth/contas-demo';
+import { EMAIL_PROFESSOR_DEMO } from '../auth/contas-demo';
 import { Aluno, Usuario } from '../models';
 import { AlunosService } from './alunos.service';
 import { AuthService } from './auth.service';
 import { GamificacaoService } from './gamificacao.service';
+
+const CONTEXTO_PADRAO = { turmaId: 'turma-1', disciplinaId: 'disciplina-1' };
 
 const autor: Usuario = {
   id: 'user-prof-1',
@@ -19,7 +21,11 @@ const autor: Usuario = {
   precisaTrocarSenha: false,
 };
 
-async function criarAluno(alunos: AlunosService, nome: string, turmaId = 'turma-1'): Promise<Aluno> {
+async function criarAluno(
+  alunos: AlunosService,
+  nome: string,
+  turmaId = 'turma-1',
+): Promise<Aluno> {
   return alunos.create({
     nome,
     email: `${nome.toLowerCase().replace(/\s+/g, '.')}@turmalina.com`,
@@ -56,11 +62,20 @@ describe('GamificacaoService', () => {
     await auth.entrar({ email: EMAIL_PROFESSOR_DEMO, senha: 'turmalina' });
   });
 
-  it('semeia as ações padrão na primeira carga', async () => {
+  it('cria as ações padrão apenas quando solicitado no contexto', async () => {
     await service.load();
+    expect(service.totalAcoes()).toBe(0);
 
-    expect(service.totalAcoes()).toBeGreaterThan(0);
-    expect(service.acoesAtivas().length).toBe(service.totalAcoes());
+    await service.criarAcoesPadraoNoContexto(CONTEXTO_PADRAO.turmaId, CONTEXTO_PADRAO.disciplinaId);
+
+    const acoesDoContexto = service.acoesDoContexto(
+      CONTEXTO_PADRAO.turmaId,
+      CONTEXTO_PADRAO.disciplinaId,
+    );
+    expect(acoesDoContexto.length).toBeGreaterThan(0);
+    expect(
+      service.acoesAtivasDoContexto(CONTEXTO_PADRAO.turmaId, CONTEXTO_PADRAO.disciplinaId).length,
+    ).toBe(acoesDoContexto.length);
   });
 
   it('cria uma ação e impede nomes duplicados', async () => {
@@ -71,6 +86,8 @@ describe('GamificacaoService', () => {
       valorXp: 5,
       indicador: 'leitura',
       ativa: true,
+      turmaId: CONTEXTO_PADRAO.turmaId,
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
 
     expect(acao.nome).toBe('Leitura compartilhada');
@@ -81,6 +98,8 @@ describe('GamificacaoService', () => {
         valorXp: 5,
         indicador: 'leitura',
         ativa: true,
+        turmaId: CONTEXTO_PADRAO.turmaId,
+        disciplinaId: CONTEXTO_PADRAO.disciplinaId,
       }),
     ).toBeRejected();
   });
@@ -93,6 +112,8 @@ describe('GamificacaoService', () => {
       valorXp: 10,
       indicador: 'participacao',
       ativa: true,
+      turmaId: CONTEXTO_PADRAO.turmaId,
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
     const primeiro = await criarAluno(alunos, 'Ana Lima');
     const segundo = await criarAluno(alunos, 'Bruno Souza');
@@ -113,6 +134,8 @@ describe('GamificacaoService', () => {
       valorXp: 15,
       indicador: 'colaboracao',
       ativa: true,
+      turmaId: CONTEXTO_PADRAO.turmaId,
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
     const aluno = await criarAluno(alunos, 'Carla Dias');
     const chaveLote = 'lote-teste';
@@ -133,13 +156,15 @@ describe('GamificacaoService', () => {
       valorXp: 5,
       indicador: 'esforco',
       ativa: true,
+      turmaId: CONTEXTO_PADRAO.turmaId,
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
     const aluno = await criarAluno(alunos, 'Diego Alves');
     await service.alternarAtiva(acao.id);
 
-    await expectAsync(
-      service.registrarPontuacao(acao.id, [aluno.id], autor),
-    ).toBeRejectedWithError('Esta ação está desativada e não pode ser aplicada.');
+    await expectAsync(service.registrarPontuacao(acao.id, [aluno.id], autor)).toBeRejectedWithError(
+      'Esta ação está desativada e não pode ser aplicada.',
+    );
   });
 
   it('corrige um lançamento por estorno sem apagar o original', async () => {
@@ -150,6 +175,8 @@ describe('GamificacaoService', () => {
       valorXp: 20,
       indicador: 'solidariedade',
       ativa: true,
+      turmaId: CONTEXTO_PADRAO.turmaId,
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
     const aluno = await criarAluno(alunos, 'Elisa Prado');
     const [original] = await service.registrarPontuacao(acao.id, [aluno.id], autor);
@@ -175,6 +202,8 @@ describe('GamificacaoService', () => {
       valorXp: 10,
       indicador: 'organizacao',
       ativa: true,
+      turmaId: CONTEXTO_PADRAO.turmaId,
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
     const aluno = await criarAluno(alunos, 'Felipe Rocha');
     const [original] = await service.registrarPontuacao(acao.id, [aluno.id], autor);
@@ -193,6 +222,8 @@ describe('GamificacaoService', () => {
       valorXp: -5,
       indicador: 'responsabilidade',
       ativa: true,
+      turmaId: CONTEXTO_PADRAO.turmaId,
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
     const aluno = await criarAluno(alunos, 'Gabi Nunes');
 
@@ -210,6 +241,8 @@ describe('GamificacaoService', () => {
       valorXp: 10,
       indicador: 'colaboracao',
       ativa: true,
+      turmaId: 'turma-9',
+      disciplinaId: CONTEXTO_PADRAO.disciplinaId,
     });
     const aluno = await criarAluno(alunos, 'Hugo Martins', 'turma-9');
     await service.registrarPontuacao(acao.id, [aluno.id], autor);
@@ -221,10 +254,7 @@ describe('GamificacaoService', () => {
     expect(alunos.alunos().find((item) => item.id === aluno.id)?.xp).toBe(0);
   });
 
-  it('não semeia ações padrão quando o usuário é aluno', async () => {
-    await auth.sair();
-    await auth.entrar({ email: EMAIL_ALUNO_DEMO, senha: 'turmalina' });
-
+  it('não semeia ações padrão automaticamente na carga', async () => {
     await service.load();
 
     expect(service.totalAcoes()).toBe(0);

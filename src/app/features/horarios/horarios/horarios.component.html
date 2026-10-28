@@ -8,6 +8,8 @@
     </div>
   </header>
 
+  <app-padrao-horario />
+
   @if (turmas().length === 0) {
     <div class="card">
       <div class="empty-state">
@@ -41,6 +43,7 @@
     @if (turmaSelecionada(); as turma) {
       <app-turma-horarios
         [turmaId]="turma.id"
+        [turno]="turma.turno"
         [disciplinas]="disciplinasDaTurma()"
         [somenteLeitura]="false"
       />
