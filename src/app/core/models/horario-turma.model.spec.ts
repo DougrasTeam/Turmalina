@@ -287,7 +287,35 @@ describe('horario-turma.model', () => {
     ]);
   });
 
-  it('rejects moves to intervals or occupied cells', () => {
+  it('rejects moves to interval lines', () => {
+    const primeira = criarLinhaAula();
+    const intervalo = criarLinhaIntervalo();
+    const segunda = criarLinhaAula();
+    const grade: DadosGradeHoraria = {
+      turmaId: 'turma-1',
+      inicio: '07:00',
+      minutosPorAula: 50,
+      linhas: [primeira, intervalo, segunda],
+      aulas: [
+        {
+          diaSemana: 'segunda',
+          linhaInicioId: primeira.id,
+          quantidadeAulas: 1,
+          disciplinaId: 'matematica',
+        },
+      ],
+    };
+
+    const resultado = moverAulaNaGrade(
+      grade,
+      { diaSemana: 'segunda', linhaInicioId: primeira.id },
+      { diaSemana: 'terca', linhaInicioId: intervalo.id },
+    );
+
+    expect(resultado.erro).toBe('Só é possível soltar aulas em uma linha de aula.');
+  });
+
+  it('swaps lessons when the destination is occupied', () => {
     const primeira = criarLinhaAula();
     const intervalo = criarLinhaIntervalo();
     const segunda = criarLinhaAula();
@@ -312,20 +340,60 @@ describe('horario-turma.model', () => {
       ],
     };
 
-    const paraIntervalo = moverAulaNaGrade(
-      grade,
-      { diaSemana: 'segunda', linhaInicioId: primeira.id },
-      { diaSemana: 'terca', linhaInicioId: intervalo.id },
-    );
-    expect(paraIntervalo.erro).toBe(
-      'Só é possível soltar aulas em uma linha de aula.',
-    );
-
-    const paraOcupada = moverAulaNaGrade(
+    const resultado = moverAulaNaGrade(
       grade,
       { diaSemana: 'segunda', linhaInicioId: primeira.id },
       { diaSemana: 'terca', linhaInicioId: segunda.id },
     );
-    expect(paraOcupada.erro).toBe('O destino já está ocupado por outra aula.');
+
+    expect(resultado.erro).toBeNull();
+    expect(resultado.aulas).toEqual([
+      {
+        diaSemana: 'terca',
+        linhaInicioId: segunda.id,
+        quantidadeAulas: 1,
+        disciplinaId: 'matematica',
+      },
+      {
+        diaSemana: 'segunda',
+        linhaInicioId: primeira.id,
+        quantidadeAulas: 1,
+        disciplinaId: 'portugues',
+      },
+    ]);
+  });
+
+  it('rejects a swap when the destination block does not fit in the origin', () => {
+    const primeira = criarLinhaAula();
+    const segunda = criarLinhaAula();
+    const terceira = criarLinhaAula();
+    const grade: DadosGradeHoraria = {
+      turmaId: 'turma-1',
+      inicio: '07:00',
+      minutosPorAula: 50,
+      linhas: [primeira, segunda, terceira],
+      aulas: [
+        {
+          diaSemana: 'segunda',
+          linhaInicioId: primeira.id,
+          quantidadeAulas: 2,
+          disciplinaId: 'portugues',
+        },
+        {
+          diaSemana: 'terca',
+          linhaInicioId: terceira.id,
+          quantidadeAulas: 1,
+          disciplinaId: 'matematica',
+        },
+      ],
+    };
+
+    const resultado = moverAulaNaGrade(
+      grade,
+      { diaSemana: 'terca', linhaInicioId: terceira.id },
+      { diaSemana: 'segunda', linhaInicioId: primeira.id },
+    );
+
+    expect(resultado.erro).toBe('A aula de destino não cabe no espaço da aula movida.');
   });
 });

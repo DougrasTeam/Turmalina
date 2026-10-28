@@ -50,14 +50,63 @@
         <table class="table">
           <thead>
             <tr>
-              <th>Turma</th>
-              <th>Série</th>
-              <th>Turno</th>
-              <th>Ano</th>
-              <th>Professores</th>
-              <th>Alunos</th>
-              <th>Status</th>
-              <th></th>
+              <th scope="col" [attr.aria-sort]="indicarOrdenacao('nome')">
+                <button class="th-sort" type="button" (click)="ordenarPor('nome')">
+                  Turma
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ iconeOrdenacao('nome') }}
+                  </span>
+                </button>
+              </th>
+              <th scope="col" [attr.aria-sort]="indicarOrdenacao('serie')">
+                <button class="th-sort" type="button" (click)="ordenarPor('serie')">
+                  Série
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ iconeOrdenacao('serie') }}
+                  </span>
+                </button>
+              </th>
+              <th scope="col" [attr.aria-sort]="indicarOrdenacao('turno')">
+                <button class="th-sort" type="button" (click)="ordenarPor('turno')">
+                  Turno
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ iconeOrdenacao('turno') }}
+                  </span>
+                </button>
+              </th>
+              <th scope="col" [attr.aria-sort]="indicarOrdenacao('anoLetivo')">
+                <button class="th-sort" type="button" (click)="ordenarPor('anoLetivo')">
+                  Ano
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ iconeOrdenacao('anoLetivo') }}
+                  </span>
+                </button>
+              </th>
+              <th scope="col" [attr.aria-sort]="indicarOrdenacao('professores')">
+                <button class="th-sort" type="button" (click)="ordenarPor('professores')">
+                  Professores
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ iconeOrdenacao('professores') }}
+                  </span>
+                </button>
+              </th>
+              <th scope="col" [attr.aria-sort]="indicarOrdenacao('alunos')">
+                <button class="th-sort" type="button" (click)="ordenarPor('alunos')">
+                  Alunos
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ iconeOrdenacao('alunos') }}
+                  </span>
+                </button>
+              </th>
+              <th scope="col" [attr.aria-sort]="indicarOrdenacao('status')">
+                <button class="th-sort" type="button" (click)="ordenarPor('status')">
+                  Status
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ iconeOrdenacao('status') }}
+                  </span>
+                </button>
+              </th>
+              <th scope="col"></th>
             </tr>
           </thead>
           <tbody>

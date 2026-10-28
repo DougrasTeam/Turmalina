@@ -122,7 +122,8 @@
   opacity: 0.45;
 }
 
-.grade-table__empty-cell--drop {
+.grade-table__empty-cell--drop,
+.grade-table__lesson-cell--drop {
   outline: 2px dashed var(--color-primary, #2563eb);
   outline-offset: -0.25rem;
   background: color-mix(in srgb, var(--color-primary, #2563eb) 8%, white);
@@ -131,6 +132,13 @@
 .grade-lesson span {
   color: var(--text-muted, #6b7280);
   font-size: 0.75rem;
+}
+
+.grade-lesson .grade-lesson__teachers {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .grade-lesson:disabled {

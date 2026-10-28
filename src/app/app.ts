@@ -17,6 +17,8 @@ import { ConquistasService } from './core/services/conquistas.service';
 import { EquipesService } from './core/services/equipes.service';
 import { GamificacaoService } from './core/services/gamificacao.service';
 import { MatriculasService } from './core/services/matriculas.service';
+import { MetasService } from './core/services/metas.service';
+import { MissoesService } from './core/services/missoes.service';
 import { ProfessoresService } from './core/services/professores.service';
 import { ToastService } from './core/services/toast.service';
 import { TurmasService } from './core/services/turmas.service';
@@ -60,6 +62,18 @@ const NAV_GAMIFICACAO: ItemNav[] = [
     label: 'Loja de moedas',
     icon: 'monetization_on',
     funcionalidade: 'gamificacao.moedas',
+  },
+  {
+    path: '/gamificacao/metas',
+    label: 'Metas',
+    icon: 'track_changes',
+    funcionalidade: 'gamificacao.metas',
+  },
+  {
+    path: '/gamificacao/missoes',
+    label: 'Missões',
+    icon: 'map',
+    funcionalidade: 'gamificacao.missoes',
   },
 ];
 
@@ -138,6 +152,8 @@ export class App {
   private readonly gamificacao = inject(GamificacaoService);
   private readonly conquistas = inject(ConquistasService);
   private readonly equipes = inject(EquipesService);
+  private readonly metas = inject(MetasService);
+  private readonly missoes = inject(MissoesService);
   private readonly instituicao = inject(InstituicaoService);
   private readonly auditoria = inject(AuditoriaService);
   private readonly router = inject(Router);
@@ -197,6 +213,8 @@ export class App {
     { prefixo: '/gamificacao/conquistas', titulo: 'Conquistas' },
     { prefixo: '/gamificacao/equipes', titulo: 'Equipes' },
     { prefixo: '/gamificacao/moedas', titulo: 'Moedas virtuais' },
+    { prefixo: '/gamificacao/metas', titulo: 'Metas' },
+    { prefixo: '/gamificacao/missoes', titulo: 'Missões' },
     { prefixo: '/auditoria', titulo: 'Auditoria' },
     { prefixo: '/boletim', titulo: 'Boletim' },
     { prefixo: '/aluno/boletim', titulo: 'Meu boletim' },
@@ -290,6 +308,8 @@ export class App {
       this.gamificacao.load(),
       this.conquistas.load(),
       this.equipes.load(),
+      this.metas.load(),
+      this.missoes.load(),
       this.auditoria.carregar(),
     ]);
     await this.garantirAlunoVinculado(usuarioId);

@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AvaliacoesService } from '../../../core/services/avaliacoes.service';
 import { BoletimService } from '../../../core/services/boletim.service';
 import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
+import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { FrequenciasService } from '../../../core/services/frequencias.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { TurmasService } from '../../../core/services/turmas.service';
@@ -13,6 +14,8 @@ import { Avaliacao, formatarNota, resumoNotas } from '../../../core/models/avali
 import { classeSituacao, rotuloSituacao } from '../../../core/models/boletim.model';
 import { dataHoje, formatarDataFrequencia, formatarPercentual, calcularResumoFrequencia } from '../../../core/models/frequencia.model';
 import { InstituicaoService } from '../../../core/services/instituicao.service';
+import { MetasService } from '../../../core/services/metas.service';
+import { MissoesService } from '../../../core/services/missoes.service';
 
 @Component({
   selector: 'app-painel-professor',
@@ -24,12 +27,15 @@ export class PainelProfessorComponent {
   private readonly auth = inject(AuthService);
   protected readonly contexto = inject(ContextoProfessorService);
   protected readonly turmas = inject(TurmasService);
+  protected readonly disciplinas = inject(DisciplinasService);
   protected readonly alunos = inject(AlunosService);
   protected readonly periodos = inject(PeriodosLetivosService);
   protected readonly avaliacoes = inject(AvaliacoesService);
   protected readonly frequencias = inject(FrequenciasService);
   protected readonly boletimService = inject(BoletimService);
   protected readonly instituicao = inject(InstituicaoService);
+  protected readonly metasService = inject(MetasService);
+  protected readonly missoesService = inject(MissoesService);
 
   protected readonly professorAtual = this.contexto.professorAtual;
 
@@ -111,6 +117,37 @@ export class PainelProfessorComponent {
     this.avaliacoesPeriodo().filter((avaliacao) => resumoNotas(avaliacao).pendentes > 0),
   );
 
+  protected readonly disciplinasDaTurma = computed(() => {
+    const turmaId = this.turmaFiltro();
+    return turmaId ? this.contexto.disciplinasDoProfessorNaTurma(turmaId) : [];
+  });
+
+  protected readonly metasPendentes = computed(() => {
+    const turmaId = this.turmaFiltro();
+    if (!turmaId) return [];
+
+    return this.disciplinasDaTurma().flatMap((disciplina) =>
+      this.metasService.metasComAlunosElegiveis(turmaId, disciplina.id),
+    );
+  });
+
+  protected readonly missoesPendentes = computed(() => {
+    const turmaId = this.turmaFiltro();
+    if (!turmaId) return [];
+
+    const totalAlunos = this.alunosAtivos();
+    return this.disciplinasDaTurma()
+      .flatMap((disciplina) =>
+        this.missoesService
+          .missoesVisiveisDaTurmaEDisciplina(turmaId, disciplina.id)
+          .map((missao) => ({
+            missao,
+            concluidos: this.missoesService.conclusoesDaMissao(missao.id).length,
+          })),
+      )
+      .filter((item) => item.concluidos < totalAlunos);
+  });
+
   protected readonly proximasAvaliacoes = computed(() => {
     const hoje = dataHoje();
     return this.avaliacoesPeriodo()
@@ -135,6 +172,10 @@ export class PainelProfessorComponent {
     }
     return eventos.sort((primeiro, segundo) => segundo.quando.localeCompare(primeiro.quando)).slice(0, 5);
   });
+
+  protected nomeDisciplina(disciplinaId: string): string {
+    return this.disciplinas.porId(disciplinaId)?.nome ?? 'Disciplina';
+  }
 
   protected valor(evento: Event): string {
     return (evento.target as HTMLSelectElement).value;

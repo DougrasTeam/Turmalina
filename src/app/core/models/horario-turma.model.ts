@@ -320,27 +320,23 @@ export function gerarAulasAutomaticas(
 }
 
 /**
- * Move uma aula para outra célula da grade.
+ * Move ou troca uma aula de lugar na grade.
  *
- * Retorna as aulas atualizadas e uma mensagem de erro quando o destino é
- * inválido. A origem é identificada pelo dia e pela linha inicial.
+ * Quando o destino está ocupado, as duas aulas trocam de posição, desde que
+ * ambas caibam no espaço uma da outra e não sobreponham uma terceira aula.
+ * Retorna as aulas atualizadas e uma mensagem de erro quando a operação é
+ * inválida. A origem é identificada pelo dia e pela linha inicial.
  */
 export function moverAulaNaGrade(
   grade: DadosGradeHoraria,
   origem: PosicaoCelulaAula,
   destino: PosicaoCelulaAula,
 ): ResultadoMovimentacaoAula {
-  const aulaOrigem = grade.aulas.find(
-    (aula) =>
-      aula.diaSemana === origem.diaSemana && aula.linhaInicioId === origem.linhaInicioId,
-  );
+  const aulaOrigem = encontrarAula(grade, origem);
   if (!aulaOrigem) {
     return { aulas: grade.aulas, erro: 'Aula de origem não encontrada.' };
   }
-  if (
-    origem.diaSemana === destino.diaSemana &&
-    origem.linhaInicioId === destino.linhaInicioId
-  ) {
+  if (mesmaPosicao(origem, destino)) {
     return { aulas: grade.aulas, erro: null };
   }
 
@@ -349,47 +345,142 @@ export function moverAulaNaGrade(
     return { aulas: grade.aulas, erro: 'Só é possível soltar aulas em uma linha de aula.' };
   }
 
-  const linhasDestino = grade.linhas.slice(
-    indiceDestino,
-    indiceDestino + aulaOrigem.quantidadeAulas,
-  );
-  const destinoCabe =
-    linhasDestino.length === aulaOrigem.quantidadeAulas &&
-    linhasDestino.every((linha) => linha.tipo === 'aula');
-  if (!destinoCabe) {
+  const linhasDestino = linhasAPartirDe(grade, destino.linhaInicioId, aulaOrigem.quantidadeAulas);
+  if (!linhasDestino) {
     return {
       aulas: grade.aulas,
       erro: 'A aula não cabe nesse destino sem atravessar uma pausa ou o fim da grade.',
     };
   }
 
-  const linhasOcupadas = new Set<string>();
-  for (const aula of grade.aulas) {
-    const ehAOrigem =
-      aula.diaSemana === origem.diaSemana && aula.linhaInicioId === origem.linhaInicioId;
-    if (ehAOrigem || aula.diaSemana !== destino.diaSemana) continue;
+  const aulaDestino = encontrarAula(grade, destino);
+  if (!aulaDestino) {
+    const outrasAulas = grade.aulas.filter((aula) => aula !== aulaOrigem);
+    if (colideComOutrasAulas(grade, aulaOrigem, destino, outrasAulas)) {
+      return { aulas: grade.aulas, erro: 'O destino já está ocupado por outra aula.' };
+    }
 
-    const linhasAula = linhasDaAula(grade, aula);
-    if (!linhasAula) continue;
-    for (const linhaId of linhasAula) linhasOcupadas.add(linhaId);
+    return {
+      aulas: grade.aulas.map((aula) =>
+        aula === aulaOrigem
+          ? { ...aula, diaSemana: destino.diaSemana, linhaInicioId: destino.linhaInicioId }
+          : aula,
+      ),
+      erro: null,
+    };
   }
 
-  if (linhasDestino.some((linha) => linhasOcupadas.has(linha.id))) {
-    return { aulas: grade.aulas, erro: 'O destino já está ocupado por outra aula.' };
+  const linhasDaAulaDestinoNaOrigem = linhasAPartirDe(
+    grade,
+    origem.linhaInicioId,
+    aulaDestino.quantidadeAulas,
+  );
+  if (!linhasDaAulaDestinoNaOrigem) {
+    return {
+      aulas: grade.aulas,
+      erro: 'A aula de destino não cabe no espaço da aula movida.',
+    };
   }
 
-  const aulasAtualizadas = grade.aulas
-    .filter(
-      (aula) =>
-        !(aula.diaSemana === origem.diaSemana && aula.linhaInicioId === origem.linhaInicioId),
+  const outrasAulas = grade.aulas.filter(
+    (aula) => aula !== aulaOrigem && aula !== aulaDestino,
+  );
+  if (colideComOutrasAulas(grade, aulaOrigem, destino, outrasAulas)) {
+    return {
+      aulas: grade.aulas,
+      erro: 'A aula não cabe nesse destino sem sobrepor outra aula.',
+    };
+  }
+  if (colideComOutrasAulas(grade, aulaDestino, origem, outrasAulas)) {
+    return {
+      aulas: grade.aulas,
+      erro: 'A aula de destino não cabe no espaço da aula movida sem sobrepor outra aula.',
+    };
+  }
+
+  if (
+    origem.diaSemana === destino.diaSemana &&
+    linhasDestino.some((linha) =>
+      linhasDaAulaDestinoNaOrigem.some((linhaDestino) => linhaDestino.id === linha.id),
     )
-    .concat({
-      ...aulaOrigem,
-      diaSemana: destino.diaSemana,
-      linhaInicioId: destino.linhaInicioId,
-    });
+  ) {
+    return {
+      aulas: grade.aulas,
+      erro: 'As aulas não podem ocupar a mesma célula após a troca.',
+    };
+  }
 
-  return { aulas: aulasAtualizadas, erro: null };
+  return {
+    aulas: grade.aulas.map((aula) => {
+      if (aula === aulaOrigem) {
+        return {
+          ...aula,
+          diaSemana: destino.diaSemana,
+          linhaInicioId: destino.linhaInicioId,
+        };
+      }
+      if (aula === aulaDestino) {
+        return {
+          ...aula,
+          diaSemana: origem.diaSemana,
+          linhaInicioId: origem.linhaInicioId,
+        };
+      }
+      return aula;
+    }),
+    erro: null,
+  };
+}
+
+function mesmaPosicao(primeira: PosicaoCelulaAula, segunda: PosicaoCelulaAula): boolean {
+  return (
+    primeira.diaSemana === segunda.diaSemana &&
+    primeira.linhaInicioId === segunda.linhaInicioId
+  );
+}
+
+function encontrarAula(
+  grade: DadosGradeHoraria,
+  posicao: PosicaoCelulaAula,
+): AulaGrade | undefined {
+  return grade.aulas.find((aula) => mesmaPosicao(aula, posicao));
+}
+
+function linhasAPartirDe(
+  grade: DadosGradeHoraria,
+  linhaInicioId: string,
+  quantidadeAulas: number,
+): LinhaGrade[] | null {
+  const indiceInicio = grade.linhas.findIndex((linha) => linha.id === linhaInicioId);
+  if (indiceInicio < 0) return null;
+
+  const linhas = grade.linhas.slice(indiceInicio, indiceInicio + quantidadeAulas);
+  if (linhas.length !== quantidadeAulas || linhas.some((linha) => linha.tipo !== 'aula')) {
+    return null;
+  }
+  return linhas;
+}
+
+function colideComOutrasAulas(
+  grade: DadosGradeHoraria,
+  aulaMovida: AulaGrade,
+  novoInicio: PosicaoCelulaAula,
+  outrasAulas: readonly AulaGrade[],
+): boolean {
+  const linhasMovidas = linhasAPartirDe(
+    grade,
+    novoInicio.linhaInicioId,
+    aulaMovida.quantidadeAulas,
+  );
+  if (!linhasMovidas) return true;
+
+  const idsLinhasMovidas = new Set(linhasMovidas.map((linha) => linha.id));
+  return outrasAulas.some((outraAula) => {
+    if (outraAula.diaSemana !== novoInicio.diaSemana) return false;
+    const linhasOutraAula = linhasDaAula(grade, outraAula);
+    if (!linhasOutraAula) return false;
+    return linhasOutraAula.some((linhaId) => idsLinhasMovidas.has(linhaId));
+  });
 }
 
 function ajustarDemandasAoTotal(

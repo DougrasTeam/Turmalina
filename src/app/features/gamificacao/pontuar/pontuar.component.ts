@@ -1,9 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 
-import { Aluno, Turma } from '../../../core/models';
+import { Aluno } from '../../../core/models';
 import {
   LinhaHistoricoXp,
   criarChaveIdempotencia,
@@ -12,18 +12,20 @@ import {
 import { formatarDataHoraAuditoria } from '../../../core/models/auditoria.model';
 import { AlunosService } from '../../../core/services/alunos.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { ContextoProfessorService } from '../../../core/services/contexto-professor.service';
+import { ContextoGamificacaoService } from '../../../core/services/contexto-gamificacao.service';
 import { GamificacaoService } from '../../../core/services/gamificacao.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { TurmasService } from '../../../core/services/turmas.service';
+import { GamificacaoContextoComponent } from '../../../shared/gamificacao-contexto/gamificacao-contexto.component';
 
 /**
- * Lançamento de XP pela equipe (RF-015). O professor escolhe turma, ação e
- * alunos; a prévia mostra quantos alunos e quantos pontos serão afetados.
- * O envio usa uma chave de lote para impedir lançamentos duplicados.
+ * Lançamento de XP pela equipe (RF-015). O professor escolhe o contexto de
+ * turma + disciplina, a ação e os alunos; a prévia mostra quantos alunos e
+ * quantos pontos serão afetados. O envio usa uma chave de lote para impedir
+ * lançamentos duplicados.
  */
 @Component({
   selector: 'app-pontuar',
+  imports: [GamificacaoContextoComponent],
   templateUrl: './pontuar.component.html',
   styleUrl: './pontuar.component.scss',
 })
@@ -32,8 +34,7 @@ export class PontuarComponent {
   private readonly auth = inject(AuthService);
   private readonly alunos = inject(AlunosService);
   protected readonly gamificacao = inject(GamificacaoService);
-  private readonly contexto = inject(ContextoProfessorService);
-  private readonly turmas = inject(TurmasService);
+  protected readonly contexto = inject(ContextoGamificacaoService);
   private readonly toast = inject(ToastService);
 
   private readonly routePai = this.route.parent;
@@ -61,36 +62,25 @@ export class PontuarComponent {
     },
   );
 
-  protected readonly turmaId = signal(
-    this.routePai?.snapshot.paramMap.get('id') ?? this.route.snapshot.queryParamMap.get('turmaId') ?? '',
-  );
   protected readonly acaoId = signal('');
   protected readonly selecionados = signal<Set<string>>(new Set());
   protected readonly salvando = signal(false);
 
-  protected readonly turmasDisponiveis = computed<Turma[]>(() => {
-    if (this.auth.papel() === 'administrador') return this.turmas.turmas();
-    return this.contexto.turmasDoProfessor();
-  });
-
-  protected readonly turmaEfetiva = computed(() => {
-    const selecionada = this.turmaIdQuery() || this.turmaId();
-    const disponiveis = this.turmasDisponiveis();
-    if (disponiveis.some((turma) => turma.id === selecionada)) return selecionada;
-    return disponiveis[0]?.id ?? '';
-  });
-
   protected readonly alunosDaTurma = computed<Aluno[]>(() => {
-    const turmaId = this.turmaEfetiva();
+    const turmaId = this.contexto.turmaId();
     if (!turmaId) return [];
     return [...this.alunos.porTurma(turmaId)]
       .filter((aluno) => aluno.ativo)
       .sort((primeiro, segundo) => primeiro.nome.localeCompare(segundo.nome, 'pt-BR'));
   });
 
+  protected readonly acoesDisponiveis = computed(() =>
+    this.gamificacao.acoesAtivasDoContexto(this.contexto.turmaId(), this.contexto.disciplinaId()),
+  );
+
   protected readonly acaoEfetiva = computed(() => {
     const selecionada = this.acaoId();
-    const ativas = this.gamificacao.acoesAtivas();
+    const ativas = this.acoesDisponiveis();
     return ativas.find((acao) => acao.id === selecionada) ?? ativas[0] ?? null;
   });
 
@@ -110,27 +100,43 @@ export class PontuarComponent {
     return alunos.length > 0 && alunos.every((aluno) => this.selecionados().has(aluno.id));
   });
 
+  protected readonly xpPorAluno = computed(() =>
+    this.gamificacao.xpPorAlunoNoContexto(this.contexto.turmaId(), this.contexto.disciplinaId()),
+  );
+
   protected readonly historico = computed<LinhaHistoricoXp[]>(() => {
-    const turmaId = this.turmaEfetiva();
-    if (!turmaId) return [];
+    const turmaId = this.contexto.turmaId();
+    const disciplinaId = this.contexto.disciplinaId();
+    if (!turmaId || !disciplinaId) return [];
+
     const estornados = new Set(
       this.gamificacao
         .eventos()
         .map((evento) => evento.estornoDe)
         .filter((eventoId): eventoId is string => Boolean(eventoId)),
     );
-    const nomesPorAluno = new Map(
-      this.alunos.alunos().map((aluno) => [aluno.id, aluno.nome]),
-    );
-    return this.gamificacao.eventosDaTurma(turmaId).map((evento) => ({
+    const nomesPorAluno = new Map(this.alunos.alunos().map((aluno) => [aluno.id, aluno.nome]));
+    return this.gamificacao.eventosDaTurmaEDisciplina(turmaId, disciplinaId).map((evento) => ({
       evento,
       alunoNome: nomesPorAluno.get(evento.alunoId) ?? 'Aluno removido',
       estornado: estornados.has(evento.id),
     }));
   });
 
-  protected alterarTurma(evento: Event): void {
-    this.turmaId.set(this.valorDoCampo(evento));
+  constructor() {
+    effect(() => {
+      const turmaId = this.turmaIdQuery();
+      const disciplinaId = this.disciplinaIdQuery();
+      const turmasDisponiveis = this.contexto.turmasDisponiveis();
+
+      if (turmaId && turmasDisponiveis.some((turma) => turma.id === turmaId)) {
+        this.contexto.selecionarContexto(turmaId, disciplinaId);
+      }
+    });
+  }
+
+  protected aoAlterarContexto(): void {
+    this.acaoId.set('');
     this.selecionados.set(new Set());
   }
 

@@ -1,0 +1,379 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Metas</h1>
+      <p class="tl-text-muted">
+        Defina objetivos por indicador e turma. O progresso vem do histórico de XP e a recompensa é
+        concedida pela equipe quando o aluno atinge o critério.
+      </p>
+    </div>
+  </header>
+
+  @if (contexto.turmasDisponiveis().length === 0) {
+    <div class="card">
+      <div class="empty-state">
+        <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">school</span>
+        <h3>Nenhuma turma ativa</h3>
+        <p>É necessário ter uma turma vinculada para criar metas.</p>
+      </div>
+    </div>
+  } @else {
+    <app-gamificacao-contexto (contextoAlterado)="aoAlterarContexto()" />
+
+    @if (!contexto.contextoAtivo()) {
+      <div class="card">
+        <div class="empty-state">
+          <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">
+            menu_book
+          </span>
+          <h3>Nenhuma disciplina disponível</h3>
+          <p>Selecione uma turma com disciplina vinculada para criar metas.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="page-toolbar">
+        <span class="tl-small tl-text-muted">
+          {{ linhas().length }} meta(s) em {{ turmaAtual()?.nome }} /
+          {{ contexto.disciplinaAtual()?.nome }}
+        </span>
+        <span class="page-toolbar__spacer"></span>
+        <button class="btn btn-primary" type="button" [disabled]="!turmaId()" (click)="abrirNova()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Nova meta
+        </button>
+      </div>
+
+      <div class="card">
+        @if (linhas().length === 0) {
+          <div class="empty-state">
+            <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">
+              track_changes
+            </span>
+            <h3>Nenhuma meta cadastrada</h3>
+            <p>Crie a primeira meta para acompanhar os indicadores desta turma.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Meta</th>
+                  <th>Indicador</th>
+                  <th>Progresso</th>
+                  <th>Recompensa</th>
+                  <th>Concessões</th>
+                  <th>Status</th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (linha of linhas(); track linha.meta.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ linha.meta.nome }}</strong>
+                      @if (linha.meta.descricao) {
+                        <p class="metas__descricao">{{ linha.meta.descricao }}</p>
+                      }
+                    </td>
+                    <td>
+                      <span class="badge badge-info">
+                        {{ rotuloIndicador(linha.meta.indicador) }}
+                      </span>
+                    </td>
+                    <td class="metas__progresso">
+                      <div class="progress" aria-hidden="true">
+                        <div
+                          class="progress-bar progress-bar-success"
+                          [style.--progress]="linha.percentualMedio + '%'"
+                        ></div>
+                      </div>
+                      <span class="tl-small tl-text-muted">
+                        {{ linha.percentualMedio }}% em média · {{ linha.concedidas }} de
+                        {{ linha.totalAlunos }} concedida(s) · {{ linha.elegiveis }} elegível(is)
+                      </span>
+                    </td>
+                    <td>{{ formatarRecompensas(linha.meta) }}</td>
+                    <td>{{ linha.concedidas }}</td>
+                    <td>
+                      <span
+                        [class]="'badge ' + (linha.meta.ativa ? 'badge-success' : 'badge-neutral')"
+                      >
+                        {{ linha.meta.ativa ? 'Ativa' : 'Inativa' }}
+                      </span>
+                    </td>
+                    <td class="text-end metas__botoes">
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        title="Conceder recompensas"
+                        [disabled]="!linha.meta.ativa"
+                        (click)="abrirConcessao(linha.meta)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true"
+                          >emoji_events</span
+                        >
+                      </button>
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        title="Editar"
+                        (click)="editar(linha.meta)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                      </button>
+                      <button
+                        class="btn btn-light btn-sm"
+                        type="button"
+                        [title]="linha.meta.ativa ? 'Desativar' : 'Ativar'"
+                        (click)="alternarAtiva(linha.meta)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">
+                          {{ linha.meta.ativa ? 'toggle_on' : 'toggle_off' }}
+                        </span>
+                      </button>
+                      <button
+                        class="btn btn-danger btn-sm"
+                        type="button"
+                        title="Excluir"
+                        (click)="pedirExclusao(linha.meta)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <app-modal
+    [open]="modalAberto()"
+    [title]="editando() ? 'Editar meta' : 'Nova meta'"
+    (close)="fecharFormulario()"
+  >
+    @if (erros().length) {
+      <div class="alert alert-danger" role="alert">
+        @for (erro of erros(); track erro) {
+          <p class="mb-0">{{ erro }}</p>
+        }
+      </div>
+    }
+
+    @if (indicadores().length === 0) {
+      <div class="alert alert-warning" role="alert">
+        Cadastre uma ação de XP com indicador antes de criar metas.
+      </div>
+    }
+
+    <div class="metas__campos">
+      <label class="form-label" for="meta-nome">
+        Nome
+        <input
+          id="meta-nome"
+          class="form-control"
+          type="text"
+          maxlength="60"
+          placeholder="Ex.: Participação em aula"
+          [value]="formulario().nome"
+          (input)="alterarNome($event)"
+        />
+      </label>
+
+      <p class="tl-small tl-text-muted metas__contexto">
+        Contexto: {{ turmaAtual()?.nome }} / {{ contexto.disciplinaAtual()?.nome }}
+      </p>
+
+      <label class="form-label metas__campo-largo" for="meta-descricao">
+        Descrição
+        <textarea
+          id="meta-descricao"
+          class="form-control"
+          rows="2"
+          maxlength="160"
+          placeholder="Explique o objetivo da meta para a equipe."
+          [value]="formulario().descricao"
+          (input)="alterarDescricao($event)"
+        ></textarea>
+      </label>
+
+      <label class="form-label" for="meta-indicador">
+        Indicador
+        <select
+          id="meta-indicador"
+          class="form-select"
+          [value]="formulario().indicador"
+          (change)="alterarIndicador($event)"
+        >
+          <option value="">Selecione</option>
+          @for (indicador of indicadores(); track indicador) {
+            <option [value]="indicador">{{ rotuloIndicador(indicador) }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="form-label" for="meta-quantidade">
+        Ocorrências necessárias
+        <input
+          id="meta-quantidade"
+          class="form-control"
+          type="number"
+          step="1"
+          min="1"
+          max="1000"
+          [value]="formulario().quantidade"
+          (input)="alterarQuantidade($event)"
+        />
+      </label>
+
+      <label class="form-label" for="meta-recompensa-xp">
+        Recompensa em XP
+        <input
+          id="meta-recompensa-xp"
+          class="form-control"
+          type="number"
+          step="1"
+          min="0"
+          max="100"
+          [value]="formulario().recompensaXp"
+          (input)="alterarRecompensaXp($event)"
+        />
+      </label>
+
+      <label class="form-label" for="meta-recompensa-moedas">
+        Recompensa em moedas
+        <input
+          id="meta-recompensa-moedas"
+          class="form-control"
+          type="number"
+          step="1"
+          min="0"
+          max="1000"
+          [value]="formulario().recompensaMoedas"
+          (input)="alterarRecompensaMoedas($event)"
+        />
+      </label>
+    </div>
+
+    <label class="metas__ativa">
+      <input type="checkbox" [checked]="formulario().ativa" (change)="alterarAtiva($event)" />
+      Meta ativa para acompanhamento
+    </label>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-light" type="button" (click)="fecharFormulario()">Cancelar</button>
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="salvando() || indicadores().length === 0"
+        (click)="salvar()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">save</span>
+        {{ salvando() ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    [open]="metaParaConceder() !== null"
+    [title]="'Concessões: ' + (metaParaConceder()?.nome ?? '')"
+    (close)="fecharConcessao()"
+  >
+    @if (metaParaConceder(); as meta) {
+      <p class="tl-text-muted">
+        Critério: {{ meta.quantidade }} ocorrência(s) de
+        <strong>{{ rotuloIndicador(meta.indicador) }}</strong
+        >. Recompensa: {{ formatarRecompensas(meta) }}.
+      </p>
+
+      <div class="metas__concessao-topo">
+        <span class="tl-small tl-text-muted">{{ totalElegiveis() }} aluno(s) elegível(is)</span>
+        <button
+          class="btn btn-primary btn-sm"
+          type="button"
+          [disabled]="totalElegiveis() === 0 || processandoAlunoId() !== ''"
+          (click)="concederParaElegiveis()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">done_all</span>
+          Conceder a todos elegíveis
+        </button>
+      </div>
+
+      @if (progressosDaMetaSelecionada().length === 0) {
+        <p class="tl-small tl-text-muted mb-0">Nenhum aluno ativo nesta turma.</p>
+      } @else {
+        <ul class="metas__lista">
+          @for (progresso of progressosDaMetaSelecionada(); track progresso.alunoId) {
+            <li class="metas__aluno">
+              <div class="metas__aluno-info">
+                <strong>{{ nomeDoAluno(progresso.alunoId) }}</strong>
+                <span class="tl-small tl-text-muted">
+                  {{ progresso.quantidadeAtual }}/{{ meta.quantidade }} ·
+                  {{ rotuloStatus(progresso) }}
+                </span>
+                <div class="progress" aria-hidden="true">
+                  <div
+                    class="progress-bar"
+                    [class.progress-bar-success]="progresso.percentual >= 100"
+                    [style.--progress]="progresso.percentual + '%'"
+                  ></div>
+                </div>
+              </div>
+
+              <span [class]="'badge ' + classeStatus(progresso)">
+                {{ rotuloStatus(progresso) }}
+              </span>
+
+              @if (progresso.status === 'disponivel') {
+                <button
+                  class="btn btn-primary btn-sm"
+                  type="button"
+                  [disabled]="processandoAlunoId() !== ''"
+                  (click)="conceder(progresso)"
+                >
+                  {{ estaProcessando(progresso.alunoId) ? 'Concedendo...' : 'Conceder' }}
+                </button>
+              } @else if (progresso.status === 'concedida') {
+                <button
+                  class="btn btn-light btn-sm"
+                  type="button"
+                  title="Revogar concessão"
+                  [disabled]="processandoAlunoId() !== ''"
+                  (click)="revogar(progresso)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">undo</span>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      @if (metas.concessoesDaMeta(meta.id).length > 0) {
+        <h3 class="metas__subtitulo">Histórico de concessões</h3>
+        <ul class="metas__historico">
+          @for (concessao of metas.concessoesDaMeta(meta.id); track concessao.id) {
+            <li>
+              <span>{{ nomeDoAluno(concessao.alunoId) }}</span>
+              <span class="tl-small tl-text-muted">
+                {{ formatarDataHora(concessao.criadoEm) }} · {{ concessao.autorNome || 'Sistema' }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </app-modal>
+
+  <app-confirmar-texto
+    [open]="exclusaoAberta()"
+    titulo="Excluir meta"
+    [mensagem]="'Excluir a meta \'' + (metaEmExclusao()?.nome ?? '') + '\'?'"
+    [detalhes]="['As concessões vinculadas serão revogadas e as recompensas estornadas.']"
+    (confirmado)="confirmarExclusao()"
+    (fechado)="cancelarExclusao()"
+  />
+</section>

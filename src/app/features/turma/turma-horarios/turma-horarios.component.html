@@ -24,6 +24,17 @@
           <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
           Limpar horário
         </button>
+        @if (!temAulasNaGrade()) {
+          <button
+            class="btn btn-sm btn-light"
+            type="button"
+            [disabled]="salvandoGrade()"
+            (click)="aplicarPadraoDaEscola()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">auto_fix_high</span>
+            Aplicar padrão da escola
+          </button>
+        }
         <button
           class="btn btn-sm btn-light"
           type="button"
@@ -180,7 +191,13 @@
                       @if (aulaNaCelula(dia.value, linhaCalculada.linha.id); as aula) {
                         <td
                           class="grade-table__lesson-cell"
+                          [class.grade-table__lesson-cell--drop]="
+                            !somenteLeitura() && arrastando() !== null
+                          "
                           [attr.rowspan]="aula.quantidadeAulas"
+                          (dragover)="permitirSoltar($event)"
+                          (dragenter)="permitirSoltar($event)"
+                          (drop)="soltarAula($event, dia.value, linhaCalculada.linha.id)"
                         >
                           <button
                             class="grade-lesson"
@@ -197,6 +214,9 @@
                             (click)="abrirAula(dia.value, linhaCalculada.linha.id)"
                           >
                             <strong>{{ nomeDisciplina(aula.disciplinaId) }}</strong>
+                            @if (professoresPorDisciplina().get(aula.disciplinaId); as professores) {
+                              <span class="grade-lesson__teachers">{{ professores }}</span>
+                            }
                             <span>
                               {{ linhaCalculada.inicio }}–{{ fimAula(aula) }}
                             </span>

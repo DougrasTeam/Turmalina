@@ -43,9 +43,151 @@
     </article>
 
     <div class="alert alert-info" role="status">
-      O XP é uma pontuação de gamificação. Ele não substitui nem altera notas, frequência ou
-      aprovação.
+      O XP Ǹ uma pontua��ǜo de gamifica��ǜo. Ele nǜo substitui nem altera notas, frequǦncia ou
+      aprova��ǜo.
     </div>
+
+    <section class="aluno-xp__secao" aria-labelledby="xp-disciplinas-titulo">
+      <h2 id="xp-disciplinas-titulo" class="aluno-xp__secao-titulo">XP por disciplina</h2>
+
+      @if (xpPorDisciplina().length === 0) {
+        <div class="card">
+          <p class="tl-small tl-text-muted mb-0">
+            Ainda não há XP registrado por disciplina nesta turma.
+          </p>
+        </div>
+      } @else {
+        <div class="aluno-xp__grade">
+          @for (item of xpPorDisciplina(); track item.disciplinaId) {
+            <article class="card aluno-xp__meta">
+              <div class="aluno-xp__meta-topo">
+                <strong>{{ item.disciplinaNome }}</strong>
+                <span class="badge badge-info">{{ item.xp }} XP</span>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="aluno-xp__secao" aria-labelledby="minhas-metas-titulo">
+      <h2 id="minhas-metas-titulo" class="aluno-xp__secao-titulo">Minhas metas</h2>
+
+      @if (metasDoAluno().length === 0) {
+        <div class="card">
+          <div class="empty-state">
+            <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">
+              track_changes
+            </span>
+            <h3>Nenhuma meta ativa</h3>
+            <p>Quando a equipe criar uma meta para sua turma, ela aparecerá aqui.</p>
+          </div>
+        </div>
+      } @else {
+        <div class="aluno-xp__grade">
+          @for (progresso of metasDoAluno(); track progresso.meta.id) {
+            <article class="card aluno-xp__meta">
+              <div class="aluno-xp__meta-topo">
+                <strong>{{ progresso.meta.nome }}</strong>
+                <span [class]="'badge ' + metas.classeStatus(progresso)">
+                  {{ metas.formatarStatus(progresso) }}
+                </span>
+              </div>
+
+              @if (progresso.meta.descricao) {
+                <p class="tl-small tl-text-muted">{{ progresso.meta.descricao }}</p>
+              }
+
+              <p class="tl-small tl-text-muted mb-0">
+                Disciplina: {{ nomeDisciplina(progresso.meta.disciplinaId) }}
+              </p>
+
+              <p class="tl-small aluno-xp__meta-criterio">
+                {{ rotuloIndicador(progresso.meta.indicador) }}:
+                <strong>{{ progresso.quantidadeAtual }}/{{ progresso.meta.quantidade }}</strong>
+              </p>
+
+              <div
+                class="progress"
+                role="progressbar"
+                [attr.aria-valuenow]="progresso.percentual"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                <div
+                  class="progress-bar progress-bar-success"
+                  [style.--progress]="progresso.percentual + '%'"
+                ></div>
+              </div>
+
+              <p class="tl-small tl-text-muted mb-0">
+                Recompensa: {{ formatarRecompensaMeta(progresso) }}
+              </p>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="aluno-xp__secao" aria-labelledby="minhas-missoes-titulo">
+      <h2 id="minhas-missoes-titulo" class="aluno-xp__secao-titulo">Minhas missões</h2>
+
+      @if (missoesDisponiveis().length === 0 && missoesConcluidas().length === 0) {
+        <div class="card">
+          <div class="empty-state">
+            <span class="empty-state__icon material-symbols-outlined" aria-hidden="true">map</span>
+            <h3>Nenhuma missão disponível</h3>
+            <p>As missões publicadas pela equipe aparecerão aqui.</p>
+          </div>
+        </div>
+      } @else {
+        <div class="aluno-xp__grade">
+          @for (missao of missoesDisponiveis(); track missao.id) {
+            <article class="card aluno-xp__missao">
+              <div class="aluno-xp__meta-topo">
+                <strong>{{ missao.nome }}</strong>
+                <span class="badge badge-info">{{ rotuloTipoMissao(missao) }}</span>
+              </div>
+
+              @if (missao.descricao) {
+                <p class="tl-small tl-text-muted">{{ missao.descricao }}</p>
+              }
+
+              @if (missao.instrucoes) {
+                <p class="tl-small aluno-xp__instrucoes">{{ missao.instrucoes }}</p>
+              }
+
+              <p class="tl-small tl-text-muted mb-0">
+                Disciplina: {{ nomeDisciplina(missao.disciplinaId) }}
+              </p>
+
+              <p class="tl-small tl-text-muted mb-0">
+                {{ formatarPeriodoMissao(missao) }} · Recompensa:
+                {{ formatarRecompensaMissao(missao) }}
+              </p>
+            </article>
+          }
+
+          @for (item of missoesConcluidas(); track item.conclusao.id) {
+            <article class="card aluno-xp__missao aluno-xp__missao--concluida">
+              <div class="aluno-xp__meta-topo">
+                <strong>{{ item.missao.nome }}</strong>
+                <span class="badge badge-success">Concluída</span>
+              </div>
+
+              <p class="tl-small tl-text-muted mb-0">
+                Disciplina: {{ nomeDisciplina(item.missao.disciplinaId) }}
+              </p>
+
+              <p class="tl-small tl-text-muted mb-0">
+                {{ formatarDataHora(item.conclusao.criadoEm) }} · Recompensa:
+                {{ formatarRecompensaMissao(item.missao) }}
+              </p>
+            </article>
+          }
+        </div>
+      }
+    </section>
 
     <article class="card">
       <div class="card-body">
@@ -64,6 +206,7 @@
             <thead>
               <tr>
                 <th>Data</th>
+                <th>Disciplina</th>
                 <th>Ação</th>
                 <th>XP</th>
                 <th>Registrado por</th>
@@ -74,6 +217,7 @@
               @for (evento of eventos(); track evento.id) {
                 <tr>
                   <td class="aluno-xp__data">{{ formatarDataHora(evento.criadoEm) }}</td>
+                  <td>{{ nomeDisciplina(evento.disciplinaId) }}</td>
                   <td>{{ evento.acaoNome }}</td>
                   <td>
                     <span

@@ -4,11 +4,12 @@ import { Disciplina } from '../../../core/models/disciplina.model';
 import { Turma } from '../../../core/models';
 import { DisciplinasService } from '../../../core/services/disciplinas.service';
 import { TurmasService } from '../../../core/services/turmas.service';
+import { PadraoHorarioComponent } from '../padrao-horario/padrao-horario.component';
 import { TurmaHorariosComponent } from '../../turma/turma-horarios/turma-horarios.component';
 
 @Component({
   selector: 'app-horarios',
-  imports: [TurmaHorariosComponent],
+  imports: [PadraoHorarioComponent, TurmaHorariosComponent],
   templateUrl: './horarios.component.html',
   styleUrl: './horarios.component.scss',
 })

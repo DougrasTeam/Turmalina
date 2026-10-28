@@ -39,6 +39,49 @@
   font-size: 1.4rem;
 }
 
+.aluno-xp__secao {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.aluno-xp__secao-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.aluno-xp__grade {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.aluno-xp__meta,
+.aluno-xp__missao {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem;
+}
+
+.aluno-xp__meta-topo {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.aluno-xp__meta-criterio {
+  margin: 0;
+}
+
+.aluno-xp__instrucoes {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.aluno-xp__missao--concluida {
+  border-left: 3px solid var(--tl-success);
+}
+
 .aluno-xp__historico-titulo {
   margin: 0;
   font-size: 1rem;

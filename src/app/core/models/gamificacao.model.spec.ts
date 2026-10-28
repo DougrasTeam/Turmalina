@@ -17,6 +17,8 @@ function dados(sobrescrever: Partial<DadosAcaoGamificacao> = {}): DadosAcaoGamif
     valorXp: 10,
     indicador: 'participacao',
     ativa: true,
+    turmaId: 'turma-1',
+    disciplinaId: 'disciplina-1',
     ...sobrescrever,
   };
 }
@@ -33,19 +35,33 @@ describe('gamificacao.model', () => {
     expect(validarAcaoGamificacao(dados({ valorXp: -20 }), [])).toEqual([]);
   });
 
-  it('recusa ação sem nome e sem indicador', () => {
-    const erros = validarAcaoGamificacao(dados({ nome: '  ', indicador: ' ' }), []);
+  it('recusa ação sem turma, disciplina, nome e indicador', () => {
+    const erros = validarAcaoGamificacao(
+      dados({ turmaId: ' ', disciplinaId: ' ', nome: '  ', indicador: ' ' }),
+      [],
+    );
+    expect(erros).toContain('Selecione a turma da ação.');
+    expect(erros).toContain('Selecione a disciplina da ação.');
     expect(erros).toContain('Informe o nome da ação.');
     expect(erros).toContain('Informe o indicador associado à ação.');
   });
 
-  it('recusa nome duplicado ignorando a própria ação na edição', () => {
-    const existente = { ...dados(), id: 'acao-1', institutionId: 'i', criadoEm: '', atualizadoEm: '' };
+  it('recusa nome duplicado na mesma turma e disciplina, ignorando a própria ação', () => {
+    const existente = {
+      ...dados(),
+      id: 'acao-1',
+      institutionId: 'i',
+      criadoEm: '',
+      atualizadoEm: '',
+    };
 
     expect(validarAcaoGamificacao(dados(), [existente])).toContain(
-      'Já existe uma ação com este nome.',
+      'Já existe uma ação com este nome nesta turma e disciplina.',
     );
     expect(validarAcaoGamificacao(dados({ valorXp: 15 }), [existente], 'acao-1')).toEqual([]);
+    expect(validarAcaoGamificacao(dados({ disciplinaId: 'disciplina-2' }), [existente])).toEqual(
+      [],
+    );
   });
 
   it('calcula o nível a partir do XP acumulado', () => {
@@ -78,7 +94,9 @@ describe('gamificacao.model', () => {
     expect(new Set(nomes).size).toBe(nomes.length);
     for (const acao of ACOES_GAMIFICACAO_PADRAO) {
       expect(acao.valorXp).not.toBe(0);
-      expect(validarAcaoGamificacao(acao, [])).toEqual([]);
+      expect(
+        validarAcaoGamificacao({ ...acao, turmaId: 'turma-1', disciplinaId: 'disciplina-1' }, []),
+      ).toEqual([]);
     }
   });
 });

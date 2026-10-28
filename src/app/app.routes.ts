@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 
 import { autenticacaoGuard } from './core/auth/guards/autenticacao.guard';
 import { papelGuard } from './core/auth/guards/papel.guard';
@@ -281,10 +281,26 @@ export const routes: Routes = [
   },
   {
     path: 'gamificacao/equipes',
-    title: 'Equipes · Turmalina',
+    title: 'Equipes �� Turmalina',
     canActivate: rotaEquipe('gamificacao.equipes'),
     loadComponent: () =>
       import('./features/gamificacao/equipes/equipes.component').then((m) => m.EquipesComponent),
+  },
+  {
+    path: 'gamificacao/metas',
+    title: 'Metas - Turmalina',
+    canActivate: rotaEquipe('gamificacao.metas'),
+    loadComponent: () =>
+      import('./features/gamificacao/metas/metas.component').then((m) => m.MetasComponent),
+  },
+  {
+    path: 'gamificacao/missoes',
+    title: 'Missoes - Turmalina',
+    canActivate: rotaEquipe('gamificacao.missoes'),
+    loadComponent: () =>
+      import('./features/gamificacao/missoes/missoes.component').then(
+        (m) => m.MissoesComponent,
+      ),
   },
   {
     path: 'gamificacao/moedas',

@@ -1,7 +1,12 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 
 import { ModalComponent } from '../../../shared/modal/modal.component';
+import type { Turno } from '../../../core/models';
 import { Disciplina } from '../../../core/models/disciplina.model';
+import {
+  montarGradeAPartirDoPadrao,
+  turnoUsaPadraoHorario,
+} from '../../../core/models/padrao-horario.model';
 import {
   AulaGrade,
   DadosGradeHoraria,
@@ -26,6 +31,7 @@ import {
   resumirAulasSemanais,
 } from '../../../core/models/horario-turma.model';
 import { HorariosTurmaService } from '../../../core/services/horarios-turma.service';
+import { PadroesHorarioService } from '../../../core/services/padroes-horario.service';
 import { PeriodosLetivosService } from '../../../core/services/periodos-letivos.service';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -48,10 +54,12 @@ interface FormularioAula {
 })
 export class TurmaHorariosComponent {
   readonly turmaId = input.required<string>();
+  readonly turno = input<Turno>('manha');
   readonly disciplinas = input<readonly Disciplina[]>([]);
   readonly somenteLeitura = input(true);
 
   protected readonly horariosService = inject(HorariosTurmaService);
+  private readonly padroesHorarioService = inject(PadroesHorarioService);
   private readonly periodosLetivosService = inject(PeriodosLetivosService);
   private readonly toast = inject(ToastService);
 
@@ -86,6 +94,21 @@ export class TurmaHorariosComponent {
   protected readonly disciplinasOfertadas = computed(
     () => new Set(this.disciplinasAtivas().map((disciplina) => disciplina.id)),
   );
+  protected readonly professoresPorDisciplina = computed<ReadonlyMap<string, string>>(() => {
+    const nomesPorDisciplina = new Map<string, string>();
+
+    for (const disciplina of this.disciplinas()) {
+      const nomes = this.horariosService.nomesProfessoresDaDisciplina(
+        this.turmaId(),
+        disciplina.id,
+      );
+      if (nomes.length > 0) {
+        nomesPorDisciplina.set(disciplina.id, nomes.join(', '));
+      }
+    }
+
+    return nomesPorDisciplina;
+  });
   protected readonly semanasLetivasSugeridas = computed(() => {
     const periodoAtivo = this.periodosLetivosService.ativo();
     if (!periodoAtivo) return SEMANAS_LETIVAS_PADRAO;
@@ -178,6 +201,32 @@ export class TurmaHorariosComponent {
 
   protected salvarConfiguracao(): void {
     void this.salvarGrade();
+  }
+
+  protected async aplicarPadraoDaEscola(): Promise<void> {
+    if (this.somenteLeitura() || this.salvandoGrade()) return;
+    if (this.temAulasNaGrade()) {
+      this.toast.mostrar(
+        'Remova as aulas da grade antes de aplicar o padrão da escola.',
+        'warning',
+      );
+      return;
+    }
+
+    const gradePadrao = await this.criarGradeComPadrao(this.turmaId());
+    if (!gradePadrao) {
+      this.toast.mostrar(
+        'O padrão da escola ainda não foi configurado para este turno.',
+        'warning',
+      );
+      return;
+    }
+
+    this.rascunho.set(gradePadrao);
+    const salvou = await this.salvarGrade();
+    if (salvou) {
+      this.toast.mostrar('Padrão de horário aplicado.');
+    }
   }
 
   protected adicionarAulaNaGrade(): void {
@@ -363,6 +412,7 @@ export class TurmaHorariosComponent {
     if (origem.diaSemana === diaSemana && origem.linhaInicioId === linhaInicioId) return;
 
     const grade = this.grade();
+    const trocouAula = Boolean(this.aulaNaCelula(diaSemana, linhaInicioId));
     const resultado = moverAulaNaGrade(grade, origem, { diaSemana, linhaInicioId });
     if (resultado.erro) {
       this.toast.mostrar(resultado.erro, 'warning');
@@ -371,14 +421,19 @@ export class TurmaHorariosComponent {
 
     this.rascunho.set({ ...grade, aulas: resultado.aulas });
     const salvou = await this.salvarGrade();
-    if (salvou) this.toast.mostrar('Aula movida.');
+    if (salvou) {
+      this.toast.mostrar(trocouAula ? 'Aulas trocadas.' : 'Aula movida.');
+    }
   }
 
   protected abrirGerador(): void {
     if (this.somenteLeitura()) return;
 
+    const gradeAtual = this.rascunho();
     this.rascunho.set(
-      garantirAulasPorDia(this.rascunho(), AULAS_POR_DIA_PADRAO),
+      gradeAtual.linhas.length > 0
+        ? gradeAtual
+        : garantirAulasPorDia(gradeAtual, AULAS_POR_DIA_PADRAO),
     );
     this.semanasLetivas.set(this.semanasLetivasSugeridas());
     this.maximoAulasPorDisciplinaPorDia.set(
@@ -526,11 +581,47 @@ export class TurmaHorariosComponent {
       const turmaId = this.turmaId();
       const gradeSalva = this.horariosService.porTurma(turmaId);
       this.turmaCarregada.set(turmaId);
+
+      const gradeSemEstrutura =
+        !gradeSalva ||
+        (gradeSalva.linhas.length === 0 && gradeSalva.aulas.length === 0);
+      if (gradeSemEstrutura) {
+        const gradePadrao = await this.criarGradeComPadrao(turmaId);
+        if (gradePadrao) {
+          const gradeInicial =
+            this.somenteLeitura()
+              ? gradeSalva ?? gradePadrao
+              : await this.horariosService.salvar(
+                  gradePadrao,
+                  this.disciplinasOfertadas(),
+                );
+          this.rascunho.set(gradeInicial);
+          return;
+        }
+      }
+
       this.rascunho.set(gradeSalva ?? gradeVazia(turmaId));
     } catch (erro) {
       this.erroCarregamento.set(this.mensagemErro(erro));
     } finally {
       this.carregando.set(false);
+    }
+  }
+
+  private async criarGradeComPadrao(
+    turmaId: string,
+  ): Promise<DadosGradeHoraria | null> {
+    if (!turnoUsaPadraoHorario(this.turno())) return null;
+
+    try {
+      await this.padroesHorarioService.load();
+      const padrao = this.padroesHorarioService.padrao();
+      if (!padrao) return null;
+
+      const grade = montarGradeAPartirDoPadrao(turmaId, padrao, this.turno());
+      return grade.linhas.length > 0 ? grade : null;
+    } catch {
+      return null;
     }
   }
 

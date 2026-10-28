@@ -1,0 +1,26 @@
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.th-sort:hover {
+  color: var(--tl-primary);
+}
+
+.th-sort:focus-visible {
+  outline: 2px solid var(--tl-primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.th-sort .material-symbols-outlined {
+  font-size: 1rem;
+}
